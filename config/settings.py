@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     REFRESH_DAYS: int = 7
     OTP_MINUTES: int = 10
     EMAIL_DOMAIN: str = "sistemas.frc.utn.edu.ar"
+    
+    COOKIE_SECURE: bool = False  # True en producción (HTTPS)
+    COOKIE_SAMESITE: str = "lax"
+
 
     class Config:
         env_file = ".env"

@@ -1,71 +1,91 @@
+from typing import Annotated
+
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException,Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import select
-from typing import Annotated
-from fastapi import Depends
+from sqlmodel import delete
 
 from config.database import db_dependency
 from models import RefreshToken, User
-from schemas.auth import LoginRequest, RefreshRequest, TokenPair, UserPublic
-from utils.auth import authenticate_user, issue_token_pair, user_dependency
+from schemas.auth import AccessToken, LoginRequest, UserPublic
+from utils.auth import (
+    REFRESH_COOKIE,
+    authenticate_user,
+    clear_refresh_cookie,
+    issue_tokens,
+    user_dependency,
+)
 from utils.security import hash_token
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-INVALID = HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+RefreshCookie = Annotated[str | None, Cookie(alias=REFRESH_COOKIE)]
 
 
-@auth_router.post("/login", response_model=TokenPair)
-async def login(data: LoginRequest, db: db_dependency):
+def _invalid_credentials() -> HTTPException:
+    return HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+
+
+@auth_router.post("/login", response_model=AccessToken)
+async def login(data: LoginRequest, response: Response, db: db_dependency):
     user = await authenticate_user(db, data.email, data.password)
     if not user:
-        raise INVALID
-    return await issue_token_pair(db, user)
+        raise _invalid_credentials()
+    return await issue_tokens(db, user, response)
 
 
-@auth_router.post("/token", response_model=TokenPair, include_in_schema=False)
+@auth_router.post("/token", response_model=AccessToken, include_in_schema=False)
 async def token_form(
-    form: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    response: Response,
+    db: db_dependency,
 ):
     """Solo para el botón Authorize de Swagger."""
     user = await authenticate_user(db, form.username, form.password)
     if not user:
-        raise INVALID
-    return await issue_token_pair(db, user)
+        raise _invalid_credentials()
+    return await issue_tokens(db, user, response)
 
-
-@auth_router.post("/refresh", response_model=TokenPair)
-async def refresh(data: RefreshRequest, db: db_dependency):
-    stored = (
-        await db.exec(
-            select(RefreshToken).where(
-                RefreshToken.token_hash == hash_token(data.refresh_token)
-            )
+@auth_router.post("/refresh", response_model=AccessToken)
+async def refresh(request: Request, response: Response, db: db_dependency):
+    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    if not refresh_token:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing refresh token")
+    
+    # DELETE atómico: si dos requests llegan con el mismo token, solo una lo consume.
+    # Un token vencido no coincide, así que también se rechaza.
+    result = await db.exec(
+        delete(RefreshToken)
+        .where(
+            RefreshToken.token_hash == hash_token(refresh_token),
+            RefreshToken.expires_at > datetime.now(timezone.utc),
         )
-    ).first()
-    if not stored or stored.expires_at < datetime.now(timezone.utc):
+        .returning(RefreshToken.id_user)
+    )
+    id_user = result.scalar_one_or_none()
+    await db.commit()
+
+    user = await db.get(User, id_user) if id_user else None
+    if not user:
+        clear_refresh_cookie(response)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
 
-    user = await db.get(User, stored.id_user)
-    await db.delete(stored)  # rotación: el token usado deja de servir
-    await db.commit()
-    return await issue_token_pair(db, user)
+    return await issue_tokens(db, user, response)
 
 
 @auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(data: RefreshRequest, db: db_dependency):
-    stored = (
+async def logout(request: Request, response: Response, db: db_dependency):
+    refresh_token = request.cookies.get(REFRESH_COOKIE)
+    
+    if refresh_token:
         await db.exec(
-            select(RefreshToken).where(
-                RefreshToken.token_hash == hash_token(data.refresh_token)
+            delete(RefreshToken).where(
+                RefreshToken.token_hash == hash_token(refresh_token)
             )
         )
-    ).first()
-    if stored:
-        await db.delete(stored)
         await db.commit()
+    clear_refresh_cookie(response)
 
 
 @auth_router.get("/me", response_model=UserPublic)

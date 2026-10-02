@@ -6,13 +6,8 @@ class LoginRequest(SQLModel):
     password: str
 
 
-class RefreshRequest(SQLModel):
-    refresh_token: str
-
-
-class TokenPair(SQLModel):
+class AccessToken(SQLModel):
     access_token: str
-    refresh_token: str
     token_type: str = "bearer"
 
 
