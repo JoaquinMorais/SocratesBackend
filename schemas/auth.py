@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel
+from sqlmodel import Field, SQLModel
 
 
 class LoginRequest(SQLModel):
@@ -11,10 +11,11 @@ class AccessToken(SQLModel):
     token_type: str = "bearer"
 
 
-class UserPublic(SQLModel):
-    id_user: int
-    first_name: str
-    last_name: str
-    file_number: int
+class PasswordRequest(SQLModel):
     email: str
-    role: str | None
+
+
+class PasswordConfirm(SQLModel):
+    email: str
+    code: str
+    new_password: str = Field(min_length=8, max_length=128)

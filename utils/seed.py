@@ -14,7 +14,7 @@ def _build_user(item: dict) -> User:
     user = User(
         first_name=item["first_name"],
         last_name=item["last_name"],
-        file_number=item["file_number"],
+        legajo=item["legajo"],
         birth_date=date.fromisoformat(item["birth_date"]),
     )
     if item.get("password"):
@@ -41,6 +41,12 @@ async def load_seed(session: AsyncSession) -> None:
         user = _build_user(item)
         session.add(user)
         await session.flush()
-        session.add(Professor(id_professor=user.id_user))
+        session.add(
+            Professor(
+                id_professor=user.id_user,
+                mail=item["mail"].strip().lower(),
+                is_super_admin=item.get("is_super_admin", False),
+            )
+        )
 
     await session.commit()

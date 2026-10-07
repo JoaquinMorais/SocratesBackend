@@ -1,26 +1,28 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
-from datetime import datetime, timezone
-
-from fastapi import APIRouter, Cookie, Depends, HTTPException,Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import delete
 
 from config.database import db_dependency
 from models import RefreshToken, User
-from schemas.auth import AccessToken, LoginRequest, UserPublic
+from schemas.auth import AccessToken, LoginRequest, PasswordConfirm, PasswordRequest
+from schemas.user import UserPublic
 from utils.auth import (
     REFRESH_COOKIE,
     authenticate_user,
     clear_refresh_cookie,
+    get_user_by_mail,
     issue_tokens,
     user_dependency,
 )
+from utils.email import send_otp_email
 from utils.security import hash_token
+from utils.verification import consume_otp, create_otp
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
-
-RefreshCookie = Annotated[str | None, Cookie(alias=REFRESH_COOKIE)]
 
 
 def _invalid_credentials() -> HTTPException:
@@ -41,20 +43,20 @@ async def token_form(
     response: Response,
     db: db_dependency,
 ):
-    """Solo para el botón Authorize de Swagger."""
+    """Solo para el botón Authorize de Swagger (username = mail)."""
     user = await authenticate_user(db, form.username, form.password)
     if not user:
         raise _invalid_credentials()
     return await issue_tokens(db, user, response)
+
 
 @auth_router.post("/refresh", response_model=AccessToken)
 async def refresh(request: Request, response: Response, db: db_dependency):
     refresh_token = request.cookies.get(REFRESH_COOKIE)
     if not refresh_token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing refresh token")
-    
+
     # DELETE atómico: si dos requests llegan con el mismo token, solo una lo consume.
-    # Un token vencido no coincide, así que también se rechaza.
     result = await db.exec(
         delete(RefreshToken)
         .where(
@@ -68,8 +70,9 @@ async def refresh(request: Request, response: Response, db: db_dependency):
 
     user = await db.get(User, id_user) if id_user else None
     if not user:
-        clear_refresh_cookie(response)
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
+        error = JSONResponse({"detail": "Invalid refresh token"}, status_code=401)
+        clear_refresh_cookie(error)
+        return error
 
     return await issue_tokens(db, user, response)
 
@@ -77,7 +80,6 @@ async def refresh(request: Request, response: Response, db: db_dependency):
 @auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(request: Request, response: Response, db: db_dependency):
     refresh_token = request.cookies.get(REFRESH_COOKIE)
-    
     if refresh_token:
         await db.exec(
             delete(RefreshToken).where(
@@ -95,7 +97,34 @@ async def me(user: user_dependency):
         id_user=user.id_user,
         first_name=user.first_name,
         last_name=user.last_name,
-        file_number=user.file_number,
-        email=user.email,
+        legajo=user.legajo,
+        email=user.get_mail(),
         role=role,
+        is_super_admin=bool(user.professor and user.professor.is_super_admin),
     )
+
+
+@auth_router.post("/password/request", status_code=status.HTTP_202_ACCEPTED)
+async def password_request(
+    data: PasswordRequest, background: BackgroundTasks, db: db_dependency
+):
+    user = await get_user_by_mail(db, data.email)
+    if user:
+        code = await create_otp(db, user)
+        if code:
+            background.add_task(send_otp_email, user.get_mail(), code)
+    # misma respuesta exista o no el usuario
+    return {"detail": "Si el usuario existe, se envió un código a su mail"}
+
+
+@auth_router.post("/password/confirm", status_code=status.HTTP_204_NO_CONTENT)
+async def password_confirm(data: PasswordConfirm, db: db_dependency):
+    user = await get_user_by_mail(db, data.email)
+    if not user or not await consume_otp(db, user, data.code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired code")
+
+    user.set_password(data.new_password)
+    db.add(user)
+    # cambiar la contraseña cierra todas las sesiones
+    await db.exec(delete(RefreshToken).where(RefreshToken.id_user == user.id_user))
+    await db.commit()

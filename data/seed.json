@@ -3,27 +3,29 @@
     {
       "first_name": "Ana",
       "last_name": "Gómez",
-      "file_number": 100001,
+      "legajo": 100001,
       "birth_date": "2002-03-14",
       "enrollment_year": 2021,
-      "password": "password"
+      "password": "Test1234!"
     },
     {
       "first_name": "Luis",
       "last_name": "Pérez",
-      "file_number": 100002,
+      "legajo": 100002,
       "birth_date": "2003-07-22",
       "enrollment_year": 2022,
-      "password": "Pepe1234"
+      "password": "Test1234!"
     }
   ],
   "professors": [
     {
       "first_name": "Marta",
       "last_name": "Rodríguez",
-      "file_number": 200001,
+      "legajo": 200001,
       "birth_date": "1980-11-05",
-      "password": "testpassword"
+      "mail": "marta.rodriguez@frc.utn.edu.ar",
+      "is_super_admin": true,
+      "password": "Test1234!"
     }
   ]
 }

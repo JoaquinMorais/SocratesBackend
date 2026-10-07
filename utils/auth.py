@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from config.database import db_dependency
 from config.settings import settings
-from models import RefreshToken, User
+from models import Professor, RefreshToken, Student, User
 from utils.security import (
     create_access_token,
     decode_access_token,
@@ -37,16 +37,30 @@ def clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(REFRESH_COOKIE, path=REFRESH_COOKIE_PATH)
 
 
-def parse_file_number(email_or_file: str) -> int | None:
-    local = email_or_file.strip().split("@")[0]
-    return int(local) if local.isdigit() else None
+async def get_user_by_mail(db, mail: str) -> User | None:
+    """Mail institucional ({legajo}@dominio) -> alumno; cualquier otro -> profesor."""
+    mail = mail.strip().lower()
+    local, _, domain = mail.partition("@")
+
+    if domain == settings.EMAIL_DOMAIN:
+        if not local.isdigit():
+            return None
+        stmt = (
+            select(User)
+            .join(Student, Student.id_student == User.id_user)
+            .where(User.legajo == int(local))
+        )
+    else:
+        stmt = (
+            select(User)
+            .join(Professor, Professor.id_professor == User.id_user)
+            .where(Professor.mail == mail)
+        )
+    return (await db.exec(stmt)).first()
 
 
-async def authenticate_user(db, email: str, password: str) -> User | None:
-    file_number = parse_file_number(email)
-    if file_number is None:
-        return None
-    user = (await db.exec(select(User).where(User.file_number == file_number))).first()
+async def authenticate_user(db, mail: str, password: str) -> User | None:
+    user = await get_user_by_mail(db, mail)
     if not user or not user.verify_password(password):
         return None
     return user
@@ -65,7 +79,7 @@ async def issue_tokens(db, user: User, response: Response) -> dict:
     await db.commit()
     set_refresh_cookie(response, refresh)
     return {
-        "access_token": create_access_token(user.id_user, user.file_number),
+        "access_token": create_access_token(user.id_user, user.legajo),
         "token_type": "bearer",
     }
 

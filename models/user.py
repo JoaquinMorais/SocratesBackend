@@ -3,18 +3,17 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from config.settings import settings
 from utils.security import hash_password, verify_password
 
 if TYPE_CHECKING:
-    from models.student import Student
     from models.professor import Professor
+    from models.student import Student
 
 
 class UserBase(SQLModel):
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
-    file_number: int = Field(unique=True, index=True)
+    legajo: int = Field(index=True)  # no es único
     birth_date: date
 
 
@@ -33,9 +32,12 @@ class User(UserBase, table=True):
         sa_relationship_kwargs={"uselist": False, "lazy": "selectin"},
     )
 
-    @property
-    def email(self) -> str:
-        return f"{self.file_number}@{settings.EMAIL_DOMAIN}"
+    def get_mail(self) -> str:
+        if self.student:
+            return self.student.get_mail()
+        if self.professor:
+            return self.professor.get_mail()
+        raise ValueError("User without student or professor profile")
 
     def set_password(self, password: str) -> None:
         self.password_hash = hash_password(password)

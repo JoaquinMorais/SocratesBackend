@@ -46,10 +46,10 @@ def hash_otp(code: str) -> str:
 
 
 # --- access token (JWT) ---
-def create_access_token(id_user: int, file_number: int) -> str:
+def create_access_token(id_user: int, legajo: int) -> str:
     payload = {
         "sub": str(id_user),
-        "file_number": file_number,
+        "legajo": legajo,
         "type": "access",
         "jti": uuid.uuid4().hex,
         "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_MINUTES),
