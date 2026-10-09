@@ -3,4 +3,4 @@ __pycache__/
 */__pycache__/
 *.pyc
 .venv/
-comands.md
+.pytest_cache/

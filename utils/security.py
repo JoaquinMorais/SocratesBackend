@@ -6,8 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from jose import JWTError, jwt
-
+import jwt
 from config.settings import settings
 
 _ph = PasswordHasher()
@@ -59,6 +58,6 @@ def create_access_token(id_user: int, legajo: int) -> str:
 def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    except JWTError:
+    except jwt.PyJWTError:  # en lugar de JWTError
         return None
     return payload if payload.get("type") == "access" else None

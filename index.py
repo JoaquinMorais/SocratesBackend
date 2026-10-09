@@ -22,12 +22,28 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="Socrates API", lifespan=lifespan)
-
+app = FastAPI(
+    title="Socrates API",
+    description=(
+        "Backend de Socrates.\n\n"
+        "**Autenticación:** `POST /auth/login` devuelve un `access_token` (JWT, 15 min) "
+        "que se envía en el header `Authorization: Bearer <token>`. El refresh token "
+        "viaja en una cookie `HttpOnly` que el navegador gestiona solo; para renovar "
+        "el access se llama a `POST /auth/refresh` sin body.\n\n"
+        "**Login:** se usa el mail completo. Alumnos: `{legajo}@sistemas.frc.utn.edu.ar`. "
+        "Profesores: su mail propio."
+    ),
+    lifespan=lifespan,
+    openapi_tags=[
+        {"name": "auth", "description": "Login, sesión y contraseña."},
+        {"name": "students", "description": "Alta de alumnos (solo profesores)."},
+        {"name": "professors", "description": "Alta de profesores (solo super admin)."},
+    ],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

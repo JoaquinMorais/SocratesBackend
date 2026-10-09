@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -24,9 +24,16 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_TIMEOUT: int = 10
 
+    SEND_WELCOME_EMAILS: bool = True
+
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    '''
     class Config:
         env_file = ".env"
         extra = "ignore"
+    '''
 
 
 settings = Settings()

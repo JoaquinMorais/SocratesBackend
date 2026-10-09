@@ -54,7 +54,8 @@ async def send_otp_email(to: str, code: str) -> bool:
 
 async def send_welcome_emails(recipients: list[tuple[str, str]]) -> None:
     """recipients: lista de (mail, nombre)."""
-    return
+    if not settings.SEND_WELCOME_EMAILS:
+        return
     for mail, first_name in recipients:
         body = (
             f"Hola {first_name},\n\n"
