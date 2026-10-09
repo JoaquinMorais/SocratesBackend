@@ -36,8 +36,10 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=[
         {"name": "auth", "description": "Login, sesión y contraseña."},
-        {"name": "students", "description": "Alta de alumnos (solo profesores)."},
-        {"name": "professors", "description": "Alta de profesores (solo super admin)."},
+        {"name": "me", "description": "Datos del usuario logueado."},
+        {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
+        {"name": "students", "description": "Alta y edición de alumnos (profesores)."},
+        {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
     ],
 )
 app.add_middleware(
@@ -49,6 +51,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(me_router)
+app.include_router(users_router)
 app.include_router(students_router)
 app.include_router(professors_router)
 

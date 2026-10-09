@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 
-from models import Professor
+from models import Professor, Student
 from utils.auth import user_dependency
 
 
@@ -20,5 +20,12 @@ async def get_super_admin(
     return professor
 
 
+async def get_student(user: user_dependency) -> Student:
+    if not user.student:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Students only")
+    return user.student
+
+
 professor_dependency = Annotated[Professor, Depends(get_professor)]
 super_admin_dependency = Annotated[Professor, Depends(get_super_admin)]
+student_dependency = Annotated[Student, Depends(get_student)]

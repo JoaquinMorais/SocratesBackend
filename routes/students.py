@@ -1,10 +1,10 @@
 from fastapi import APIRouter, BackgroundTasks, status
 
 from config.database import db_dependency
-from schemas.student import StudentBulkCreate, StudentCreate, StudentPublic
+from schemas.student import StudentBulkCreate, StudentCreate, StudentPublic, StudentUpdate
 from utils.email import send_welcome_emails
 from utils.permissions import professor_dependency
-from utils.students import create_students
+from utils.students import create_students, update_student
 
 students_router = APIRouter(prefix="/students", tags=["students"])
 
@@ -82,3 +82,35 @@ async def create_students_bulk(
         send_welcome_emails, [(s.email, s.first_name) for s in created]
     )
     return created
+
+
+@students_router.patch(
+    "/{id_student}",
+    response_model=StudentPublic,
+    summary="Modificar un alumno",
+    responses={
+        **_AUTH_ERRORS,
+        404: {"description": "No existe el alumno"},
+        409: {"description": "Otro alumno ya tiene ese legajo"},
+        422: {"description": "Datos inválidos, body vacío o campos que no se pueden modificar"},
+    },
+)
+async def update_student_route(
+    id_student: int,
+    data: StudentUpdate,
+    db: db_dependency,
+    _: professor_dependency,
+):
+    """
+    Corrige los datos de un alumno. **Solo profesores** (sean o no super admin).
+
+    **Campos editables** (opcionales, se envían solo los que cambian):
+    `first_name`, `last_name`, `birth_date`, `legajo`, `enrollment_year`.
+
+    - Cambiar el `legajo` cambia también el mail de login del alumno
+      (`{legajo}@sistemas.frc.utn.edu.ar`); sus sesiones siguen abiertas.
+    - El legajo no puede repetirse entre alumnos (409).
+    - Cualquier otro campo responde 422. La contraseña no se puede modificar
+      desde acá.
+    """
+    return await update_student(db, id_student, data)

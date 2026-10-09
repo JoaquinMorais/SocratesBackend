@@ -9,14 +9,13 @@ from sqlmodel import delete
 from config.database import db_dependency
 from models import RefreshToken, User
 from schemas.auth import AccessToken, LoginRequest, PasswordConfirm, PasswordRequest
-from schemas.user import UserPublic
+
 from utils.auth import (
     REFRESH_COOKIE,
     authenticate_user,
     clear_refresh_cookie,
     get_user_by_mail,
     issue_tokens,
-    user_dependency,
 )
 from utils.email import send_otp_email
 from utils.security import hash_token
@@ -131,31 +130,6 @@ async def logout(request: Request, response: Response, db: db_dependency):
         )
         await db.commit()
     clear_refresh_cookie(response)
-
-
-@auth_router.get(
-    "/me",
-    response_model=UserPublic,
-    summary="Datos del usuario logueado",
-    responses={401: {"description": "Token ausente, inválido o vencido"}},
-)
-async def me(user: user_dependency):
-    """
-    Devuelve los datos del usuario del token: nombre, legajo, mail, rol
-    (`student` o `professor`) y si es super admin.
-
-    Sirve para que el frontend sepa qué pantallas mostrar según el rol.
-    """
-    role = "student" if user.student else "professor" if user.professor else None
-    return UserPublic(
-        id_user=user.id_user,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        legajo=user.legajo,
-        email=user.get_mail(),
-        role=role,
-        is_super_admin=bool(user.professor and user.professor.is_super_admin),
-    )
 
 
 @auth_router.post(

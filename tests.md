@@ -29,8 +29,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_login_professor`: testear que un profesor puede loguearse con su mail.
 - `test_login_invalid`: testear que se rechaza (401) contraseña incorrecta, legajo inexistente, legajo suelto sin dominio y mail desconocido.
 
-**Perfil (`/auth/me`)**
-- `test_me_student`: testear que un alumno ve su rol, su mail calculado por legajo y que no es super admin.
+**Perfil (`GET /me`)**
+- `test_me_student`: testear que un alumno ve su rol, su mail calculado por legajo y que no se le muestra super admin.
 - `test_me_super_admin`: testear que Marta figura como profesora y super admin.
 - `test_me_requires_valid_token`: testear que sin token o con token inválido responde 401.
 
@@ -83,3 +83,23 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Flujo de cuenta**
 - `test_created_professor_sets_password_and_logs_in`: testear que un profesor recién creado crea su contraseña por OTP y luego puede loguearse.
+
+## `tests/test_users.py`
+
+**Modificar mis datos (`PATCH /me`)**
+- `test_update_requires_authentication`: testear que sin login responde 401.
+- `test_student_updates_own_data`: testear que un alumno modifica nombre y fecha de nacimiento, que lo no enviado no cambia y que `GET /me` refleja el cambio.
+- `test_professor_updates_own_data`: testear que un profesor puede modificar sus datos y conserva su rol de super admin.
+- `test_cannot_update_forbidden_fields`: testear que legajo, mail, año de ingreso e `is_super_admin` no se pueden modificar (422).
+- `test_update_empty_body_rejected`: testear que un body vacío se rechaza.
+- `test_update_invalid_values_rejected`: testear que se rechaza un nombre vacío y una fecha de nacimiento futura.
+
+**Consultar usuarios (`GET /users`)**
+- `test_list_requires_authentication`: testear que sin login responde 401.
+- `test_student_cannot_list_users`: testear que un alumno no puede listar usuarios (403).
+- `test_regular_professor_cannot_list_users`: testear que un profesor que no es super admin no puede listar (403).
+- `test_super_admin_lists_users`: testear que un super admin ve todos los usuarios ordenados por apellido.
+- `test_list_exposes_only_public_data`: testear que nunca se expone contraseña ni fecha de nacimiento, que los alumnos no muestran `is_super_admin` y los profesores no muestran año de ingreso.
+- `test_list_filter_by_role`: testear el filtro por rol y que un rol inválido se rechaza.
+- `test_list_search`: testear la búsqueda por nombre, legajo y mail de profesor.
+- `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.

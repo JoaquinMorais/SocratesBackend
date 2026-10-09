@@ -2,6 +2,7 @@ from datetime import date
 
 from sqlmodel import Field, SQLModel
 
+from schemas.user import UserUpdate
 
 class StudentCreate(SQLModel):
     first_name: str = Field(min_length=1, max_length=100)
@@ -22,3 +23,10 @@ class StudentPublic(SQLModel):
     legajo: int
     email: str
     enrollment_year: int
+
+
+class StudentUpdate(UserUpdate):
+    """Hereda first_name, last_name y birth_date de UserUpdate (y rechaza campos extra)."""
+
+    legajo: int | None = Field(default=None, gt=0)
+    enrollment_year: int | None = Field(default=None, ge=1950, le=2100)

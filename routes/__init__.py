@@ -1,9 +1,13 @@
 from routes.auth import auth_router
+from routes.me import me_router
 from routes.students import students_router
 from routes.professors import professors_router
+from routes.users import users_router
 
 __all__ = [
     "auth_router",
+    "me_router",
     "students_router",
     "professors_router",
+    "users_router",
 ]

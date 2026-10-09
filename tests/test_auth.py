@@ -36,17 +36,17 @@ async def test_login_invalid(client, mail, password):
 
 # ---------- me ----------
 async def test_me_student(client, login):
-    r = await client.get("/auth/me", headers=await login(STUDENT))
+    r = await client.get("/me", headers=await login(STUDENT))
     assert r.status_code == 200
     body = r.json()
     assert body["role"] == "student"
     assert body["email"] == STUDENT
     assert body["legajo"] == 100001
-    assert body["is_super_admin"] is False
+    assert "is_super_admin" not in body  # no aplica a alumnos
 
 
 async def test_me_super_admin(client, login):
-    r = await client.get("/auth/me", headers=await login(SUPER_ADMIN))
+    r = await client.get("/me", headers=await login(SUPER_ADMIN))
     body = r.json()
     assert body["role"] == "professor"
     assert body["email"] == SUPER_ADMIN
@@ -54,8 +54,8 @@ async def test_me_super_admin(client, login):
 
 
 async def test_me_requires_valid_token(client):
-    assert (await client.get("/auth/me")).status_code == 401
-    r = await client.get("/auth/me", headers={"Authorization": "Bearer basura"})
+    assert (await client.get("/me")).status_code == 401
+    r = await client.get("/me", headers={"Authorization": "Bearer basura"})
     assert r.status_code == 401
 
 

@@ -1,5 +1,4 @@
-from tests.helpers import STUDENT, SUPER_ADMIN, set_password
-
+from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
 
 def professor(mail: str, **kw) -> dict:
     return {
@@ -97,3 +96,109 @@ async def test_created_super_admin_can_create_professors(client, login, outbox):
     h2 = await login("admin2@frc.utn.edu.ar", "NuevaClave123")
     r = await client.post("/professors", json=professor("otro@frc.utn.edu.ar"), headers=h2)
     assert r.status_code == 201
+
+
+# ---------- PATCH /professors/{id} ----------
+async def _id_of(client, headers, q: str) -> int:
+    r = await client.get("/users", params={"q": q}, headers=headers)
+    return r.json()["items"][0]["id_user"]
+
+
+async def test_patch_requires_authentication(client):
+    assert (await client.patch("/professors/3", json={"first_name": "X"})).status_code == 401
+
+
+async def test_student_cannot_patch_professors(client, login):
+    r = await client.patch("/professors/3", json={"first_name": "X"}, headers=await login(STUDENT))
+    assert r.status_code == 403
+
+
+async def test_regular_professor_cannot_patch_professors(client, login, make_professor):
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    r = await client.patch("/professors/3", json={"first_name": "X"}, headers=await login(mail))
+    assert r.status_code == 403
+
+
+async def test_super_admin_edits_professor(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(
+        f"/professors/{pid}",
+        json={"first_name": "Nuevo", "legajo": 300001, "mail": "Nuevo@FRC.utn.edu.ar"},
+        headers=admin,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert (body["first_name"], body["legajo"], body["email"]) == ("Nuevo", 300001, "nuevo@frc.utn.edu.ar")
+
+
+async def test_mail_change_closes_sessions_and_keeps_password(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    await login("prof@frc.utn.edu.ar")  # la cookie de refresh del profesor queda en el client
+    r = await client.patch(f"/professors/{pid}", json={"mail": "nuevo@frc.utn.edu.ar"}, headers=admin)
+    assert r.status_code == 200
+    assert (await client.post("/auth/refresh")).status_code == 401  # sesión cerrada
+    new = await client.post("/auth/login", json={"email": "nuevo@frc.utn.edu.ar", "password": PASSWORD})
+    assert new.status_code == 200  # conserva su contraseña
+    old = await client.post("/auth/login", json={"email": "prof@frc.utn.edu.ar", "password": PASSWORD})
+    assert old.status_code == 401
+
+
+async def test_patch_duplicate_mail_rejected(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(
+        f"/professors/{pid}", json={"mail": "MARTA.RODRIGUEZ@frc.utn.edu.ar"}, headers=admin
+    )
+    assert r.status_code == 409
+
+
+async def test_patch_student_domain_is_reserved(client, login):
+    r = await client.patch(
+        "/professors/3", json={"mail": "x@sistemas.frc.utn.edu.ar"}, headers=await login(SUPER_ADMIN)
+    )
+    assert r.status_code == 422
+
+
+async def test_promote_and_demote_other_professor(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(f"/professors/{pid}", json={"is_super_admin": True}, headers=admin)
+    assert r.json()["is_super_admin"] is True
+    r = await client.patch(f"/professors/{pid}", json={"is_super_admin": False}, headers=admin)
+    assert r.status_code == 200 and r.json()["is_super_admin"] is False
+
+
+async def test_cannot_remove_own_super_admin(client, login):
+    r = await client.patch(
+        "/professors/3", json={"is_super_admin": False}, headers=await login(SUPER_ADMIN)
+    )
+    assert r.status_code == 409
+
+
+async def test_super_admin_edits_self(client, login):
+    r = await client.patch("/professors/3", json={"last_name": "Nueva"}, headers=await login(SUPER_ADMIN))
+    assert r.status_code == 200
+    assert r.json()["last_name"] == "Nueva" and r.json()["is_super_admin"] is True
+
+
+async def test_patch_professor_not_found(client, login):
+    r = await client.patch("/professors/999", json={"first_name": "X"}, headers=await login(SUPER_ADMIN))
+    assert r.status_code == 404
+
+
+async def test_patch_professor_forbidden_fields(client, login):
+    headers = await login(SUPER_ADMIN)
+    for field, value in [("password", "Abcdefgh1"), ("id_professor", 5), ("email", "x@frc.utn.edu.ar")]:
+        r = await client.patch("/professors/3", json={field: value}, headers=headers)
+        assert r.status_code == 422, field
+
+
+async def test_patch_professor_empty_body_rejected(client, login):
+    r = await client.patch("/professors/3", json={}, headers=await login(SUPER_ADMIN))
+    assert r.status_code == 422

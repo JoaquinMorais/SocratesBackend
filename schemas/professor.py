@@ -5,8 +5,18 @@ from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from config.settings import settings
+from schemas.user import UserUpdate
 
 _MAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def normalize_mail(v: str) -> str:
+    v = v.strip().lower()
+    if not _MAIL_RE.match(v):
+        raise ValueError("Invalid mail")
+    if v.endswith(f"@{settings.EMAIL_DOMAIN}"):
+        raise ValueError(f"@{settings.EMAIL_DOMAIN} is reserved for students")
+    return v
 
 
 class ProfessorCreate(SQLModel):
@@ -20,12 +30,20 @@ class ProfessorCreate(SQLModel):
     @field_validator("mail")
     @classmethod
     def validate_mail(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not _MAIL_RE.match(v):
-            raise ValueError("Invalid mail")
-        if v.endswith(f"@{settings.EMAIL_DOMAIN}"):
-            raise ValueError(f"@{settings.EMAIL_DOMAIN} is reserved for students")
-        return v
+        return normalize_mail(v)
+
+
+class ProfessorUpdate(UserUpdate):
+    """Hereda first_name, last_name y birth_date de UserUpdate (y rechaza campos extra)."""
+
+    legajo: int | None = Field(default=None, gt=0)
+    mail: str | None = Field(default=None, max_length=255)
+    is_super_admin: bool | None = None
+
+    @field_validator("mail")
+    @classmethod
+    def validate_mail(cls, v: str | None) -> str | None:
+        return None if v is None else normalize_mail(v)
 
 
 class ProfessorPublic(SQLModel):
