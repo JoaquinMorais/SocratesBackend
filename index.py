@@ -40,9 +40,10 @@ app = FastAPI(
         {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
         {"name": "students", "description": "Alta y edición de alumnos (profesores)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
-        {"name": "sections", "description": "Comisiones (solo super admin)."},    
-                {"name": "section-years", "description": "Cursos lectivos: comisión + año (solo super admin)."},
-    ],
+        {"name": "sections", "description": "Comisiones (consulta: cualquier usuario; escritura: super admin)."},
+        {"name": "section-years", "description": "Cursos lectivos: comisión + año (consulta: cualquier usuario; escritura: super admin)."},
+        {"name": "professor-section-years", "description": "Profesores asignados a cursos lectivos (consulta: cualquier usuario; escritura: super admin)."},
+        ],
 )
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +60,7 @@ app.include_router(students_router)
 app.include_router(professors_router)
 app.include_router(sections_router)
 app.include_router(section_years_router)
+app.include_router(professor_section_years_router)
 
 @app.get("/health")
 async def health():

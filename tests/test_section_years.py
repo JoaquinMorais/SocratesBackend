@@ -1,12 +1,15 @@
 from tests.helpers import STUDENT, SUPER_ADMIN
 
-ENDPOINTS = [
-    ("POST", "/section-years", {"year": 2025, "id_section": 1}),
+READ = [
     ("GET", "/section-years", None),
     ("GET", "/section-years/1", None),
+]
+WRITE = [
+    ("POST", "/section-years", {"year": 2025, "id_section": 1}),
     ("PATCH", "/section-years/1", {"year": 2024}),
     ("DELETE", "/section-years/1", None),
 ]
+ENDPOINTS = READ + WRITE
 
 
 async def _section(client, headers, name: str) -> int:
@@ -30,18 +33,29 @@ async def test_requires_authentication(client):
         assert r.status_code == 401, (method, url)
 
 
-async def test_student_cannot_manage_section_years(client, login):
+async def test_student_cannot_write_section_years(client, login):
     headers = await login(STUDENT)
-    for method, url, body in ENDPOINTS:
+    for method, url, body in WRITE:
         r = await client.request(method, url, json=body, headers=headers)
         assert r.status_code == 403, (method, url)
 
 
-async def test_regular_professor_cannot_manage_section_years(client, login, make_professor):
+async def test_regular_professor_cannot_write_section_years(client, login, make_professor):
     headers = await login(await make_professor("prof@frc.utn.edu.ar"))
-    for method, url, body in ENDPOINTS:
+    for method, url, body in WRITE:
         r = await client.request(method, url, json=body, headers=headers)
         assert r.status_code == 403, (method, url)
+
+
+async def test_any_user_can_read_section_years(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    professor = await login(await make_professor("prof@frc.utn.edu.ar"))
+    for headers in (await login(STUDENT), professor):
+        listing = await client.get("/section-years", headers=headers)
+        assert listing.status_code == 200 and listing.json()["total"] == 1
+        one = await client.get(f"/section-years/{created['id_section_year']}", headers=headers)
+        assert one.status_code == 200 and one.json() == created
 
 
 # ---------- crear ----------

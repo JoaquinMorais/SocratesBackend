@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query, status
 
 from config.database import db_dependency
 from schemas.section import SectionCreate, SectionList, SectionPublic, SectionUpdate
+from utils.auth import user_dependency
 from utils.permissions import super_admin_dependency
 from utils.sections import (
     create_section,
@@ -21,7 +22,7 @@ _AUTH_ERRORS = {
     403: {"description": "El usuario no es profesor super admin"},
 }
 _NOT_FOUND = {404: {"description": "No existe la comisión"}}
-
+_READ_ERRORS = {401: {"description": "Token ausente, inválido o vencido"}}
 
 @sections_router.post(
     "",
@@ -51,11 +52,11 @@ async def create_section_route(
     "",
     response_model=SectionList,
     summary="Listar comisiones",
-    responses=_AUTH_ERRORS,
+    responses=_READ_ERRORS,
 )
 async def get_sections(
     db: db_dependency,
-    _: super_admin_dependency,
+    _: user_dependency,
     q: Annotated[
         str | None,
         Query(min_length=1, max_length=20, description="Busca dentro del nombre"),
@@ -64,7 +65,7 @@ async def get_sections(
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """
-    Lista las comisiones ordenadas por nombre. **Solo super admin.**
+    Lista las comisiones ordenadas por nombre. **Cualquier usuario logeado.**
 
     Está paginado: `total` es la cantidad total que cumple el filtro y
     `limit`/`offset` controlan la página. `q` filtra por texto dentro del nombre
@@ -80,12 +81,12 @@ async def get_sections(
     "/{id_section}",
     response_model=SectionPublic,
     summary="Consultar una comisión",
-    responses={**_AUTH_ERRORS, **_NOT_FOUND},
+    responses={**_READ_ERRORS, **_NOT_FOUND},
 )
 async def get_section_route(
-    id_section: int, db: db_dependency, _: super_admin_dependency
+    id_section: int, db: db_dependency, _: user_dependency
 ):
-    """Devuelve una comisión por su id. **Solo super admin.**"""
+    """Devuelve una comisión por su id. **Cualquier usuario logeado.**"""
     return to_public(await get_section(db, id_section))
 
 

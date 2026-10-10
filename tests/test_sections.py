@@ -1,12 +1,15 @@
 from tests.helpers import STUDENT, SUPER_ADMIN
 
-ENDPOINTS = [
-    ("POST", "/sections", {"name": "3K1"}),
+READ = [
     ("GET", "/sections", None),
     ("GET", "/sections/1", None),
+]
+WRITE = [
+    ("POST", "/sections", {"name": "3K1"}),
     ("PATCH", "/sections/1", {"name": "3K2"}),
     ("DELETE", "/sections/1", None),
 ]
+ENDPOINTS = READ + WRITE
 
 
 async def _create(client, headers, name: str) -> dict:
@@ -22,18 +25,28 @@ async def test_requires_authentication(client):
         assert r.status_code == 401, (method, url)
 
 
-async def test_student_cannot_manage_sections(client, login):
+async def test_student_cannot_write_sections(client, login):
     headers = await login(STUDENT)
-    for method, url, body in ENDPOINTS:
+    for method, url, body in WRITE:
         r = await client.request(method, url, json=body, headers=headers)
         assert r.status_code == 403, (method, url)
 
 
-async def test_regular_professor_cannot_manage_sections(client, login, make_professor):
+async def test_regular_professor_cannot_write_sections(client, login, make_professor):
     headers = await login(await make_professor("prof@frc.utn.edu.ar"))
-    for method, url, body in ENDPOINTS:
+    for method, url, body in WRITE:
         r = await client.request(method, url, json=body, headers=headers)
         assert r.status_code == 403, (method, url)
+
+
+async def test_any_user_can_read_sections(client, login, make_professor):
+    created = await _create(client, await login(SUPER_ADMIN), "3K1")
+    professor = await login(await make_professor("prof@frc.utn.edu.ar"))
+    for headers in (await login(STUDENT), professor):
+        listing = await client.get("/sections", headers=headers)
+        assert listing.status_code == 200 and listing.json()["total"] == 1
+        one = await client.get(f"/sections/{created['id_section']}", headers=headers)
+        assert one.status_code == 200 and one.json() == created
 
 
 # ---------- crear ----------

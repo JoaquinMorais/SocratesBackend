@@ -9,6 +9,7 @@ from schemas.section_year import (
     SectionYearPublic,
     SectionYearUpdate,
 )
+from utils.auth import user_dependency
 from utils.permissions import super_admin_dependency
 from utils.section_years import (
     create_section_year,
@@ -26,7 +27,7 @@ _AUTH_ERRORS = {
     403: {"description": "El usuario no es profesor super admin"},
 }
 _NOT_FOUND = {404: {"description": "No existe el curso lectivo"}}
-
+_READ_ERRORS = {401: {"description": "Token ausente, inválido o vencido"}}
 
 @section_years_router.post(
     "",
@@ -59,18 +60,18 @@ async def create_section_year_route(
     "",
     response_model=SectionYearList,
     summary="Listar cursos lectivos",
-    responses=_AUTH_ERRORS,
+    responses=_READ_ERRORS,
 )
 async def get_section_years(
     db: db_dependency,
-    _: super_admin_dependency,
+    _: user_dependency,
     year: Annotated[int | None, Query(description="Filtrar por año")] = None,
     id_section: Annotated[int | None, Query(description="Filtrar por comisión")] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """
-    Lista los cursos lectivos. **Solo super admin.**
+    Lista los cursos lectivos. **Cualquier usuario logeado.**
 
     Orden: año más reciente primero y, dentro del año, por nombre de comisión.
     Se puede filtrar por `year` y/o `id_section`. Está paginado: `total` es la
@@ -88,12 +89,12 @@ async def get_section_years(
     "/{id_section_year}",
     response_model=SectionYearPublic,
     summary="Consultar un curso lectivo",
-    responses={**_AUTH_ERRORS, **_NOT_FOUND},
+    responses={**_READ_ERRORS, **_NOT_FOUND},
 )
 async def get_section_year_route(
-    id_section_year: int, db: db_dependency, _: super_admin_dependency
+    id_section_year: int, db: db_dependency, _: user_dependency
 ):
-    """Devuelve un curso lectivo por su id. **Solo super admin.**"""
+    """Devuelve un curso lectivo por su id. **Cualquier usuario logeado.**"""
     return to_public(await get_section_year(db, id_section_year))
 
 
@@ -131,8 +132,7 @@ async def update_section_year_route(
     responses={
         **_AUTH_ERRORS,
         **_NOT_FOUND,
-        409: {"description": "El curso lectivo está en uso (tiene datos asociados) y no se puede eliminar"},
-    },
+        409: {"description": "El curso lectivo tiene profesores asignados (u otros datos) y no se puede eliminar"},    },
 )
 async def delete_section_year_route(
     id_section_year: int, db: db_dependency, _: super_admin_dependency
@@ -141,7 +141,7 @@ async def delete_section_year_route(
     Elimina un curso lectivo. **Solo super admin.** La acción es irreversible; la
     combinación año + comisión queda libre para volver a crearse.
 
-    Cuando existan alumnos u otros datos asociados, responderá 409 en vez de
-    borrarlo.
+    Si tiene profesores asignados (`/professor-section-years`) u otros datos
+    asociados responde 409: hay que quitarlos primero.
     """
     await delete_section_year(db, id_section_year)

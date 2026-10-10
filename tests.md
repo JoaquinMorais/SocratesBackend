@@ -136,8 +136,9 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Permisos**
 - `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
-- `test_student_cannot_manage_sections`: testear que un alumno no puede crear, consultar, modificar ni eliminar comisiones (403).
-- `test_regular_professor_cannot_manage_sections`: testear que un profesor que no es super admin tampoco puede (403).
+- `test_student_cannot_write_sections`: testear que un alumno no puede crear, modificar ni eliminar comisiones (403).
+- `test_regular_professor_cannot_write_sections`: testear que un profesor que no es super admin tampoco puede escribir (403).
+- `test_any_user_can_read_sections`: testear que un alumno y un profesor común pueden listar y consultar comisiones.
 
 **Crear**
 - `test_create_section_normalizes_name`: testear que el nombre se guarda sin espacios sobrantes y en mayúsculas.
@@ -167,8 +168,9 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Permisos**
 - `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
-- `test_student_cannot_manage_section_years`: testear que un alumno no puede crear, consultar, modificar ni eliminar cursos lectivos (403).
-- `test_regular_professor_cannot_manage_section_years`: testear que un profesor que no es super admin tampoco puede (403).
+- `test_student_cannot_write_section_years`: testear que un alumno no puede crear, modificar ni eliminar cursos lectivos (403).
+- `test_regular_professor_cannot_write_section_years`: testear que un profesor que no es super admin tampoco puede escribir (403).
+- `test_any_user_can_read_section_years`: testear que un alumno y un profesor común pueden listar y consultar cursos lectivos.
 
 **Crear**
 - `test_create_section_year`: testear que se crea un curso lectivo y la respuesta incluye el nombre de la comisión.
@@ -197,3 +199,40 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_not_found`: testear que eliminar un curso lectivo inexistente responde 404.
 - `test_cannot_delete_section_in_use`: testear que no se puede eliminar una comisión con cursos lectivos (409) y que sí se puede después de eliminarlos.
 - `test_deleted_combination_can_be_reused`: testear que la combinación de un curso lectivo eliminado vuelve a estar disponible.
+
+
+## `tests/test_professor_section_years.py`
+
+**Permisos**
+- `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
+- `test_student_cannot_write`: testear que un alumno no puede asignar, modificar ni quitar profesores (403).
+- `test_regular_professor_cannot_write`: testear que un profesor que no es super admin tampoco puede escribir (403).
+- `test_any_user_can_read`: testear que un alumno y un profesor común pueden listar y consultar asignaciones.
+
+**Crear**
+- `test_create_assignment`: testear que se asigna un profesor a un curso lectivo y la respuesta trae nombre, año y comisión pero ningún dato privado (mail, contraseña).
+- `test_create_duplicate_rejected`: testear que no se puede repetir el mismo par profesor + curso lectivo (409).
+- `test_many_to_many`: testear que un profesor puede dictar varios cursos lectivos y un curso lectivo puede tener varios profesores.
+- `test_create_unknown_references_rejected`: testear que un profesor inexistente, el id de un alumno usado como profesor o un curso lectivo inexistente responden 404.
+- `test_create_invalid_rejected`: testear que se rechazan campos faltantes, ids no positivos y campos desconocidos.
+
+**Consultar**
+- `test_list_sorted`: testear que el listado ordena por año más reciente, comisión y apellido del profesor.
+- `test_list_filters_and_pagination`: testear los filtros por profesor, curso lectivo, año y comisión (también combinados), `limit` y `offset`, y que `limit=0` se rechaza.
+- `test_get_assignment`: testear que se puede consultar una asignación por id.
+- `test_get_not_found`: testear que una asignación inexistente responde 404.
+
+**Modificar**
+- `test_patch_professor`: testear que se puede reasignar a otro profesor y el curso lectivo no cambia.
+- `test_patch_section_year`: testear que se puede reasignar a otro curso lectivo y el profesor no cambia.
+- `test_patch_to_existing_pair_rejected`: testear que no se puede dejar un par que ya existe (409).
+- `test_patch_same_values_is_ok`: testear que reenviar los valores actuales no da error.
+- `test_patch_not_found`: testear que modificar una asignación inexistente responde 404.
+- `test_patch_unknown_references_rejected`: testear que un profesor inexistente, el id de un alumno o un curso lectivo inexistente responden 404.
+- `test_patch_invalid_rejected`: testear que se rechaza un body vacío, ids no positivos y campos desconocidos.
+
+**Eliminar**
+- `test_delete_assignment`: testear que se quita la asignación (204) sin borrar al profesor ni al curso lectivo.
+- `test_delete_not_found`: testear que eliminar una asignación inexistente responde 404.
+- `test_cannot_delete_section_year_in_use`: testear que no se puede eliminar un curso lectivo con profesores asignados (409) y que sí se puede después de quitarlos.
+- `test_deleted_assignment_can_be_recreated`: testear que una asignación eliminada puede volver a crearse.
