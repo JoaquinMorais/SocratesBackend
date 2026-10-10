@@ -37,7 +37,7 @@ _READ_ERRORS = {401: {"description": "Token ausente, inválido o vencido"}}
     responses={
         **_AUTH_ERRORS,
         404: {"description": "No existe la comisión indicada"},
-        409: {"description": "Ya existe esa comisión en ese año"},
+        409: {"description": "El curso lectivo tiene profesores asignados, proyectos u otros datos y no se puede eliminar"},
         422: {"description": "Año fuera de rango, campos faltantes o desconocidos"},
     },
 )
@@ -141,7 +141,7 @@ async def delete_section_year_route(
     Elimina un curso lectivo. **Solo super admin.** La acción es irreversible; la
     combinación año + comisión queda libre para volver a crearse.
 
-    Si tiene profesores asignados (`/professor-section-years`) u otros datos
-    asociados responde 409: hay que quitarlos primero.
+    Si tiene profesores asignados (`/professor-section-years`), proyectos
+    (`/projects`) u otros datos asociados responde 409: hay que quitarlos primero.
     """
     await delete_section_year(db, id_section_year)

@@ -236,3 +236,44 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_not_found`: testear que eliminar una asignación inexistente responde 404.
 - `test_cannot_delete_section_year_in_use`: testear que no se puede eliminar un curso lectivo con profesores asignados (409) y que sí se puede después de quitarlos.
 - `test_deleted_assignment_can_be_recreated`: testear que una asignación eliminada puede volver a crearse.
+
+## `tests/test_projects.py`
+
+**Permisos**
+- `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
+- `test_student_cannot_create_or_delete`: testear que un alumno no puede crear, crear en masa ni eliminar proyectos (403).
+- `test_unassigned_professor_cannot_create_or_delete`: testear que un profesor no asignado al curso lectivo no puede crear, crear en masa ni eliminar (403).
+- `test_assigned_professor_manages_only_own_section_year`: testear que un profesor asignado puede crear, crear en masa y eliminar solo en su curso lectivo, y no en otros.
+- `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
+
+**Crear**
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado y con el grupo 1.
+- `test_create_assigns_next_group_number`: testear que sin `group_number` toma el siguiente libre, también después de un número explícito.
+- `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
+- `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
+- `test_create_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
+- `test_create_invalid_rejected`: testear que se rechazan campos faltantes, ids o números no positivos y campos no permitidos (privacidad, nombre).
+
+**Crear en masa**
+- `test_bulk_create`: testear que se crean grupos consecutivos y que una segunda tanda continúa la numeración.
+- `test_bulk_continues_after_last_group_number`: testear que tras eliminar un grupo intermedio la numeración sigue desde el mayor.
+- `test_bulk_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
+- `test_bulk_invalid_rejected`: testear que se rechaza una cantidad fuera de 1-50, campos faltantes y campos desconocidos.
+
+**Consultar**
+- `test_list_sorted_and_filtered`: testear el orden (año, comisión, grupo) y los filtros por curso lectivo, año, comisión y privacidad.
+- `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
+- `test_get_not_found`: testear que un proyecto inexistente responde 404.
+
+**Visibilidad según privacidad**
+- `test_public_project_detail_visible_to_everyone`: testear que un alumno cualquiera y un profesor ajeno ven el detalle de un proyecto público.
+- `test_protected_project_info_visible_to_everyone`: testear que un proyecto protegido muestra nombre, descripción, objetivo y problemática a cualquier usuario.
+- `test_private_project_detail_hidden_from_outsiders`: testear que en un proyecto privado un alumno no miembro y un profesor ajeno ven solo lo básico (`restricted`) y reciben 403 al consultarlo.
+- `test_private_project_detail_visible_to_members_and_staff`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle de un proyecto privado, y otro alumno no.
+
+**Eliminar**
+- `test_delete_empty_project`: testear que se elimina un proyecto vacío (204) y deja de figurar.
+- `test_delete_not_found`: testear que eliminar un proyecto inexistente responde 404.
+- `test_cannot_delete_project_with_students`: testear que no se puede eliminar un proyecto con alumnos (409).
+- `test_deleted_group_number_can_be_reused`: testear que un número de grupo eliminado puede volver a crearse enviándolo.
+- `test_cannot_delete_section_year_with_projects`: testear que no se puede eliminar un curso lectivo con proyectos (409) y que sí se puede después de eliminarlos.
