@@ -131,3 +131,33 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_professor_not_found`: testear que un profesor inexistente responde 404.
 - `test_patch_professor_forbidden_fields`: testear que contraseña, id y `email` no se pueden modificar (422).
 - `test_patch_professor_empty_body_rejected`: testear que un body vacío se rechaza.
+
+## `tests/test_sections.py`
+
+**Permisos**
+- `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
+- `test_student_cannot_manage_sections`: testear que un alumno no puede crear, consultar, modificar ni eliminar comisiones (403).
+- `test_regular_professor_cannot_manage_sections`: testear que un profesor que no es super admin tampoco puede (403).
+
+**Crear**
+- `test_create_section_normalizes_name`: testear que el nombre se guarda sin espacios sobrantes y en mayúsculas.
+- `test_create_duplicate_name_rejected`: testear que no se puede repetir un nombre, sin distinguir mayúsculas (409).
+- `test_create_invalid_name_rejected`: testear que se rechaza un nombre vacío, en blanco, de más de 20 caracteres, ausente o con campos desconocidos.
+
+**Consultar**
+- `test_list_sections_sorted_by_name`: testear que el listado devuelve todas las comisiones ordenadas por nombre.
+- `test_list_search_and_pagination`: testear la búsqueda por nombre, `limit` y `offset`, y que `limit=0` se rechaza.
+- `test_get_section`: testear que se puede consultar una comisión por id.
+- `test_get_section_not_found`: testear que una comisión inexistente responde 404.
+
+**Modificar**
+- `test_rename_section`: testear que se puede renombrar y que el nombre nuevo se normaliza.
+- `test_rename_same_name_is_ok`: testear que reenviar el mismo nombre no da error.
+- `test_rename_to_existing_name_rejected`: testear que no se puede usar el nombre de otra comisión (409).
+- `test_patch_section_not_found`: testear que modificar una comisión inexistente responde 404.
+- `test_patch_invalid_rejected`: testear que se rechaza un body vacío, un nombre inválido o campos desconocidos.
+
+**Eliminar**
+- `test_delete_section`: testear que se elimina (204) y luego ya no existe ni figura en el listado.
+- `test_delete_not_found`: testear que eliminar una comisión inexistente responde 404.
+- `test_deleted_name_can_be_reused`: testear que el nombre de una comisión eliminada vuelve a estar disponible.

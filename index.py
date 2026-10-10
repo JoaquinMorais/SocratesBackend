@@ -40,6 +40,7 @@ app = FastAPI(
         {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
         {"name": "students", "description": "Alta y edición de alumnos (profesores)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
+        {"name": "sections", "description": "Comisiones (solo super admin)."},    
     ],
 )
 app.add_middleware(
@@ -55,6 +56,7 @@ app.include_router(me_router)
 app.include_router(users_router)
 app.include_router(students_router)
 app.include_router(professors_router)
+app.include_router(sections_router)
 
 @app.get("/health")
 async def health():
