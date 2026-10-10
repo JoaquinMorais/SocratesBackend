@@ -4,6 +4,7 @@ from routes.students import students_router
 from routes.professors import professors_router
 from routes.users import users_router
 from routes.sections import sections_router
+from routes.section_years import section_years_router
 
 __all__ = [
     "auth_router",
@@ -12,4 +13,5 @@ __all__ = [
     "professors_router",
     "users_router",
     "sections_router",
+    "section_years_router",
 ]

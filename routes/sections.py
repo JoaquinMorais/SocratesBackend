@@ -123,8 +123,7 @@ async def update_section_route(
     responses={
         **_AUTH_ERRORS,
         **_NOT_FOUND,
-        409: {"description": "La comisión está en uso (tiene datos asociados) y no se puede eliminar"},
-    },
+        409: {"description": "La comisión tiene cursos lectivos asociados y no se puede eliminar"},    },
 )
 async def delete_section_route(
     id_section: int, db: db_dependency, _: super_admin_dependency
@@ -133,7 +132,7 @@ async def delete_section_route(
     Elimina una comisión. **Solo super admin.** La acción es irreversible; el
     nombre queda libre para volver a usarse.
 
-    Cuando existan alumnos u otros datos asociados a la comisión, responderá 409
-    en vez de borrarla.
+    Si la comisión tiene cursos lectivos asociados (`/section-years`) responde
+    409: hay que eliminar esos primero.
     """
     await delete_section(db, id_section)

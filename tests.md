@@ -161,3 +161,39 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_section`: testear que se elimina (204) y luego ya no existe ni figura en el listado.
 - `test_delete_not_found`: testear que eliminar una comisión inexistente responde 404.
 - `test_deleted_name_can_be_reused`: testear que el nombre de una comisión eliminada vuelve a estar disponible.
+
+
+## `tests/test_section_years.py`
+
+**Permisos**
+- `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
+- `test_student_cannot_manage_section_years`: testear que un alumno no puede crear, consultar, modificar ni eliminar cursos lectivos (403).
+- `test_regular_professor_cannot_manage_section_years`: testear que un profesor que no es super admin tampoco puede (403).
+
+**Crear**
+- `test_create_section_year`: testear que se crea un curso lectivo y la respuesta incluye el nombre de la comisión.
+- `test_create_duplicate_rejected`: testear que no se puede repetir la combinación año + comisión (409).
+- `test_same_section_other_year_and_same_year_other_section_are_ok`: testear que una comisión puede repetirse en otro año y un año en otra comisión.
+- `test_create_unknown_section_rejected`: testear que una comisión inexistente responde 404.
+- `test_create_invalid_rejected`: testear que se rechaza un año fuera de rango, campos faltantes, un id no positivo y campos desconocidos.
+
+**Consultar**
+- `test_list_sorted_by_year_desc_then_section`: testear que el listado ordena por año más reciente y luego por nombre de comisión.
+- `test_list_filters_and_pagination`: testear los filtros por año y comisión, `limit` y `offset`, y que `limit=0` se rechaza.
+- `test_get_section_year`: testear que se puede consultar un curso lectivo por id.
+- `test_get_not_found`: testear que un curso lectivo inexistente responde 404.
+
+**Modificar**
+- `test_patch_year`: testear que se puede cambiar el año y la comisión no cambia.
+- `test_patch_section`: testear que se puede cambiar la comisión y el año no cambia.
+- `test_patch_to_existing_combination_rejected`: testear que no se puede dejar la combinación de otro curso lectivo (409).
+- `test_patch_same_values_is_ok`: testear que reenviar los valores actuales no da error.
+- `test_patch_not_found`: testear que modificar un curso lectivo inexistente responde 404.
+- `test_patch_unknown_section_rejected`: testear que cambiar a una comisión inexistente responde 404.
+- `test_patch_invalid_rejected`: testear que se rechaza un body vacío, un año fuera de rango, un id no positivo y campos desconocidos.
+
+**Eliminar**
+- `test_delete_section_year`: testear que se elimina (204) y luego ya no existe ni figura en el listado.
+- `test_delete_not_found`: testear que eliminar un curso lectivo inexistente responde 404.
+- `test_cannot_delete_section_in_use`: testear que no se puede eliminar una comisión con cursos lectivos (409) y que sí se puede después de eliminarlos.
+- `test_deleted_combination_can_be_reused`: testear que la combinación de un curso lectivo eliminado vuelve a estar disponible.
