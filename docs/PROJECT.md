@@ -70,10 +70,10 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Los profesores crean los grupos, individualmente o en masa, y los dejan vacíos. Los alumnos se unirán después.
 - Un profesor solo gestiona proyectos de los cursos lectivos a los que está asignado. Un super admin puede gestionar los de cualquiera.
 - Un proyecto solo se elimina si no tiene ningún alumno.
-- Visibilidad del detalle:
-  - **`public`**: cualquier usuario lo ve.
-  - **`protected`**: cualquier usuario ve la información general; los datos sensibles (documentación, repositorio de GitHub), cuando existan, solo los ven miembros, profesores del curso lectivo y super admin.
-  - **`private`**: solo miembros, profesores del curso lectivo y super admin. El resto ve únicamente los datos básicos (id, curso lectivo, número de grupo y privacidad).
+- Visibilidad del detalle. Los **privilegiados** son los miembros del grupo, los profesores del curso lectivo y los super admin:
+  - **`public`**: cualquier usuario ve todo el detalle.
+  - **`protected`**: los privilegiados ven todo; el resto ve la información básica (el proyecto aparece con `restricted` en `true` y nombre, descripción, objetivo y problemática en `null`). Los datos sensibles (documentación, repositorio de GitHub), cuando existan, se ocultan a quien no sea privilegiado.
+  - **`private`**: solo los privilegiados. Para el resto el proyecto no aparece en el listado ni se cuenta en `total`, y consultarlo responde **403**.
 
 ## Estado actual
 

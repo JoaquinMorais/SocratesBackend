@@ -4,7 +4,7 @@ Para agregar un recurso nuevo, copiar la plantilla y reemplazar los nombres. Los
 
 **Reemplazos:** `Widget` → nombre de la clase, `widget` → nombre en minúsculas, `widgets` → plural, `id_widget` → clave primaria.
 
-**Orden de trabajo:** modelo → schemas → lógica → rutas → registrar en `index.py` → tests → documentar en `tests.md`.
+**Orden de trabajo:** modelo → schemas → lógica → rutas → registrar en `index.py` → tests → documentar en `docs/tests.md`.
 
 ---
 
@@ -400,7 +400,7 @@ async def test_delete_not_found(client, login):
     assert (await client.delete("/widgets/999", headers=await login(SUPER_ADMIN))).status_code == 404
 ```
 
-Documentar los tests en `tests.md` con la forma "testear que...".
+Documentar los tests en `docs/tests.md` con la forma "testear que...".
 
 ---
 
@@ -476,4 +476,4 @@ async def build_access(db, user) -> Access:
 - [ ] Cada endpoint tiene `summary`, docstring en español y `responses` completos.
 - [ ] Ninguna respuesta incluye datos privados.
 - [ ] Hay tests de permisos, caso feliz, duplicado, 404, 422 y borrado.
-- [ ] `tests.md` está actualizado, y también `PROJECT.md` / `STRUCTURE.md` si corresponde.
+- [ ] `docs/tests.md` está actualizado, y también `docs/PROJECT.md` / `docs/STRUCTURE.md` si corresponde.

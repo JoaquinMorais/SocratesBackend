@@ -267,9 +267,11 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Visibilidad según privacidad**
 - `test_public_project_detail_visible_to_everyone`: testear que un alumno cualquiera y un profesor ajeno ven el detalle de un proyecto público.
-- `test_protected_project_info_visible_to_everyone`: testear que un proyecto protegido muestra nombre, descripción, objetivo y problemática a cualquier usuario.
-- `test_private_project_detail_hidden_from_outsiders`: testear que en un proyecto privado un alumno no miembro y un profesor ajeno ven solo lo básico (`restricted`) y reciben 403 al consultarlo.
-- `test_private_project_detail_visible_to_members_and_staff`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle de un proyecto privado, y otro alumno no.
+- `test_protected_project_basic_visible_to_outsiders`: testear que en un proyecto protegido un alumno no miembro y un profesor ajeno ven solo la información básica (`restricted` en `true` y el detalle en `null`), tanto en el listado como al consultarlo.
+- `test_protected_project_detail_visible_to_privileged`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle completo de un proyecto protegido.
+- `test_private_project_hidden_from_outsiders`: testear que en un proyecto privado un alumno no miembro y un profesor ajeno no lo ven en el listado y reciben 403 al consultarlo.
+- `test_private_project_detail_visible_to_members_and_staff`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle de un proyecto privado, y que otro alumno no lo ve ni en el listado ni en el detalle.
+- `test_assigned_professor_sees_all_projects_of_own_section_year`: testear que un profesor asignado a un curso lectivo ve el detalle completo de todos sus proyectos (públicos, protegidos y privados) filtrando por ese curso lectivo.
 
 **Eliminar**
 - `test_delete_empty_project`: testear que se elimina un proyecto vacío (204) y deja de figurar.

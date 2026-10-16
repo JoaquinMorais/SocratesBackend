@@ -1,8 +1,8 @@
 ## Antes de empezar
-- `PROJECT.md` y `STRUCTURE.md` ya están cargados como contexto (ver `opencode.json`).
-- Antes de crear un recurso nuevo o una tabla intermedia, **leer `TEMPLATES.md`** con la herramienta de lectura.
-- Antes de agregar o cambiar tests, **leer `tests.md`**.
-- Para cualquier historia de usuario, **seguir `WORKFLOW.md`** (ya está cargado como contexto).
+- `docs/PROJECT.md` y `docs/STRUCTURE.md` ya están cargados como contexto (ver `opencode.json`).
+- Antes de crear un recurso nuevo o una tabla intermedia, **leer `docs/TEMPLATES.md`** con la herramienta de lectura.
+- Antes de agregar o cambiar tests, **leer `docs/tests.md`**.
+- Para cualquier historia de usuario, **seguir `docs/WORKFLOW.md`** (ya está cargado como contexto).
 ## Protección de archivos sensibles
 - NUNCA leas, abras, inspecciones ni muestres el contenido de archivos `.env`.
 - NUNCA leas, modifiques, crees, sobrescribas ni elimines archivos `.env`.
@@ -17,7 +17,7 @@
 
 # Guía para IA y colaboradores
 
-Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + PostgreSQL, en Docker). Para entender qué hace la app y por qué, leer `PROJECT.md`; para ubicar cada archivo, `STRUCTURE.md`; para escribir código nuevo, copiar de `TEMPLATES.md`; para saber qué prueba cada test, `tests.md`.
+Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + PostgreSQL, en Docker). Para entender qué hace la app y por qué, leer `docs/PROJECT.md`; para ubicar cada archivo, `docs/STRUCTURE.md`; para escribir código nuevo, copiar de `docs/TEMPLATES.md`; para saber qué prueba cada test, `docs/tests.md`.
 
 ## Reglas que no se rompen
 
@@ -26,8 +26,8 @@ Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + Pos
 3. **El punto de entrada es `index.py`** (no `main.py`). Todo router nuevo se registra ahí.
 4. **Nunca exponer datos privados:** ni `password_hash` ni fecha de nacimiento fuera de los endpoints propios. El mail de un profesor no se muestra en datos que ven los alumnos.
 5. **Nunca subir `.env`** ni credenciales al repo.
-6. **No cambiar permisos sin avisar.** La tabla de permisos está en `PROJECT.md`; si cambia, actualizarla.
-7. **Todo cambio de comportamiento lleva tests** y se documenta en `tests.md`.
+6. **No cambiar permisos sin avisar.** La tabla de permisos está en `docs/PROJECT.md`; si cambia, actualizarla.
+7. **Todo cambio de comportamiento lleva tests** y se documenta en `docs/tests.md`.
 
 ## Idioma y nombres
 
@@ -81,7 +81,7 @@ Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + Pos
 
 ## Autenticación en una línea
 
-Login con mail completo + contraseña → access JWT (15 min, header `Bearer`) + refresh opaco en cookie `HttpOnly` (hasheado en la BD, se rota en cada uso). Las cuentas nuevas no tienen contraseña: la crean con el código por mail (`/auth/password/request` y `/auth/password/confirm`). Detalle en `PROJECT.md`.
+Login con mail completo + contraseña → access JWT (15 min, header `Bearer`) + refresh opaco en cookie `HttpOnly` (hasheado en la BD, se rota en cada uso). Las cuentas nuevas no tienen contraseña: la crean con el código por mail (`/auth/password/request` y `/auth/password/confirm`). Detalle en `docs/PROJECT.md`.
 
 ## Comandos
 
@@ -113,17 +113,17 @@ La fixture `make_professor(mail, is_super_admin=False)` crea un profesor común 
 - Un archivo `tests/test_<recurso>.py` por recurso, con secciones en este orden: permisos, crear, consultar, modificar, eliminar.
 - Siempre probar: sin login (401), sin permiso (403), caso feliz, duplicado (409), referencia inexistente (404), datos inválidos y campos desconocidos (422).
 - Los tests son `async def test_...` sin decoradores; pytest-asyncio está en modo automático.
-- Nombres descriptivos en inglés; en `tests.md` se documentan en español con la forma "testear que...".
+- Nombres descriptivos en inglés; en `docs/tests.md` se documentan en español con la forma "testear que...".
 - Los tests no envían mails: se interceptan en la lista `outbox`.
 
 ## Al terminar un cambio
 
 1. Correr todos los tests: deben pasar sin avisos.
-2. Actualizar `tests.md` con los tests nuevos.
-3. Si cambió el dominio, los permisos o el alcance: actualizar `PROJECT.md`.
-4. Si se agregaron o movieron archivos: actualizar `STRUCTURE.md`.
+2. Actualizar `docs/tests.md` con los tests nuevos.
+3. Si cambió el dominio, los permisos o el alcance: actualizar `docs/PROJECT.md`.
+4. Si se agregaron o movieron archivos: actualizar `docs/STRUCTURE.md`.
 5. Revisar `/docs`: cada endpoint nuevo debe verse con su descripción y errores.
 
 ## Pendiente y fuera de alcance por ahora
 
-Ver "Pendiente" en `PROJECT.md`: unirse a un grupo, modificar proyectos, estados, campos sensibles de proyectos, Alembic, cuenta de mail propia y CORS definitivo. No implementar estas piezas sin que se defina primero el comportamiento.
+Ver "Pendiente" en `docs/PROJECT.md`: unirse a un grupo, modificar proyectos, estados, campos sensibles de proyectos, Alembic, cuenta de mail propia y CORS definitivo. No implementar estas piezas sin que se defina primero el comportamiento.

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
@@ -30,10 +31,15 @@ class Access:
     def is_privileged(self, project: Project) -> bool:
         return self.can_manage(project.id_section_year) or project.id_project in self.project_ids
 
-    def can_see_info(self, project: Project) -> bool:
-        # public y protected muestran nombre, descripción, objetivo y problemática.
+    def can_see_detail(self, project: Project) -> bool:
+        # public: todo el mundo ve el detalle. protected y private: solo los privilegiados.
         # Cuando existan los campos sensibles (documentación, GitHub), se ocultan
         # acá a quien no sea is_privileged en proyectos que no sean public.
+        return project.privacy == "public" or self.is_privileged(project)
+
+    def can_see_project(self, project: Project) -> bool:
+        # private: para el resto el proyecto no existe (no se lista y responde 403).
+        # public y protected se ven siempre (con detalle o con la información básica).
         return project.privacy != "private" or self.is_privileged(project)
 
 
@@ -178,6 +184,7 @@ async def delete_project(db, access: Access, id_project: int) -> None:
 
 async def list_projects(
     db,
+    access: Access,
     *,
     id_section_year: int | None,
     year: int | None,
@@ -187,6 +194,15 @@ async def list_projects(
     offset: int,
 ) -> tuple[list[Project], int]:
     conditions = []
+    if not access.is_super_admin:
+        # Un proyecto private solo lo ve quien tiene privilegios (miembro, profesor
+        # del curso lectivo o super admin); para el resto no existe.
+        visible = [Project.privacy != "private"]
+        if access.section_year_ids:
+            visible.append(Project.id_section_year.in_(access.section_year_ids))
+        if access.project_ids:
+            visible.append(Project.id_project.in_(access.project_ids))
+        conditions.append(or_(*visible))
     if id_section_year is not None:
         conditions.append(Project.id_section_year == id_section_year)
     if year is not None:

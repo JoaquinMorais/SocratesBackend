@@ -111,21 +111,22 @@ async def get_projects(
     """
     Lista los proyectos. **Cualquier usuario logueado.**
 
-    Los datos básicos (id, curso lectivo, número de grupo y privacidad) los ve
-    cualquiera. El detalle (nombre, descripción, objetivo y problemática) depende
-    de la privacidad:
+    La visibilidad depende de la privacidad:
 
-    - `public` y `protected`: lo ve cualquier usuario.
-    - `private`: solo los miembros del grupo, los profesores de ese curso lectivo
-      y los super admin. Para el resto, `restricted` es `true` y esos campos
-      vienen en `null`.
+    - `public`: cualquier usuario ve todo el detalle.
+    - `protected`: los privilegiados (miembros del grupo, profesores del curso
+      lectivo y super admin) ven todo; el resto ve solo la información básica
+      (`restricted` es `true` y el detalle viene en `null`).
+    - `private`: solo los privilegiados; para el resto **no aparece** en el
+      listado ni se cuenta en `total`.
 
     Orden: año más reciente, comisión y número de grupo. Está paginado: `total`
-    es la cantidad que cumple los filtros.
+    es la cantidad que cumple los filtros y es visible para el usuario.
     """
     access = await build_access(db, user)
     items, total = await list_projects(
         db,
+        access,
         id_section_year=id_section_year,
         year=year,
         id_section=id_section,
@@ -134,7 +135,7 @@ async def get_projects(
         offset=offset,
     )
     return ProjectList(
-        items=[to_public(p, restricted=not access.can_see_info(p)) for p in items],
+        items=[to_public(p, restricted=not access.can_see_detail(p)) for p in items],
         total=total,
         limit=limit,
         offset=offset,
@@ -147,7 +148,7 @@ async def get_projects(
     summary="Consultar un proyecto",
     responses={
         **_READ_ERRORS,
-        403: {"description": "El proyecto es privado y el usuario no tiene acceso"},
+        403: {"description": "El proyecto es privado y el usuario no tiene privilegios"},
         404: {"description": "No existe el proyecto"},
     },
 )
@@ -156,15 +157,17 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
     Devuelve el detalle de un proyecto. **Cualquier usuario logueado**, según la
     privacidad:
 
-    - `public` y `protected`: cualquier usuario.
-    - `private`: miembros del grupo, profesores de ese curso lectivo y super
-      admin. El resto recibe 403 (los datos básicos siguen visibles en el listado).
+    - `public`: cualquier usuario, con todo el detalle.
+    - `protected`: los privilegiados (miembros, profesores del curso lectivo y
+      super admin) ven todo; el resto recibe `200` con `restricted` en `true` y
+      los campos de detalle en `null`.
+    - `private`: solo los privilegiados; el resto recibe **403**.
     """
     access = await build_access(db, user)
     project = await get_project(db, id_project)
-    if not access.can_see_info(project):
+    if not access.can_see_project(project):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This project is private")
-    return to_public(project)
+    return to_public(project, restricted=not access.can_see_detail(project))
 
 
 @projects_router.delete(

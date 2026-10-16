@@ -1,12 +1,12 @@
 # Cómo trabajar una historia de usuario
 
-Este es el proceso que se sigue para cada funcionalidad nueva. Las reglas de código están en `AGENTS.md`, las plantillas en `TEMPLATES.md` y los tests existentes en `tests.md`. Acá solo se define **el orden y los entregables**.
+Este es el proceso que se sigue para cada funcionalidad nueva. Las reglas de código están en `AGENTS.md`, las plantillas en `docs/TEMPLATES.md` y los tests existentes en `docs/tests.md`. Acá solo se define **el orden y los entregables**.
 
 Si la tarea es solo documentación o un arreglo menor, saltar los pasos que no apliquen y decirlo.
 
 ## 0. Antes de escribir código
 
-1. Leer `PROJECT.md` (dominio y permisos) y `STRUCTURE.md`. Si la historia crea o cambia un recurso, leer también `TEMPLATES.md`.
+1. Leer `docs/PROJECT.md` (dominio y permisos) y `docs/STRUCTURE.md`. Si la historia crea o cambia un recurso, leer también `docs/TEMPLATES.md`.
 2. Identificar qué recursos existentes toca la historia: tablas con las que se relaciona, endpoints cuyo comportamiento cambia, permisos afectados.
 3. **Si algo es ambiguo, no asumir en silencio.** Proponer valores por defecto concretos y pedir confirmación **una sola vez**, con la lista de decisiones:
    - nombres de la clase, tabla y ruta;
@@ -15,7 +15,7 @@ Si la tarea es solo documentación o un arreglo menor, saltar los pasos que no a
    - qué responde ante duplicados, referencias inexistentes y borrados con datos asociados;
    - efectos sobre recursos existentes (por ejemplo, un borrado que antes funcionaba y ahora da 409).
 4. Si la historia es clara, avanzar sin preguntar y dejar las decisiones tomadas escritas en el resumen final.
-5. No implementar nada marcado como "Pendiente" en `PROJECT.md` sin que se haya definido su comportamiento.
+5. No implementar nada marcado como "Pendiente" en `docs/PROJECT.md` sin que se haya definido su comportamiento.
 
 ## 1. Orden de implementación
 
@@ -30,11 +30,11 @@ Seguir siempre este orden, completando cada paso antes del siguiente:
 | 5 | **Registro** | `index.py`: `app.include_router(...)` y la entrada en `openapi_tags`. |
 | 6 | **Revisar la documentación de la API** | Ver sección siguiente. |
 | 7 | **Tests** | `tests/test_<recurso>.py` y ajustes a los tests existentes que cambien. |
-| 8 | **Documentar los tests** | `tests.md`. |
-| 9 | **Actualizar la documentación del proyecto** | `PROJECT.md`, `STRUCTURE.md` y `AGENTS.md` si corresponde. |
+| 8 | **Documentar los tests** | `docs/tests.md`. |
+| 9 | **Actualizar la documentación del proyecto** | `docs/PROJECT.md`, `docs/STRUCTURE.md` y `AGENTS.md` si corresponde. |
 | 10 | **Verificar** | Correr toda la suite. |
 
-Si la historia es una tabla intermedia o un caso especial (permisos que dependen del dato, operaciones masivas), usar la plantilla correspondiente de `TEMPLATES.md`.
+Si la historia es una tabla intermedia o un caso especial (permisos que dependen del dato, operaciones masivas), usar la plantilla correspondiente de `docs/TEMPLATES.md`.
 
 ## 2. Revisar la documentación de la API
 
@@ -66,7 +66,7 @@ Además:
 - Usar los helpers y fixtures de `tests/conftest.py` y `tests/helpers.py`; no repetir lógica de preparación.
 - Un caso de prueba por comportamiento, con nombres descriptivos.
 
-## 4. Documentar los tests en `tests.md`
+## 4. Documentar los tests en `docs/tests.md`
 
 - Agregar una sección `## tests/test_<recurso>.py` con los grupos (permisos, crear, consultar, modificar, eliminar, reglas específicas).
 - Cada test con una línea: `- test_nombre: testear que ...`. Describir el comportamiento, no los datos concretos del seed.

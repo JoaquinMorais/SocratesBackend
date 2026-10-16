@@ -295,6 +295,21 @@ async def _assert_detail_visible(client, headers, id_project: int) -> None:
     assert one.status_code == 200 and {k: one.json()[k] for k in DATA} == DATA
 
 
+async def _assert_detail_restricted(client, headers, id_project: int) -> None:
+    item = _item((await client.get(URL, headers=headers)).json(), id_project)
+    assert item["restricted"] is True
+    assert {k: item[k] for k in DATA} == {k: None for k in DATA}
+    one = await client.get(f"{URL}/{id_project}", headers=headers)
+    assert one.status_code == 200 and one.json()["restricted"] is True
+    assert {k: one.json()[k] for k in DATA} == {k: None for k in DATA}
+
+
+async def _assert_project_hidden(client, headers, id_project: int) -> None:
+    listing = (await client.get(URL, headers=headers)).json()
+    assert all(i["id_project"] != id_project for i in listing["items"])
+    assert (await client.get(f"{URL}/{id_project}", headers=headers)).status_code == 403
+
+
 async def test_public_project_detail_visible_to_everyone(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
     _, pid = await _project_with_data(client, admin, "public")
@@ -303,24 +318,31 @@ async def test_public_project_detail_visible_to_everyone(client, login, make_pro
         await _assert_detail_visible(client, headers, pid)
 
 
-async def test_protected_project_info_visible_to_everyone(client, login, make_professor):
+async def test_protected_project_basic_visible_to_outsiders(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
     _, pid = await _project_with_data(client, admin, "protected")
     outsider_prof = await login(await make_professor("prof@frc.utn.edu.ar"))
     for headers in (await login(LUIS), outsider_prof):
+        await _assert_detail_restricted(client, headers, pid)
+
+
+async def test_protected_project_detail_visible_to_privileged(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy, pid = await _project_with_data(client, admin, "protected")
+    await _add_student(pid, ANA_ID)
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+
+    for headers in (await login(STUDENT), await login(mail), admin):  # miembro, profesor del curso, super admin
         await _assert_detail_visible(client, headers, pid)
 
 
-async def test_private_project_detail_hidden_from_outsiders(client, login, make_professor):
+async def test_private_project_hidden_from_outsiders(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
     _, pid = await _project_with_data(client, admin, "private")
     outsider_prof = await login(await make_professor("prof@frc.utn.edu.ar"))
     for headers in (await login(LUIS), outsider_prof):
-        item = _item((await client.get(URL, headers=headers)).json(), pid)
-        assert item["restricted"] is True
-        assert [item[k] for k in DATA] == [None] * 4
-        assert (item["group_number"], item["privacy"]) == (1, "private")  # lo básico sigue visible
-        assert (await client.get(f"{URL}/{pid}", headers=headers)).status_code == 403
+        await _assert_project_hidden(client, headers, pid)
 
 
 async def test_private_project_detail_visible_to_members_and_staff(client, login, make_professor):
@@ -332,8 +354,27 @@ async def test_private_project_detail_visible_to_members_and_staff(client, login
 
     for headers in (await login(STUDENT), await login(mail), admin):  # miembro, profesor del curso, super admin
         await _assert_detail_visible(client, headers, pid)
-    # otro alumno que no es miembro, sigue sin acceso
-    assert (await client.get(f"{URL}/{pid}", headers=await login(LUIS))).status_code == 403
+    # otro alumno que no es miembro: no lo ve ni en el listado ni en el detalle
+    await _assert_project_hidden(client, await login(LUIS), pid)
+
+
+async def test_assigned_professor_sees_all_projects_of_own_section_year(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    sy = await _section_year(client, admin)
+    await _assign_professor(client, admin, mail, sy)
+
+    ids = []
+    for privacy in ("public", "protected", "private"):
+        project = await _create(client, admin, sy)
+        await _set(project["id_project"], privacy=privacy, **DATA)
+        ids.append(project["id_project"])
+
+    headers = await login(mail)
+    listing = (await client.get(URL, params={"id_section_year": sy}, headers=headers)).json()
+    assert listing["total"] == 3
+    for pid in ids:
+        await _assert_detail_visible(client, headers, pid)
 
 
 # ---------- eliminar ----------

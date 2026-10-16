@@ -15,10 +15,15 @@ socrates-backend/
 ├── .gitignore
 ├── .dockerignore
 ├── README.md
-├── comands.md                    # Comandos de Docker de uso diario
-├── PROJECT.md                    # Idea y alcance del proyecto
-├── STRUCTURE.md                  # Este archivo
-├── tests.md                      # Documentación de los tests
+├── AGENTS.md                     # Reglas para IA y colaboradores
+├── opencode.json                 # Configuración (carga docs/ como contexto)
+├── docs/
+│   ├── commands.md               # Comandos de Docker de uso diario
+│   ├── PROJECT.md                    # Idea y alcance del proyecto
+│   ├── STRUCTURE.md                  # Este archivo
+│   ├── TEMPLATES.md
+│   ├── tests.md                      # Documentación de los tests
+│   └── WORKFLOW.md
 │
 ├── config/                       # Configuración de la app
 │   ├── __init__.py
@@ -112,9 +117,20 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `requirements.txt` | Dependencias de Python. |
 | `pytest.ini` | Configuración de pytest (modo async y alcance del event loop). |
 | `.env` | Credenciales y parámetros (base de datos, claves, tiempos, mail). No se versiona. |
-| `comands.md` | Comandos de Docker de uso diario. |
+| `README.md` | Presentación breve del repositorio. |
+| `AGENTS.md` | Reglas y convenciones para IA y colaboradores. |
+| `opencode.json` | Configuración del asistente: carga `docs/` como contexto. |
+
+## `docs/`
+
+| Archivo | Para qué sirve |
+|---|---|
+| `commands.md` | Comandos de Docker de uso diario. |
 | `PROJECT.md` | Idea del proyecto, dominio, flujos, permisos y estado. |
+| `STRUCTURE.md` | Este archivo: mapa de todo el repositorio. |
+| `TEMPLATES.md` | Plantillas de código para recursos nuevos. |
 | `tests.md` | Qué verifica cada test. |
+| `WORKFLOW.md` | Orden y entregables para trabajar una historia de usuario. |
 
 ## `config/`
 
@@ -197,7 +213,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
 
-El detalle de cada test está en `tests.md`.
+El detalle de cada test está en `docs/tests.md`.
 
 ## Cómo agregar un recurso nuevo
 
@@ -206,4 +222,4 @@ El detalle de cada test está en `tests.md`.
 3. Escribir la lógica y las reglas de negocio en `utils/`.
 4. Declarar los endpoints, con permisos y descripción, en `routes/` y exportar el router en `routes/__init__.py`.
 5. Registrar el router (y su etiqueta de documentación) en `index.py`.
-6. Escribir los tests en `tests/` y documentarlos en `tests.md`.
+6. Escribir los tests en `tests/` y documentarlos en `docs/tests.md`.
