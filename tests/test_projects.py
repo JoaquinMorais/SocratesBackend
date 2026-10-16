@@ -28,7 +28,9 @@ async def _section_year(client, headers, name: str = "3K1", year: int = 2025) ->
     r = await client.post("/sections", json={"name": name}, headers=headers)
     assert r.status_code == 201, r.text
     r = await client.post(
-        "/section-years", json={"year": year, "id_section": r.json()["id_section"]}, headers=headers
+        "/section-years",
+        json={"year": year, "id_section": r.json()["id_section"], "min_students": 1, "max_students": 10},
+        headers=headers,
     )
     assert r.status_code == 201, r.text
     return r.json()["id_section_year"]
@@ -230,7 +232,12 @@ async def test_list_sorted_and_filtered(client, login):
     r = await client.get("/sections", params={"q": "3K1"}, headers=admin)
     sy_c = (await client.post(
         "/section-years",
-        json={"year": 2024, "id_section": r.json()["items"][0]["id_section"]},
+        json={
+            "year": 2024,
+            "id_section": r.json()["items"][0]["id_section"],
+            "min_students": 1,
+            "max_students": 10,
+        },
         headers=admin,
     )).json()["id_section_year"]
     await _create(client, admin, sy_b)

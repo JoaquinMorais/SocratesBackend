@@ -23,7 +23,9 @@ from config.database import SessionLocal, engine  # noqa: E402
 from index import app  # noqa: E402
 from models import Professor, User  # noqa: E402
 from tests.helpers import PASSWORD  # noqa: E402
-from utils.seed import load_seed  # noqa: E402
+from utils.seed import DATA_DIR, load_seed  # noqa: E402
+
+TEST_SEED_PATH = DATA_DIR / "seed_test.json"
 
 
 async def _admin(sql: str) -> None:
@@ -58,7 +60,7 @@ async def clean_db(database):
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
     async with SessionLocal() as session:
-        await load_seed(session)
+        await load_seed(session, seed_path=TEST_SEED_PATH)
 
 
 @pytest.fixture(autouse=True)

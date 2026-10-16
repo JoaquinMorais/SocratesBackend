@@ -15,6 +15,190 @@
       "birth_date": "2003-07-22",
       "enrollment_year": 2022,
       "password": "Test1234!"
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Fernández",
+      "legajo": 100003,
+      "birth_date": "2002-09-05",
+      "enrollment_year": 2021,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Romero",
+      "legajo": 100004,
+      "birth_date": "2003-01-18",
+      "enrollment_year": 2021,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Aguirre",
+      "legajo": 100005,
+      "birth_date": "2002-11-30",
+      "enrollment_year": 2021,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Benítez",
+      "legajo": 100006,
+      "birth_date": "2003-05-09",
+      "enrollment_year": 2022,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Facundo",
+      "last_name": "Molina",
+      "legajo": 100007,
+      "birth_date": "2003-08-27",
+      "enrollment_year": 2022,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Suárez",
+      "legajo": 100008,
+      "birth_date": "2004-02-11",
+      "enrollment_year": 2022,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Ferreyra",
+      "legajo": 100009,
+      "birth_date": "2003-12-03",
+      "enrollment_year": 2022,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Pereyra",
+      "legajo": 100010,
+      "birth_date": "2004-06-21",
+      "enrollment_year": 2022,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Tobías",
+      "last_name": "Quiroga",
+      "legajo": 100011,
+      "birth_date": "2004-10-14",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Ríos",
+      "legajo": 100012,
+      "birth_date": "2005-03-02",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Mateo",
+      "last_name": "Navarro",
+      "legajo": 100013,
+      "birth_date": "2004-07-16",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Catalina",
+      "last_name": "Ibáñez",
+      "legajo": 100014,
+      "birth_date": "2005-01-25",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Domínguez",
+      "legajo": 100015,
+      "birth_date": "2004-11-08",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Lucía",
+      "last_name": "Cáceres",
+      "legajo": 100016,
+      "birth_date": "2005-04-19",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Escobar",
+      "legajo": 100017,
+      "birth_date": "2005-08-30",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Delfina",
+      "last_name": "Acosta",
+      "legajo": 100018,
+      "birth_date": "2005-12-12",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Miranda",
+      "legajo": 100019,
+      "birth_date": "2005-02-27",
+      "enrollment_year": 2023,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Duarte",
+      "legajo": 100020,
+      "birth_date": "2006-05-06",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Thiago",
+      "last_name": "Salas",
+      "legajo": 100021,
+      "birth_date": "2006-09-23",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Emma",
+      "last_name": "Godoy",
+      "legajo": 100022,
+      "birth_date": "2006-01-31",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Franco",
+      "last_name": "Villalba",
+      "legajo": 100023,
+      "birth_date": "2006-07-14",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Abril",
+      "last_name": "Coronel",
+      "legajo": 100024,
+      "birth_date": "2006-11-02",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Lautaro",
+      "last_name": "Rojas",
+      "legajo": 100025,
+      "birth_date": "2006-03-08",
+      "enrollment_year": 2024,
+      "password": "Test1234!"
     }
   ],
   "professors": [
@@ -26,6 +210,287 @@
       "mail": "marta.rodriguez@frc.utn.edu.ar",
       "is_super_admin": true,
       "password": "Test1234!"
+    },
+    {
+      "first_name": "Carlos",
+      "last_name": "Ruiz",
+      "legajo": 200002,
+      "birth_date": "1978-04-17",
+      "mail": "carlos.ruiz@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Laura",
+      "last_name": "Fernández",
+      "legajo": 200003,
+      "birth_date": "1982-08-23",
+      "mail": "laura.fernandez@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Diego",
+      "last_name": "Sosa",
+      "legajo": 200004,
+      "birth_date": "1976-02-09",
+      "mail": "diego.sosa@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Sofía",
+      "last_name": "Méndez",
+      "legajo": 200005,
+      "birth_date": "1985-06-28",
+      "mail": "sofia.mendez@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Pablo",
+      "last_name": "Gutiérrez",
+      "legajo": 200006,
+      "birth_date": "1979-10-12",
+      "mail": "pablo.gutierrez@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Valeria",
+      "last_name": "Ortiz",
+      "legajo": 200007,
+      "birth_date": "1983-01-20",
+      "mail": "valeria.ortiz@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Martín",
+      "last_name": "Cabrera",
+      "legajo": 200008,
+      "birth_date": "1977-09-15",
+      "mail": "martin.cabrera@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Natalia",
+      "last_name": "Ledesma",
+      "legajo": 200009,
+      "birth_date": "1986-03-04",
+      "mail": "natalia.ledesma@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Andrés",
+      "last_name": "Vargas",
+      "legajo": 200010,
+      "birth_date": "1974-12-01",
+      "mail": "andres.vargas@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
     }
+  ],
+  "sections": [
+    { "name": "3K1" },
+    { "name": "3K2" },
+    { "name": "3K3" },
+    { "name": "3K4" }
+  ],
+  "section_years": [
+    { "section": "3K1", "year": 2025, "min_students": 3, "max_students": 10 },
+    { "section": "3K2", "year": 2025, "min_students": 3, "max_students": 10 },
+    { "section": "3K3", "year": 2025, "min_students": 3, "max_students": 10 },
+    { "section": "3K4", "year": 2025, "min_students": 3, "max_students": 10 },
+    { "section": "3K1", "year": 2026, "min_students": 5, "max_students": 10 },
+    { "section": "3K2", "year": 2026, "min_students": 5, "max_students": 10 },
+    { "section": "3K3", "year": 2026, "min_students": 5, "max_students": 10 }
+  ],
+  "professor_section_years": [
+    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
+    { "professor": "carlos.ruiz@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
+    { "professor": "laura.fernandez@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
+
+    { "professor": "diego.sosa@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
+    { "professor": "sofia.mendez@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
+    { "professor": "pablo.gutierrez@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
+
+    { "professor": "valeria.ortiz@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
+    { "professor": "martin.cabrera@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
+    { "professor": "natalia.ledesma@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
+
+    { "professor": "andres.vargas@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
+    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
+    { "professor": "carlos.ruiz@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
+
+    { "professor": "laura.fernandez@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
+    { "professor": "diego.sosa@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
+    { "professor": "sofia.mendez@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
+
+    { "professor": "pablo.gutierrez@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
+    { "professor": "valeria.ortiz@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
+    { "professor": "martin.cabrera@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
+
+    { "professor": "natalia.ledesma@frc.utn.edu.ar", "section": "3K3", "year": 2026 },
+    { "professor": "andres.vargas@frc.utn.edu.ar", "section": "3K3", "year": 2026 },
+    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K3", "year": 2026 }
+  ],
+  "projects": [
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "privacy": "public",
+      "name": "Gestión de Turnos",
+      "description": "Sistema para reservar y administrar turnos de atención en una clínica.",
+      "objective": "Digitalizar la asignación de turnos y reducir las esperas.",
+      "problem": "Hoy los turnos se otorgan por teléfono y se superponen con frecuencia."
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "privacy": "private",
+      "name": "Sistema de Biblioteca",
+      "description": "Préstamo y devolución de libros con catalogación y búsqueda.",
+      "objective": "Reemplazar las planillas de préstamo por un sistema centralizado.",
+      "problem": "Se pierden registros de préstamos y no hay control de stock."
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "privacy": "protected",
+      "name": "Control de Stock",
+      "description": "Gestión de inventario para un comercio minorista.",
+      "objective": "Conocer el stock disponible en tiempo real.",
+      "problem": "Las faltantes y los excedentes se detectan tarde."
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "privacy": "public"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "privacy": "private",
+      "name": "Portal de Trámites",
+      "description": "Seguimiento en línea del estado de expedientes académicos.",
+      "objective": "Que el alumno consulte su trámite sin ir a la facultad.",
+      "problem": "No hay visibilidad del avance de los trámites."
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "privacy": "protected"
+    },
+    {
+      "section": "3K4",
+      "year": 2025,
+      "group_number": 1,
+      "privacy": "public",
+      "name": "Monitor de Asistencia",
+      "description": "Registro de asistencia a clases mediante códigos QR.",
+      "objective": "Automatizar la toma de asistencia y generar reportes.",
+      "problem": "La asistencia se toma en papel y es lenta de procesar."
+    },
+    {
+      "section": "3K4",
+      "year": 2025,
+      "group_number": 2,
+      "privacy": "private",
+      "name": "App de Viandas",
+      "description": "Pedido anticipado de viandas en el comedor universitario.",
+      "objective": "Reducir las filas y el desperdicio de comida.",
+      "problem": "No se sabe cuánta comida preparar cada día."
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "privacy": "protected"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "privacy": "public",
+      "name": "Gestor de Becas",
+      "description": "Postulación y seguimiento de becas estudiantiles.",
+      "objective": "Centralizar la documentación de cada postulación.",
+      "problem": "Las postulaciones se manejan por correo y se pierden adjuntos."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "privacy": "private",
+      "name": "Telemedicina",
+      "description": "Turnos y videoconsultas para un centro de salud.",
+      "objective": "Acercar la atención médica a zonas alejadas.",
+      "problem": "Los pacientes deben viajar largas distancias para una consulta."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "privacy": "protected",
+      "name": "Reservas de Aulas",
+      "description": "Reserva de aulas y laboratorios para actividades académicas.",
+      "objective": "Evitar la superposición de reservas.",
+      "problem": "Las reservas se anotan en una pizarra y se pisan entre sí."
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "privacy": "public",
+      "name": "Control de Egresados",
+      "description": "Seguimiento de egresados y su inserción laboral.",
+      "objective": "Mantener actualizado el contacto con los graduados.",
+      "problem": "No hay una base unificada de egresados."
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "privacy": "private"
+    }
+  ],
+  "student_projects": [
+    { "student": 100001, "section": "3K1", "year": 2025, "group_number": 1 },
+    { "student": 100003, "section": "3K1", "year": 2025, "group_number": 1 },
+    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1 },
+    { "student": 100005, "section": "3K1", "year": 2025, "group_number": 2 },
+    { "student": 100006, "section": "3K1", "year": 2025, "group_number": 2 },
+
+    { "student": 100007, "section": "3K2", "year": 2025, "group_number": 1 },
+    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1 },
+    { "student": 100009, "section": "3K2", "year": 2025, "group_number": 1 },
+
+    { "student": 100010, "section": "3K3", "year": 2025, "group_number": 1 },
+    { "student": 100011, "section": "3K3", "year": 2025, "group_number": 1 },
+    { "student": 100012, "section": "3K3", "year": 2025, "group_number": 2 },
+    { "student": 100013, "section": "3K3", "year": 2025, "group_number": 2 },
+
+    { "student": 100014, "section": "3K4", "year": 2025, "group_number": 1 },
+    { "student": 100015, "section": "3K4", "year": 2025, "group_number": 1 },
+    { "student": 100016, "section": "3K4", "year": 2025, "group_number": 1 },
+
+    { "student": 100001, "section": "3K1", "year": 2026, "group_number": 2 },
+    { "student": 100017, "section": "3K1", "year": 2026, "group_number": 2 },
+
+    { "student": 100007, "section": "3K2", "year": 2026, "group_number": 1 },
+    { "student": 100018, "section": "3K2", "year": 2026, "group_number": 1 },
+    { "student": 100019, "section": "3K2", "year": 2026, "group_number": 1 },
+
+    { "student": 100003, "section": "3K3", "year": 2026, "group_number": 1 },
+    { "student": 100020, "section": "3K3", "year": 2026, "group_number": 1 }
   ]
 }

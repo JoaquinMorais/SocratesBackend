@@ -17,7 +17,17 @@ def to_public(sy: SectionYear, section: Section | None = None) -> SectionYearPub
         year=sy.year,
         id_section=section.id_section,
         section_name=section.name,
+        min_students=sy.min_students,
+        max_students=sy.max_students,
     )
+
+
+def _validate_range(min_students: int, max_students: int) -> None:
+    if max_students < min_students:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "max_students must be greater than or equal to min_students",
+        )
 
 
 def _duplicate() -> HTTPException:
@@ -55,8 +65,14 @@ async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
     section = await _get_section(db, data.id_section)
     if await _combination_taken(db, data.year, data.id_section):
         raise _duplicate()
+    _validate_range(data.min_students, data.max_students)
 
-    sy = SectionYear(year=data.year, id_section=data.id_section)
+    sy = SectionYear(
+        year=data.year,
+        id_section=data.id_section,
+        min_students=data.min_students,
+        max_students=data.max_students,
+    )
     db.add(sy)
     try:
         await db.commit()
@@ -74,17 +90,22 @@ async def update_section_year(
     if not changes:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update")
 
+    min_students = changes.get("min_students", sy.min_students)
+    max_students = changes.get("max_students", sy.max_students)
+    _validate_range(min_students, max_students)
+
     year = changes.get("year", sy.year)
     id_section = changes.get("id_section", sy.id_section)
     section = await _get_section(db, id_section)
 
-    if year == sy.year and id_section == sy.id_section:
-        return to_public(sy, section)
-    if await _combination_taken(db, year, id_section, exclude_id=id_section_year):
-        raise _duplicate()
+    if (year, id_section) != (sy.year, sy.id_section):
+        if await _combination_taken(db, year, id_section, exclude_id=id_section_year):
+            raise _duplicate()
 
     sy.year = year
     sy.section = section
+    sy.min_students = min_students
+    sy.max_students = max_students
     db.add(sy)
     try:
         await db.commit()

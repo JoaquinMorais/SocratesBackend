@@ -31,7 +31,8 @@ socrates-backend/
 │   └── database.py
 │
 ├── data/
-│   └── seed.json                 # Usuarios de ejemplo que se cargan al arrancar
+│   ├── seed.json                 # Datos de ejemplo (usuarios, comisiones, cursadas, grupos)
+│   └── seed_test.json            # Seed mínimo y fijo que usan los tests
 │
 ├── models/                       # Tablas de la base de datos (SQLModel)
 │   ├── __init__.py
@@ -96,7 +97,8 @@ socrates-backend/
     ├── test_sections.py
     ├── test_section_years.py
     ├── test_professor_section_years.py
-    └── test_projects.py
+    ├── test_projects.py
+    └── test_seed.py
 ```
 
 ## Cómo se reparten las responsabilidades
@@ -143,7 +145,8 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 
 | Archivo | Para qué sirve |
 |---|---|
-| `seed.json` | Alumnos y un profesor super admin de ejemplo, para poder probar sin cargar nada. Solo se carga si la BD está vacía. |
+| `seed.json` | Datos de ejemplo realistas (alumnos, profesores, comisiones, cursos lectivos, asignaciones, grupos y miembros), para poder probar sin cargar nada. Solo se carga si la BD está vacía. |
+| `seed_test.json` | Seed mínimo y fijo que usan los tests (Ana, Luis y Marta). Así el seed real puede cambiar sin romper los tests. |
 
 ## `models/`
 
@@ -153,7 +156,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `student.py` | `students` | Datos del alumno (año de ingreso); su mail se calcula por legajo. |
 | `professor.py` | `professors` | Datos del profesor (mail propio e indicador de super admin). |
 | `section.py` | `sections` | Comisión (por ejemplo `3K1`). |
-| `section_year.py` | `section_years` | Curso lectivo: comisión + año. |
+| `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo. |
 | `professor_section_year.py` | `professor_section_years` | Asignación de un profesor a un curso lectivo. |
 | `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad. |
 | `student_project.py` | `student_projects` | Alumnos que integran un proyecto. |
@@ -189,7 +192,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `permissions.py` | Dependencias de rol: `professor_dependency`, `super_admin_dependency` y `student_dependency`. |
 | `email.py` | Envío de mails (por consola o por SMTP): código de verificación y bienvenida. |
 | `verification.py` | Creación y consumo de códigos OTP (vencimiento, intentos y espera entre pedidos). |
-| `seed.py` | Carga inicial desde `data/seed.json`. |
+| `seed.py` | Carga inicial desde un archivo JSON (`data/seed.json` por defecto; los tests usan `data/seed_test.json`): usuarios, comisiones, cursos lectivos, asignaciones, grupos y miembros, resolviendo las referencias por claves naturales. |
 | `users.py` | Armado de respuestas de usuario, edición de datos propios y listado con filtros. |
 | `students.py` | Alta masiva de alumnos y modificación de un alumno. |
 | `professors.py` | Alta y modificación de profesores. |
@@ -212,6 +215,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
+| `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, unicidad y referencias. |
 
 El detalle de cada test está en `docs/tests.md`.
 

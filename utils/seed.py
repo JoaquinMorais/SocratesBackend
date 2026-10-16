@@ -5,9 +5,19 @@ from pathlib import Path
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from models import Professor, Student, User
+from models import (
+    Professor,
+    ProfessorSectionYear,
+    Project,
+    Section,
+    SectionYear,
+    Student,
+    StudentProject,
+    User,
+)
 
-SEED_PATH = Path(__file__).resolve().parent.parent / "data" / "seed.json"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DEFAULT_SEED_PATH = DATA_DIR / "seed.json"
 
 
 def _build_user(item: dict) -> User:
@@ -22,31 +32,152 @@ def _build_user(item: dict) -> User:
     return user
 
 
-async def load_seed(session: AsyncSession) -> None:
-    existing = (await session.exec(select(User.id_user).limit(1))).first()
-    if existing is not None:
-        return
+def _missing(entity: str, value: object) -> ValueError:
+    return ValueError(f"Seed: no existe {entity} para {value!r}")
 
-    data = json.loads(SEED_PATH.read_text(encoding="utf-8"))
 
+async def _load_users(session: AsyncSession, data: dict) -> tuple[dict, dict]:
+    """Crea alumnos y profesores; devuelve índices por legajo y por mail."""
+    students: dict[int, Student] = {}
     for item in data.get("students", []):
         user = _build_user(item)
         session.add(user)
         await session.flush()  # obtiene id_user
-        session.add(
-            Student(id_student=user.id_user, enrollment_year=item["enrollment_year"])
-        )
+        student = Student(id_student=user.id_user, enrollment_year=item["enrollment_year"])
+        session.add(student)
+        students[item["legajo"]] = student
 
+    professors: dict[str, Professor] = {}
     for item in data.get("professors", []):
         user = _build_user(item)
         session.add(user)
         await session.flush()
+        mail = item["mail"].strip().lower()
+        professor = Professor(
+            id_professor=user.id_user,
+            mail=mail,
+            is_super_admin=item.get("is_super_admin", False),
+        )
+        session.add(professor)
+        professors[mail] = professor
+
+    await session.flush()
+    return students, professors
+
+
+async def _load_sections(session: AsyncSession, data: dict) -> dict[str, Section]:
+    sections: dict[str, Section] = {}
+    for item in data.get("sections", []):
+        section = Section(name=item["name"])
+        session.add(section)
+        sections[item["name"]] = section
+    await session.flush()
+    return sections
+
+
+async def _load_section_years(
+    session: AsyncSession, data: dict, sections: dict[str, Section]
+) -> dict[tuple[str, int], SectionYear]:
+    section_years: dict[tuple[str, int], SectionYear] = {}
+    for item in data.get("section_years", []):
+        name = item["section"]
+        section = sections.get(name)
+        if section is None:
+            raise _missing("la comisión", name)
+        sy = SectionYear(
+            year=item["year"],
+            id_section=section.id_section,
+            min_students=item["min_students"],
+            max_students=item["max_students"],
+        )
+        session.add(sy)
+        section_years[(name, item["year"])] = sy
+    await session.flush()
+    return section_years
+
+
+async def _load_professor_section_years(
+    session: AsyncSession,
+    data: dict,
+    professors: dict[str, Professor],
+    section_years: dict[tuple[str, int], SectionYear],
+) -> None:
+    for item in data.get("professor_section_years", []):
+        professor = professors.get(item["professor"].strip().lower())
+        if professor is None:
+            raise _missing("el profesor", item["professor"])
+        key = (item["section"], item["year"])
+        sy = section_years.get(key)
+        if sy is None:
+            raise _missing("el curso lectivo", key)
         session.add(
-            Professor(
-                id_professor=user.id_user,
-                mail=item["mail"].strip().lower(),
-                is_super_admin=item.get("is_super_admin", False),
+            ProfessorSectionYear(
+                id_professor=professor.id_professor,
+                id_section_year=sy.id_section_year,
             )
         )
+    await session.flush()
+
+
+async def _load_projects(
+    session: AsyncSession,
+    data: dict,
+    section_years: dict[tuple[str, int], SectionYear],
+) -> dict[tuple[str, int, int], Project]:
+    projects: dict[tuple[str, int, int], Project] = {}
+    for item in data.get("projects", []):
+        key = (item["section"], item["year"])
+        sy = section_years.get(key)
+        if sy is None:
+            raise _missing("el curso lectivo", key)
+        project = Project(
+            id_section_year=sy.id_section_year,
+            group_number=item["group_number"],
+            privacy=item["privacy"],
+            name=item.get("name"),
+            description=item.get("description"),
+            objective=item.get("objective"),
+            problem=item.get("problem"),
+        )
+        session.add(project)
+        projects[(item["section"], item["year"], item["group_number"])] = project
+    await session.flush()
+    return projects
+
+
+async def _load_student_projects(
+    session: AsyncSession,
+    data: dict,
+    students: dict[int, Student],
+    projects: dict[tuple[str, int, int], Project],
+) -> None:
+    for item in data.get("student_projects", []):
+        student = students.get(item["student"])
+        if student is None:
+            raise _missing("el alumno", item["student"])
+        key = (item["section"], item["year"], item["group_number"])
+        project = projects.get(key)
+        if project is None:
+            raise _missing("el proyecto", key)
+        session.add(
+            StudentProject(id_student=student.id_student, id_project=project.id_project)
+        )
+    await session.flush()
+
+
+async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
+    existing = (await session.exec(select(User.id_user).limit(1))).first()
+    if existing is not None:
+        return
+
+    path = Path(seed_path) if seed_path is not None else DEFAULT_SEED_PATH
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    students, professors = await _load_users(session, data)
+    sections = await _load_sections(session, data)
+    section_years = await _load_section_years(session, data, sections)
+    await _load_professor_section_years(session, data, professors, section_years)
+    projects = await _load_projects(session, data, section_years)
+    await _load_student_projects(session, data, students, projects)
 
     await session.commit()

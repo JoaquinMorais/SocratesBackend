@@ -37,8 +37,8 @@ _READ_ERRORS = {401: {"description": "Token ausente, inválido o vencido"}}
     responses={
         **_AUTH_ERRORS,
         404: {"description": "No existe la comisión indicada"},
-        409: {"description": "El curso lectivo tiene profesores asignados, proyectos u otros datos y no se puede eliminar"},
-        422: {"description": "Año fuera de rango, campos faltantes o desconocidos"},
+        409: {"description": "Ya existe esa comisión en ese año"},
+        422: {"description": "Año fuera de rango, rango de estudiantes inválido (max < min o fuera de 1-100), campos faltantes o desconocidos"},
     },
 )
 async def create_section_year_route(
@@ -50,6 +50,9 @@ async def create_section_year_route(
 
     - `year` debe estar entre 2000 y 2100.
     - `id_section` es el id de una comisión existente (`POST /sections`).
+    - `min_students` y `max_students` definen cuántos alumnos debe tener cada
+      grupo (ambos entre 1 y 100, y `max_students` no puede ser menor que
+      `min_students`). Se usarán más adelante para validar el estado del grupo.
     - La combinación año + comisión no puede repetirse. Una misma comisión sí
       puede existir en distintos años, y un mismo año en distintas comisiones.
     """
@@ -106,7 +109,7 @@ async def get_section_year_route(
         **_AUTH_ERRORS,
         404: {"description": "No existe el curso lectivo o la comisión indicada"},
         409: {"description": "Ya existe esa comisión en ese año"},
-        422: {"description": "Body vacío, año fuera de rango o campos desconocidos"},
+        422: {"description": "Body vacío, año fuera de rango, rango de estudiantes inválido (max < min o fuera de 1-100) o campos desconocidos"},
     },
 )
 async def update_section_year_route(
@@ -116,11 +119,14 @@ async def update_section_year_route(
     _: super_admin_dependency,
 ):
     """
-    Cambia el año y/o la comisión de un curso lectivo. **Solo super admin.**
+    Cambia el año, la comisión y/o el rango de estudiantes de un curso lectivo.
+    **Solo super admin.**
 
-    Ambos campos son opcionales (se envían solo los que cambian), pero debe
-    enviarse al menos uno. Aplica la misma regla de unicidad que al crear:
-    reenviar los valores actuales no da error.
+    Todos los campos son opcionales (se envían solo los que cambian), pero debe
+    enviarse al menos uno. `min_students` y `max_students` se validan juntos
+    (entre 1 y 100 y `max_students >= min_students`), por lo que si se envía solo
+    uno se compara con el valor actual del otro. Aplica la misma regla de
+    unicidad que al crear: reenviar los valores actuales no da error.
     """
     return await update_section_year(db, id_section_year, data)
 
@@ -132,7 +138,8 @@ async def update_section_year_route(
     responses={
         **_AUTH_ERRORS,
         **_NOT_FOUND,
-        409: {"description": "El curso lectivo tiene profesores asignados (u otros datos) y no se puede eliminar"},    },
+        409: {"description": "El curso lectivo tiene profesores asignados (u otros datos) y no se puede eliminar"},
+    },
 )
 async def delete_section_year_route(
     id_section_year: int, db: db_dependency, _: super_admin_dependency

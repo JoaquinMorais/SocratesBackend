@@ -41,7 +41,7 @@ app = FastAPI(
         {"name": "students", "description": "Alta y edición de alumnos (profesores)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
         {"name": "sections", "description": "Comisiones (consulta: cualquier usuario; escritura: super admin)."},
-        {"name": "section-years", "description": "Cursos lectivos: comisión + año (consulta: cualquier usuario; escritura: super admin)."},
+        {"name": "section-years", "description": "Cursos lectivos: comisión + año, con el mínimo y máximo de estudiantes por grupo (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "professor-section-years", "description": "Profesores asignados a cursos lectivos (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "projects", "description": "Proyectos (grupos) de cada curso lectivo; el detalle depende de la privacidad."},
     ],

@@ -11,7 +11,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 ## Cómo funcionan
 
 - Cada corrida crea una BD temporal (`<nombre_bd>_test`) y la borra al terminar. La BD principal no se toca.
-- Antes de cada test se vacían las tablas y se recarga el seed (Ana, Luis y Marta).
+- Antes de cada test se vacían las tablas y se recarga el seed de tests (`data/seed_test.json`: Ana, Luis y Marta).
 - Los mails no se envían: quedan en una lista (`outbox`) de donde los tests leen los códigos OTP.
 - `httpx` llama a la app directamente y conserva las cookies como un navegador.
 
@@ -173,11 +173,12 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_any_user_can_read_section_years`: testear que un alumno y un profesor común pueden listar y consultar cursos lectivos.
 
 **Crear**
-- `test_create_section_year`: testear que se crea un curso lectivo y la respuesta incluye el nombre de la comisión.
+- `test_create_section_year`: testear que se crea un curso lectivo, que la respuesta incluye el nombre de la comisión y el rango de estudiantes.
 - `test_create_duplicate_rejected`: testear que no se puede repetir la combinación año + comisión (409).
 - `test_same_section_other_year_and_same_year_other_section_are_ok`: testear que una comisión puede repetirse en otro año y un año en otra comisión.
 - `test_create_unknown_section_rejected`: testear que una comisión inexistente responde 404.
-- `test_create_invalid_rejected`: testear que se rechaza un año fuera de rango, campos faltantes, un id no positivo y campos desconocidos.
+- `test_create_invalid_rejected`: testear que se rechaza un año fuera de rango, campos faltantes (incluido el rango de estudiantes), un id no positivo, un rango fuera de 1-100, `max < min` y campos desconocidos.
+- `test_create_max_less_than_min_rejected`: testear que crear con `max_students` menor que `min_students` responde 422.
 
 **Consultar**
 - `test_list_sorted_by_year_desc_then_section`: testear que el listado ordena por año más reciente y luego por nombre de comisión.
@@ -188,11 +189,14 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 **Modificar**
 - `test_patch_year`: testear que se puede cambiar el año y la comisión no cambia.
 - `test_patch_section`: testear que se puede cambiar la comisión y el año no cambia.
+- `test_patch_student_range`: testear que se puede cambiar el rango de estudiantes y que cambiar un solo extremo se valida contra el valor actual del otro.
+- `test_patch_max_less_than_min_rejected`: testear que dejar `max_students` por debajo de `min_students` responde 422 (enviando ambos o solo uno).
+- `test_patch_min_above_max_rejected`: testear que subir `min_students` por encima del `max_students` actual responde 422.
 - `test_patch_to_existing_combination_rejected`: testear que no se puede dejar la combinación de otro curso lectivo (409).
 - `test_patch_same_values_is_ok`: testear que reenviar los valores actuales no da error.
 - `test_patch_not_found`: testear que modificar un curso lectivo inexistente responde 404.
 - `test_patch_unknown_section_rejected`: testear que cambiar a una comisión inexistente responde 404.
-- `test_patch_invalid_rejected`: testear que se rechaza un body vacío, un año fuera de rango, un id no positivo y campos desconocidos.
+- `test_patch_invalid_rejected`: testear que se rechaza un body vacío, un año fuera de rango, un id no positivo, un rango de estudiantes fuera de 1-100 y campos desconocidos.
 
 **Eliminar**
 - `test_delete_section_year`: testear que se elimina (204) y luego ya no existe ni figura en el listado.
@@ -279,3 +283,17 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_cannot_delete_project_with_students`: testear que no se puede eliminar un proyecto con alumnos (409).
 - `test_deleted_group_number_can_be_reused`: testear que un número de grupo eliminado puede volver a crearse enviándolo.
 - `test_cannot_delete_section_year_with_projects`: testear que no se puede eliminar un curso lectivo con proyectos (409) y que sí se puede después de eliminarlos.
+
+## `tests/test_seed.py`
+
+Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
+
+- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos y 22 membresías.
+- `test_seed_group_size_ranges`: testear que las cursadas de 2025 tienen mínimo 3 y máximo 10, y las de 2026 mínimo 5 y máximo 10.
+- `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
+- `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
+- `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
+- `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores ni legajos de alumnos.
+- `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.
+- `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
+- `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.

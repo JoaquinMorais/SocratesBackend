@@ -5,7 +5,7 @@ READ = [
     ("GET", "/section-years/1", None),
 ]
 WRITE = [
-    ("POST", "/section-years", {"year": 2025, "id_section": 1}),
+    ("POST", "/section-years", {"year": 2025, "id_section": 1, "min_students": 1, "max_students": 10}),
     ("PATCH", "/section-years/1", {"year": 2024}),
     ("DELETE", "/section-years/1", None),
 ]
@@ -18,9 +18,18 @@ async def _section(client, headers, name: str) -> int:
     return r.json()["id_section"]
 
 
-async def _create(client, headers, id_section: int, year: int) -> dict:
+async def _create(
+    client, headers, id_section: int, year: int, min_students: int = 1, max_students: int = 10
+) -> dict:
     r = await client.post(
-        "/section-years", json={"year": year, "id_section": id_section}, headers=headers
+        "/section-years",
+        json={
+            "year": year,
+            "id_section": id_section,
+            "min_students": min_students,
+            "max_students": max_students,
+        },
+        headers=headers,
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -62,10 +71,12 @@ async def test_any_user_can_read_section_years(client, login, make_professor):
 async def test_create_section_year(client, login):
     headers = await login(SUPER_ADMIN)
     id_section = await _section(client, headers, "3K1")
-    created = await _create(client, headers, id_section, 2021)
+    created = await _create(client, headers, id_section, 2021, min_students=3, max_students=7)
     assert created["year"] == 2021
     assert created["id_section"] == id_section
     assert created["section_name"] == "3K1"
+    assert created["min_students"] == 3
+    assert created["max_students"] == 7
     assert created["id_section_year"]
 
 
@@ -74,7 +85,9 @@ async def test_create_duplicate_rejected(client, login):
     id_section = await _section(client, headers, "3K1")
     await _create(client, headers, id_section, 2025)
     r = await client.post(
-        "/section-years", json={"year": 2025, "id_section": id_section}, headers=headers
+        "/section-years",
+        json={"year": 2025, "id_section": id_section, "min_students": 1, "max_students": 10},
+        headers=headers,
     )
     assert r.status_code == 409
 
@@ -90,7 +103,9 @@ async def test_same_section_other_year_and_same_year_other_section_are_ok(client
 
 async def test_create_unknown_section_rejected(client, login):
     r = await client.post(
-        "/section-years", json={"year": 2025, "id_section": 999}, headers=await login(SUPER_ADMIN)
+        "/section-years",
+        json={"year": 2025, "id_section": 999, "min_students": 1, "max_students": 10},
+        headers=await login(SUPER_ADMIN),
     )
     assert r.status_code == 404
 
@@ -99,15 +114,30 @@ async def test_create_invalid_rejected(client, login):
     headers = await login(SUPER_ADMIN)
     id_section = await _section(client, headers, "3K1")
     for body in (
-        {"year": 1999, "id_section": id_section},
-        {"year": 2101, "id_section": id_section},
+        {"year": 1999, "id_section": id_section, "min_students": 1, "max_students": 10},
+        {"year": 2101, "id_section": id_section, "min_students": 1, "max_students": 10},
         {"year": 2025},
         {"id_section": id_section},
-        {"year": 2025, "id_section": 0},
-        {"year": 2025, "id_section": id_section, "extra": 1},
+        {"year": 2025, "id_section": 0, "min_students": 1, "max_students": 10},
+        {"year": 2025, "id_section": id_section},  # faltan min y max
+        {"year": 2025, "id_section": id_section, "min_students": 0, "max_students": 10},
+        {"year": 2025, "id_section": id_section, "min_students": 1, "max_students": 101},
+        {"year": 2025, "id_section": id_section, "min_students": 10, "max_students": 5},
+        {"year": 2025, "id_section": id_section, "min_students": 1, "max_students": 10, "extra": 1},
     ):
         r = await client.post("/section-years", json=body, headers=headers)
         assert r.status_code == 422, body
+
+
+async def test_create_max_less_than_min_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    id_section = await _section(client, headers, "3K1")
+    r = await client.post(
+        "/section-years",
+        json={"year": 2025, "id_section": id_section, "min_students": 8, "max_students": 2},
+        headers=headers,
+    )
+    assert r.status_code == 422
 
 
 # ---------- consultar ----------
@@ -209,6 +239,41 @@ async def test_patch_same_values_is_ok(client, login):
     assert r.status_code == 200
 
 
+async def test_patch_student_range(client, login):
+    headers = await login(SUPER_ADMIN)
+    created = await _create(client, headers, await _section(client, headers, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}"
+    r = await client.patch(url, json={"min_students": 4, "max_students": 8}, headers=headers)
+    assert r.status_code == 200
+    assert (r.json()["min_students"], r.json()["max_students"]) == (4, 8)
+    # cambiar solo un extremo se compara con el valor actual del otro
+    r = await client.patch(url, json={"min_students": 6}, headers=headers)
+    assert r.status_code == 200
+    assert (r.json()["min_students"], r.json()["max_students"]) == (6, 8)
+    assert (await client.get(url, headers=headers)).json()["min_students"] == 6
+
+
+async def test_patch_max_less_than_min_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    created = await _create(
+        client, headers, await _section(client, headers, "3K1"), 2025, min_students=4, max_students=8
+    )
+    url = f"/section-years/{created['id_section_year']}"
+    # enviando los dos
+    assert (await client.patch(url, json={"min_students": 9, "max_students": 2}, headers=headers)).status_code == 422
+    # enviando solo max por debajo del min actual (4)
+    assert (await client.patch(url, json={"max_students": 3}, headers=headers)).status_code == 422
+
+
+async def test_patch_min_above_max_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    created = await _create(
+        client, headers, await _section(client, headers, "3K1"), 2025, min_students=4, max_students=8
+    )
+    url = f"/section-years/{created['id_section_year']}"
+    assert (await client.patch(url, json={"min_students": 9}, headers=headers)).status_code == 422
+
+
 async def test_patch_not_found(client, login):
     r = await client.patch("/section-years/999", json={"year": 2024}, headers=await login(SUPER_ADMIN))
     assert r.status_code == 404
@@ -227,7 +292,15 @@ async def test_patch_invalid_rejected(client, login):
     headers = await login(SUPER_ADMIN)
     created = await _create(client, headers, await _section(client, headers, "3K1"), 2025)
     url = f"/section-years/{created['id_section_year']}"
-    for body in ({}, {"year": 1999}, {"year": 2101}, {"id_section": 0}, {"year": 2024, "extra": 1}):
+    for body in (
+        {},
+        {"year": 1999},
+        {"year": 2101},
+        {"id_section": 0},
+        {"min_students": 0},
+        {"max_students": 101},
+        {"year": 2024, "extra": 1},
+    ):
         r = await client.patch(url, json=body, headers=headers)
         assert r.status_code == 422, body
 

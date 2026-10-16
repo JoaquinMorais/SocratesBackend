@@ -28,7 +28,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ### Comisiones y cursos lectivos
 
 - **Comisión (`Section`)**: una división de la carrera, por ejemplo `3K1` o `3K2`. El nombre es único y se guarda en mayúsculas.
-- **Curso lectivo (`SectionYear`)**: una comisión en un año concreto (por ejemplo, `3K1` de `2025`). La combinación año + comisión es única.
+- **Curso lectivo (`SectionYear`)**: una comisión en un año concreto (por ejemplo, `3K1` de `2025`). La combinación año + comisión es única. Define además la cantidad mínima y máxima de estudiantes que debe tener cada grupo (`min_students` y `max_students`, entre 1 y 100, con `max_students >= min_students`); se usará más adelante para validar el estado del grupo.
 - **Asignación de profesor (`ProfessorSectionYear`)**: qué profesor dicta qué curso lectivo. Es una relación muchos a muchos.
 
 ### Proyectos (grupos)
@@ -78,7 +78,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ## Estado actual
 
 **Hecho**
-- Base de datos, Docker y seed con usuarios de ejemplo.
+- Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos y miembros).
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores.
 - Edición de datos propios y de otros usuarios; listado de usuarios.

@@ -19,7 +19,9 @@ async def _section(client, headers, name: str) -> int:
 
 async def _section_year(client, headers, id_section: int, year: int) -> int:
     r = await client.post(
-        "/section-years", json={"year": year, "id_section": id_section}, headers=headers
+        "/section-years",
+        json={"year": year, "id_section": id_section, "min_students": 1, "max_students": 10},
+        headers=headers,
     )
     assert r.status_code == 201, r.text
     return r.json()["id_section_year"]

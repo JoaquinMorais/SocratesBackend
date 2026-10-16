@@ -7,6 +7,8 @@ class SectionYearCreate(SQLModel):
 
     year: int = Field(ge=2000, le=2100)
     id_section: int = Field(gt=0)
+    min_students: int = Field(ge=1, le=100)
+    max_students: int = Field(ge=1, le=100)
 
 
 class SectionYearUpdate(SQLModel):
@@ -14,6 +16,8 @@ class SectionYearUpdate(SQLModel):
 
     year: int | None = Field(default=None, ge=2000, le=2100)
     id_section: int | None = Field(default=None, gt=0)
+    min_students: int | None = Field(default=None, ge=1, le=100)
+    max_students: int | None = Field(default=None, ge=1, le=100)
 
 
 class SectionYearPublic(SQLModel):
@@ -21,6 +25,8 @@ class SectionYearPublic(SQLModel):
     year: int
     id_section: int
     section_name: str
+    min_students: int
+    max_students: int
 
 
 class SectionYearList(SQLModel):
