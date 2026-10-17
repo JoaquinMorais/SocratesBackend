@@ -180,7 +180,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `auth.py` | `/auth` | Login, refresh, logout y flujo de contraseña por código. |
 | `me.py` | `/me` | Datos del usuario logueado y modificación de sus datos personales. |
 | `users.py` | `/users` | Listado de usuarios registrados (super admin). |
-| `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación y listado de alumnos con sus grupos (incluye `is_leader`). |
+| `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación y listado de alumnos con sus grupos (incluye `is_leader` y el estado de la membresía, filtrable con `status`). |
 | `professors.py` | `/professors` | Alta de profesores y su modificación (super admin). |
 | `sections.py` | `/sections` | CRUD de comisiones. |
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
@@ -201,13 +201,13 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `verification.py` | Creación y consumo de códigos OTP (vencimiento, intentos y espera entre pedidos). |
 | `seed.py` | Carga inicial desde un archivo JSON (`data/seed.json` por defecto; los tests usan `data/seed_test.json`): usuarios, comisiones, cursos lectivos, asignaciones, grupos y miembros, resolviendo las referencias por claves naturales. |
 | `users.py` | Armado de respuestas de usuario, edición de datos propios y listado con filtros. |
-| `students.py` | Alta masiva de alumnos, modificación de un alumno y listado con los grupos de cada alumno. |
+| `students.py` | Alta masiva de alumnos, modificación de un alumno y listado con los grupos de cada alumno (filtrado por estado de la membresía). |
 | `professors.py` | Alta y modificación de profesores. |
 | `sections.py` | Lógica del CRUD de comisiones. |
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
-| `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad. |
-| `statuses.py` | Lógica de estados: catálogo base, estado inicial (por ámbito y por jefe de grupo), búsqueda y listado. |
+| `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin). |
+| `statuses.py` | Lógica de estados: catálogo base, estado inicial (por ámbito y por jefe de grupo), estados que dan privilegios y estados que se listan por defecto, búsqueda y listado. |
 
 ## `tests/`
 

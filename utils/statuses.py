@@ -10,6 +10,23 @@ INITIAL_STATUS = {"project": "active", "student_project": "active"}
 # Estado de una membresía que se une a un grupo que ya tiene jefe.
 PENDING_STATUS = "pending_approval"
 
+# Estados de una membresía que cuentan como "pertenece al grupo" para los
+# privilegios: ver el detalle de un proyecto protegido y acceder a uno privado.
+PRIVILEGED_STATUSES = ("active", "finished")
+
+# Estados de membresía que se listan en `GET /students` si no se pide otro filtro.
+DEFAULT_MEMBERSHIP_STATUSES = ["active", "finished"]
+
+# Orden en que se agrupan los grupos de un alumno según el estado de la membresía.
+MEMBERSHIP_STATUS_ORDER = [
+    "active",
+    "pending_approval",
+    "finished",
+    "abandoned",
+    "expelled",
+    "rejected",
+]
+
 # Estados que se crean al arrancar para que siempre exista al menos el inicial.
 # La seed puede sumar más; estos no se borran.
 DEFAULT_STATUSES = [

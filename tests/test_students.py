@@ -1,7 +1,7 @@
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
-from utils.statuses import INITIAL_STATUS, get_status
+from utils.statuses import get_status
 
 URL = "/students"
 ANA_ID, LUIS_ID = 1, 2  # ids de los alumnos del seed
@@ -55,14 +55,16 @@ async def _create_project(client, headers, id_section_year: int, name: str | Non
     return project
 
 
-async def _add_student(id_project: int, id_student: int, *, is_leader: bool = False) -> None:
+async def _add_student(
+    id_project: int, id_student: int, *, is_leader: bool = False, status: str = "active"
+) -> None:
     async with SessionLocal() as s:
-        status = await get_status(s, "student_project", INITIAL_STATUS["student_project"])
+        membership_status = await get_status(s, "student_project", status)
         s.add(
             StudentProject(
                 id_student=id_student,
                 id_project=id_project,
-                id_status=status.id_status,
+                id_status=membership_status.id_status,
                 is_leader=is_leader,
             )
         )
@@ -221,6 +223,68 @@ async def test_groups_mark_the_leader(client, login):
     assert _find(body, LUIS_ID)["groups"][0]["is_leader"] is False
 
 
+async def test_groups_hide_non_current_statuses_by_default(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    active = await _create_project(client, admin, sy, name="Vigente")
+    abandoned = await _create_project(client, admin, sy, name="Abandonado")
+    await _add_student(active["id_project"], ANA_ID)
+    await _add_student(abandoned["id_project"], ANA_ID, status="abandoned")
+
+    # Por defecto solo se listan las membresías active/finished.
+    ana = _find((await client.get(URL, headers=admin)).json(), ANA_ID)
+    assert [g["project_name"] for g in ana["groups"]] == ["Vigente"]
+
+    # El filtro es ampliable a cualquier estado.
+    ana = _find(
+        (await client.get(f"{URL}?status=abandoned", headers=admin)).json(), ANA_ID
+    )
+    assert [g["project_name"] for g in ana["groups"]] == ["Abandonado"]
+
+    ana = _find(
+        (await client.get(f"{URL}?status=active&status=abandoned", headers=admin)).json(),
+        ANA_ID,
+    )
+    assert [g["project_name"] for g in ana["groups"]] == ["Vigente", "Abandonado"]
+
+
+async def test_groups_ordered_by_status_priority(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_old = await _section_year(client, admin, "3K1", 2024)
+    sy_new = await _section_year(client, admin, "3K2", 2025)
+    active = await _create_project(client, admin, sy_old, name="Vigente viejo")
+    abandoned = await _create_project(client, admin, sy_new, name="Abandonado nuevo")
+    await _add_student(active["id_project"], ANA_ID)
+    await _add_student(abandoned["id_project"], ANA_ID, status="abandoned")
+
+    body = (await client.get(f"{URL}?status=active&status=abandoned", headers=admin)).json()
+    ana = _find(body, ANA_ID)
+    # El estado manda sobre el año: active primero aunque sea más viejo.
+    assert [g["project_name"] for g in ana["groups"]] == ["Vigente viejo", "Abandonado nuevo"]
+
+
+async def test_list_rejects_unknown_status(client, login):
+    headers = await login(SUPER_ADMIN)
+    assert (await client.get(f"{URL}?status=cancelled", headers=headers)).status_code == 422
+
+
+async def test_scope_filter_respects_membership_status(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy1 = await _section_year(client, admin, "3K1")
+    sy2 = await _section_year(client, admin, "3K2")
+    p1 = await _create_project(client, admin, sy1)
+    p2 = await _create_project(client, admin, sy2)
+    await _add_student(p1["id_project"], ANA_ID)  # active en sy1
+    await _add_student(p2["id_project"], LUIS_ID, status="abandoned")  # abandoned en sy2
+
+    async def total(query: str) -> int:
+        return (await client.get(f"{URL}?{query}", headers=admin)).json()["total"]
+
+    assert await total(f"id_section_year={sy2}") == 0  # Luis está abandonado
+    assert await total(f"id_section_year={sy2}&status=abandoned") == 1
+    assert await total(f"id_section_year={sy1}") == 1  # Ana sigue active
+
+
 async def test_list_filters(client, login):
     admin = await login(SUPER_ADMIN)
     sy1 = await _section_year(client, admin, "3K1", 2025)
@@ -274,8 +338,9 @@ async def test_list_does_not_expose_private_data(client, login):
     assert "birth_date" not in ana
     assert set(ana["groups"][0]) == {
         "id_project", "project_name", "group_number",
-        "id_section_year", "year", "id_section", "section_name", "is_leader",
+        "id_section_year", "year", "id_section", "section_name", "is_leader", "status",
     }
+    assert ana["groups"][0]["status"]["code"] == "active"
 
 
 async def test_list_pagination(client, login):

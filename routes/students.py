@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Query, status
 
 from config.database import db_dependency
+from schemas.status import MembershipStatus
 from schemas.student import (
     StudentBulkCreate,
     StudentCreate,
@@ -36,12 +37,23 @@ _AUTH_ERRORS = {
                 "profesor (los super admin pueden cualquiera)"
             )
         },
+        422: {"description": "Algún `status` no es un estado de membresía válido"},
     },
 )
 async def get_students(
     db: db_dependency,
     user: user_dependency,
     _: professor_dependency,
+    status_filter: Annotated[
+        list[MembershipStatus],
+        Query(
+            alias="status",
+            description=(
+                "Estados de la membresía a incluir (repetible). Por defecto "
+                "`active` y `finished`"
+            ),
+        ),
+    ] = ["active", "finished"],
     id_section_year: Annotated[
         int | None, Query(description="Filtrar por curso lectivo")
     ] = None,
@@ -66,20 +78,27 @@ async def get_students(
       están en ningún grupo (`groups` vacío). Un **profesor común** solo ve los
       alumnos de los cursos lectivos a los que está asignado.
     - Cada grupo incluye `id_project`, `project_name`, `group_number`, `is_leader`
-      (si el alumno es jefe del grupo) y los datos del curso lectivo (año,
-      comisión). Nunca expone datos privados del alumno (como la fecha de
-      nacimiento) ni el detalle del proyecto.
-    - Filtros: `id_section_year`, `year`, `id_section` y `q` (nombre, apellido o
-      legajo exacto). Si un profesor pide un `id_section_year` que no dicta,
-      responde **403**.
+      (si el alumno es jefe del grupo), su `status` de membresía y los datos del
+      curso lectivo (año, comisión). Nunca expone datos privados del alumno (como
+      la fecha de nacimiento) ni el detalle del proyecto.
+    - Filtros: `status` (repetible; por defecto `active` y `finished`),
+      `id_section_year`, `year`, `id_section` y `q` (nombre, apellido o legajo
+      exacto). Un `status` desconocido responde **422**. Si un profesor pide un
+      `id_section_year` que no dicta, responde **403**.
+    - Un alumno sin ninguna membresía sigue apareciendo mientras no se filtre por
+      curso/año/comisión; al filtrar por ellos, solo aparecen los alumnos con al
+      menos una membresía en los estados pedidos dentro del alcance.
 
-    Orden: apellido, nombre. Está paginado: `total` es la cantidad que cumple los
-    filtros.
+    Orden: apellido, nombre. Dentro de cada alumno, los grupos van por estado
+    (`active`, `pending_approval`, `finished`, `abandoned`, `expelled`,
+    `rejected`) y después del curso más reciente al más viejo. Está paginado:
+    `total` es la cantidad que cumple los filtros.
     """
     access = await build_access(db, user)
     items, total = await list_students(
         db,
         access,
+        statuses=status_filter,
         id_section_year=id_section_year,
         year=year,
         id_section=id_section,

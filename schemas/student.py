@@ -2,6 +2,7 @@ from datetime import date
 
 from sqlmodel import Field, SQLModel
 
+from schemas.status import StatusPublic
 from schemas.user import UserUpdate
 
 class StudentCreate(SQLModel):
@@ -34,6 +35,7 @@ class StudentGroupPublic(SQLModel):
     id_section: int
     section_name: str
     is_leader: bool
+    status: StatusPublic
 
 
 class StudentListItem(SQLModel):

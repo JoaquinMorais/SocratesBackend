@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
-from sqlalchemy import false
+from sqlalchemy import case, false
 from sqlmodel import col, func, or_, select
 
-from models import Project, Section, SectionYear, Student, StudentProject, User
+from models import Project, Section, SectionYear, Status, Student, StudentProject, User
+from schemas.status import StatusPublic
 from schemas.student import (
     StudentCreate,
     StudentGroupPublic,
@@ -10,6 +11,7 @@ from schemas.student import (
     StudentPublic,
     StudentUpdate,
 )
+from utils.statuses import MEMBERSHIP_STATUS_ORDER
 
 async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]:
     """Todo o nada: si alguna fila falla, no se crea ninguna."""
@@ -129,12 +131,22 @@ def to_list_item(student: Student, groups: list[StudentGroupPublic]) -> StudentL
 
 
 async def _groups_by_student(
-    db, student_ids: list[int], scope: list
+    db, student_ids: list[int], scope: list, statuses: list[str]
 ) -> dict[int, list[StudentGroupPublic]]:
-    """Trae los grupos de todos los alumnos de la página en una sola consulta."""
+    """Trae los grupos de todos los alumnos de la página en una sola consulta.
+
+    Solo los grupos cuya membresía está en `statuses`, ordenados por la prioridad
+    de `MEMBERSHIP_STATUS_ORDER` y, dentro de cada estado, del curso más reciente
+    al más viejo.
+    """
     if not student_ids:
         return {}
 
+    status_priority = case(
+        {code: index for index, code in enumerate(MEMBERSHIP_STATUS_ORDER)},
+        value=Status.code,
+        else_=len(MEMBERSHIP_STATUS_ORDER),
+    )
     rows = (
         await db.exec(
             select(
@@ -147,13 +159,26 @@ async def _groups_by_student(
                 Section.id_section,
                 Section.name,
                 StudentProject.is_leader,
+                Status.id_status,
+                Status.ambito,
+                Status.code,
+                Status.name,
+                Status.description,
+                Status.is_final,
             )
             .join(Project, Project.id_project == StudentProject.id_project)
             .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
             .join(Section, Section.id_section == SectionYear.id_section)
-            .where(StudentProject.id_student.in_(student_ids), *scope)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student.in_(student_ids),
+                Status.ambito == "student_project",
+                Status.code.in_(statuses),
+                *scope,
+            )
             .order_by(
                 col(StudentProject.id_student),
+                status_priority,
                 col(SectionYear.year).desc(),
                 col(Section.name),
                 col(Project.group_number),
@@ -172,6 +197,12 @@ async def _groups_by_student(
         id_section,
         section_name,
         is_leader,
+        id_status,
+        ambito,
+        code,
+        name,
+        description,
+        is_final,
     ) in rows:
         groups.setdefault(id_student, []).append(
             StudentGroupPublic(
@@ -183,6 +214,14 @@ async def _groups_by_student(
                 id_section=id_section,
                 section_name=section_name,
                 is_leader=is_leader,
+                status=StatusPublic(
+                    id_status=id_status,
+                    ambito=ambito,
+                    code=code,
+                    name=name,
+                    description=description,
+                    is_final=is_final,
+                ),
             )
         )
     return groups
@@ -192,6 +231,7 @@ async def list_students(
     db,
     access,
     *,
+    statuses: list[str],
     id_section_year: int | None,
     year: int | None,
     id_section: int | None,
@@ -229,12 +269,17 @@ async def list_students(
         conditions.append(or_(*search))
 
     if scope:
-        # Solo alumnos con al menos un grupo dentro del alcance.
+        # Solo alumnos con al menos un grupo, en los estados pedidos, dentro del alcance.
         enrolled = (
             select(StudentProject.id_student)
             .join(Project, Project.id_project == StudentProject.id_project)
             .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
-            .where(*scope)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                *scope,
+                Status.ambito == "student_project",
+                Status.code.in_(statuses),
+            )
         )
         conditions.append(Student.id_student.in_(enrolled))
 
@@ -260,6 +305,6 @@ async def list_students(
         )
     ).all()
 
-    groups = await _groups_by_student(db, [s.id_student for s in students], scope)
+    groups = await _groups_by_student(db, [s.id_student for s in students], scope, statuses)
     items = [to_list_item(s, groups.get(s.id_student, [])) for s in students]
     return items, total

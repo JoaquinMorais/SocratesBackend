@@ -109,10 +109,14 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_professor_sees_only_own_section_year`: testear que un profesor común solo ve los alumnos de sus cursos lectivos, con el nombre y número de su grupo.
 - `test_groups_list_all_memberships`: testear que un alumno en varias cursadas trae todos sus grupos, con el curso más reciente primero.
 - `test_groups_mark_the_leader`: testear que el grupo del alumno indica con `is_leader` si es el jefe del grupo.
+- `test_groups_hide_non_current_statuses_by_default`: testear que por defecto solo se listan las membresías `active`/`finished` y que `?status=` permite traer cualquier otro estado.
+- `test_groups_ordered_by_status_priority`: testear que dentro de un alumno los grupos se ordenan por estado (los `active` primero) antes que por año.
+- `test_list_rejects_unknown_status`: testear que un `status` que no es un estado de membresía válido responde 422.
+- `test_scope_filter_respects_membership_status`: testear que al filtrar por curso lectivo solo cuentan las membresías en los estados pedidos.
 - `test_list_filters`: testear los filtros `id_section_year`, `year` e `id_section`, solos y combinados.
 - `test_list_search`: testear la búsqueda por nombre, apellido y legajo (exacto).
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
-- `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo y si el alumno es jefe.
+- `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
 ## `tests/test_professors.py`
@@ -291,6 +295,9 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_protected_project_detail_visible_to_privileged`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle completo de un proyecto protegido.
 - `test_private_project_hidden_from_outsiders`: testear que en un proyecto privado un alumno no miembro y un profesor ajeno no lo ven en el listado y reciben 403 al consultarlo.
 - `test_private_project_detail_visible_to_members_and_staff`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle de un proyecto privado, y que otro alumno no lo ve ni en el listado ni en el detalle.
+- `test_pending_member_has_no_privileges`: testear que un alumno con membresía `pending_approval` no cuenta como privilegiado y solo ve la información básica de un proyecto protegido.
+- `test_abandoned_member_loses_privileges_on_private_project`: testear que un alumno con membresía `abandoned` no ve un proyecto privado (ni en el listado ni al consultarlo).
+- `test_finished_member_keeps_privileges`: testear que un alumno con membresía `finished` sigue viendo el detalle de un proyecto privado.
 - `test_assigned_professor_sees_all_projects_of_own_section_year`: testear que un profesor asignado a un curso lectivo ve el detalle completo de todos sus proyectos (públicos, protegidos y privados) filtrando por ese curso lectivo.
 
 **Eliminar**

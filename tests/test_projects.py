@@ -1,7 +1,7 @@
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import STUDENT, SUPER_ADMIN
-from utils.statuses import INITIAL_STATUS, get_status
+from utils.statuses import get_status
 
 LUIS = "100002@sistemas.frc.utn.edu.ar"
 ANA_ID, LUIS_ID = 1, 2  # ids de los alumnos del seed
@@ -66,12 +66,14 @@ async def _set(id_project: int, **fields) -> None:
         await s.commit()
 
 
-async def _add_student(id_project: int, id_student: int) -> None:
+async def _add_student(id_project: int, id_student: int, *, status: str = "active") -> None:
     async with SessionLocal() as s:
-        status = await get_status(s, "student_project", INITIAL_STATUS["student_project"])
+        membership_status = await get_status(s, "student_project", status)
         s.add(
             StudentProject(
-                id_student=id_student, id_project=id_project, id_status=status.id_status
+                id_student=id_student,
+                id_project=id_project,
+                id_status=membership_status.id_status,
             )
         )
         await s.commit()
@@ -372,6 +374,35 @@ async def test_private_project_detail_visible_to_members_and_staff(client, login
         await _assert_detail_visible(client, headers, pid)
     # otro alumno que no es miembro: no lo ve ni en el listado ni en el detalle
     await _assert_project_hidden(client, await login(LUIS), pid)
+
+
+async def test_pending_member_has_no_privileges(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy, pid = await _project_with_data(client, admin, "protected")
+    await _add_student(pid, ANA_ID, status="pending_approval")
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+
+    # Ana solo pidió unirse: no ve el detalle del proyecto protegido.
+    await _assert_detail_restricted(client, await login(STUDENT), pid)
+
+
+async def test_abandoned_member_loses_privileges_on_private_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    _, pid = await _project_with_data(client, admin, "private")
+    await _add_student(pid, ANA_ID, status="abandoned")
+
+    # Ana dejó el grupo: el proyecto privado ya no existe para ella.
+    await _assert_project_hidden(client, await login(STUDENT), pid)
+
+
+async def test_finished_member_keeps_privileges(client, login):
+    admin = await login(SUPER_ADMIN)
+    _, pid = await _project_with_data(client, admin, "private")
+    await _add_student(pid, ANA_ID, status="finished")
+
+    # Terminó el proyecto pero sigue contando como miembro.
+    await _assert_detail_visible(client, await login(STUDENT), pid)
 
 
 async def test_assigned_professor_sees_all_projects_of_own_section_year(client, login, make_professor):

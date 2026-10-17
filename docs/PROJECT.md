@@ -79,11 +79,12 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 - Los profesores crean los grupos, individualmente o en masa, y los dejan vacíos. Los alumnos se unirán después.
 - Un profesor solo gestiona proyectos de los cursos lectivos a los que está asignado. Un super admin puede gestionar los de cualquiera.
-- Un proyecto solo se elimina si no tiene ningún alumno.
-- Visibilidad del detalle. Los **privilegiados** son los miembros del grupo, los profesores del curso lectivo y los super admin:
+- Un proyecto solo se elimina si no tiene ningún alumno (basta una membresía en cualquier estado).
+- Visibilidad del detalle. Los **privilegiados** son los miembros del grupo con membresía **`active` o `finished`**, los profesores del curso lectivo y los super admin (una membresía `pending_approval`, `abandoned`, `expelled` o `rejected` no da privilegios):
   - **`public`**: cualquier usuario ve todo el detalle.
   - **`protected`**: los privilegiados ven todo; el resto ve la información básica (el proyecto aparece con `restricted` en `true` y nombre, descripción, objetivo y problemática en `null`). Los datos sensibles (documentación, repositorio de GitHub), cuando existan, se ocultan a quien no sea privilegiado.
   - **`private`**: solo los privilegiados. Para el resto el proyecto no aparece en el listado ni se cuenta en `total`, y consultarlo responde **403**.
+- `GET /students` devuelve, por cada alumno, sus grupos con el `status` de la membresía. Por defecto solo lista `active` y `finished`; el parámetro repetible `status` permite pedir cualquier combinación de estados (uno desconocido responde **422**). Los grupos se ordenan por estado (`active`, `pending_approval`, `finished`, `abandoned`, `expelled`, `rejected`) y, dentro de cada uno, del curso más reciente al más viejo. Al filtrar por curso/año/comisión solo cuentan las membresías en los estados pedidos; sin esos filtros, los alumnos sin grupo siguen apareciendo.
 
 ## Estado actual
 
@@ -91,7 +92,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos y miembros).
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores.
-- Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por curso lectivo, año o comisión.
+- Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por estado de la membresía, curso lectivo, año o comisión.
 - Edición de datos propios y de otros usuarios; listado de usuarios.
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).

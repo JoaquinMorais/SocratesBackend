@@ -10,12 +10,13 @@ from models import (
     Project,
     Section,
     SectionYear,
+    Status,
     StudentProject,
     User,
 )
 from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic
 from utils.section_years import get_section_year
-from utils.statuses import INITIAL_STATUS, get_status
+from utils.statuses import INITIAL_STATUS, PRIVILEGED_STATUSES, get_status
 from utils.statuses import to_public as status_public
 
 
@@ -58,8 +59,12 @@ async def build_access(db, user: User) -> Access:
             access.section_year_ids = set(rows.all())
     if user.student:
         rows = await db.exec(
-            select(StudentProject.id_project).where(
-                StudentProject.id_student == user.id_user
+            select(StudentProject.id_project)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student == user.id_user,
+                Status.ambito == "student_project",
+                Status.code.in_(PRIVILEGED_STATUSES),
             )
         )
         access.project_ids = set(rows.all())
