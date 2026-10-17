@@ -16,7 +16,7 @@ from models import (
 )
 from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic
 from utils.section_years import get_section_year
-from utils.statuses import INITIAL_STATUS, PRIVILEGED_STATUSES, get_status
+from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
 from utils.statuses import to_public as status_public
 
 
@@ -64,7 +64,7 @@ async def build_access(db, user: User) -> Access:
             .where(
                 StudentProject.id_student == user.id_user,
                 Status.ambito == "student_project",
-                Status.code.in_(PRIVILEGED_STATUSES),
+                Status.code.in_(STUDENT_PROJECT.codes_of(MEMBER)),
             )
         )
         access.project_ids = set(rows.all())
@@ -139,7 +139,7 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
     else:
         number = await _next_group_number(db, sy.id_section_year)
 
-    initial_status = await get_status(db, "project", INITIAL_STATUS["project"])
+    initial_status = await get_status(db, "project", PROJECT.initial)
     project = Project(group_number=number, section_year=sy, status=initial_status)
     db.add(project)
     try:
@@ -157,7 +157,7 @@ async def create_projects_bulk(
     _require_manager(access, sy.id_section_year)
 
     start = await _next_group_number(db, sy.id_section_year)
-    initial_status = await get_status(db, "project", INITIAL_STATUS["project"])
+    initial_status = await get_status(db, "project", PROJECT.initial)
     projects = [
         Project(group_number=start + i, section_year=sy, status=initial_status)
         for i in range(data.quantity)

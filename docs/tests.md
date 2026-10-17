@@ -336,3 +336,11 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae `active` y `cancelled`; `student_project` trae `active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`.
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
+
+**Reglas por ámbito (`StatusPolicy`)**
+- `test_member_category`: testear que la categoría `member` es `active` + `finished` y que ningún otro estado de membresía pertenece.
+- `test_initial_and_pending_status`: testear que el estado inicial es `active` y que una membresía que se une a un grupo con jefe queda `pending_approval`.
+- `test_transitions`: testear que solo se permiten las transiciones documentadas (`pending_approval → active | rejected`, `active → abandoned | expelled | finished`, `rejected → pending_approval`) y que un estado final no admite ninguna.
+- `test_final_states_have_no_transitions`: testear que todo estado marcado `is_final` en el catálogo no tiene transiciones en su política (coherencia dato/regla).
+- `test_policy_codes_match_catalog`: testear que el orden y las categorías de cada política referencian exactamente los códigos del catálogo de ese ámbito.
+- `test_membership_status_literal_matches_policy`: testear que el `Literal` que valida `?status=` en `GET /students` coincide con los códigos de la política de membresías.

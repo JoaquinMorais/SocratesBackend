@@ -1,31 +1,84 @@
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+
 from fastapi import HTTPException, status
 from sqlmodel import col, func, select
 
 from models import Status
 from schemas.status import StatusPublic
 
-# Estado con el que nacen las entidades, por ámbito.
-INITIAL_STATUS = {"project": "active", "student_project": "active"}
+# Categorías que puede tener un estado, por ámbito.
+MEMBER = "member"  # student_project: el alumno pertenece al grupo (`active`, `finished`).
 
-# Estado de una membresía que se une a un grupo que ya tiene jefe.
-PENDING_STATUS = "pending_approval"
 
-# Estados de una membresía que cuentan como "pertenece al grupo" para los
-# privilegios: ver el detalle de un proyecto protegido y acceder a uno privado.
-PRIVILEGED_STATUSES = ("active", "finished")
+@dataclass(frozen=True)
+class StatusPolicy:
+    """Reglas de un ámbito: estado inicial, orden, categorías y transiciones.
 
-# Estados de membresía que se listan en `GET /students` si no se pide otro filtro.
-DEFAULT_MEMBERSHIP_STATUSES = ["active", "finished"]
+    Las categorías agrupan códigos (por ejemplo `member` = `active` y `finished`);
+    las transiciones dicen qué estados admite cada estado. Viven en código porque
+    son reglas de dominio estables: la seed puede sumar estados, pero no cambia
+    estas reglas. La categoría `insured` del ámbito `project` se sumará cuando
+    existan esos estados.
+    """
 
-# Orden en que se agrupan los grupos de un alumno según el estado de la membresía.
-MEMBERSHIP_STATUS_ORDER = [
-    "active",
-    "pending_approval",
-    "finished",
-    "abandoned",
-    "expelled",
-    "rejected",
-]
+    ambito: str
+    initial: str
+    order: tuple[str, ...]
+    categories: Mapping[str, frozenset[str]] = field(default_factory=dict)
+    pending: str | None = None
+    transitions: Mapping[str, frozenset[str]] = field(default_factory=dict)
+
+    def has(self, code: str, category: str) -> bool:
+        """Si el código `code` pertenece a `category`."""
+        return code in self.categories.get(category, frozenset())
+
+    def codes_of(self, category: str) -> frozenset[str]:
+        """Códigos de `category`, para usar en un `IN` de SQL."""
+        return self.categories.get(category, frozenset())
+
+    def next_codes(self, code: str) -> frozenset[str]:
+        """Estados a los que se puede pasar desde `code` (vacío si es terminal)."""
+        return self.transitions.get(code, frozenset())
+
+    def can_transition(self, from_code: str, to_code: str) -> bool:
+        """Si se puede pasar de `from_code` a `to_code`."""
+        return to_code in self.next_codes(from_code)
+
+
+STUDENT_PROJECT = StatusPolicy(
+    ambito="student_project",
+    initial="active",
+    pending="pending_approval",
+    order=(
+        "active",
+        "pending_approval",
+        "finished",
+        "abandoned",
+        "expelled",
+        "rejected",
+    ),
+    categories={MEMBER: frozenset({"active", "finished"})},
+    transitions={
+        "pending_approval": frozenset({"active", "rejected"}),
+        "active": frozenset({"abandoned", "expelled", "finished"}),
+        "rejected": frozenset({"pending_approval"}),
+    },
+)
+
+PROJECT = StatusPolicy(
+    ambito="project",
+    initial="active",
+    order=("active", "cancelled"),
+)
+
+POLICIES = {policy.ambito: policy for policy in (PROJECT, STUDENT_PROJECT)}
+
+
+def is_member(code: str) -> bool:
+    """Si un código de membresía cuenta como 'pertenece al grupo'."""
+    return STUDENT_PROJECT.has(code, MEMBER)
+
 
 # Estados que se crean al arrancar para que siempre exista al menos el inicial.
 # La seed puede sumar más; estos no se borran.
@@ -91,7 +144,7 @@ DEFAULT_STATUSES = [
 
 def membership_initial_status(has_leader: bool) -> str:
     """Estado inicial de una membresía nueva: con jefe en el grupo, queda pendiente."""
-    return PENDING_STATUS if has_leader else INITIAL_STATUS["student_project"]
+    return STUDENT_PROJECT.pending if has_leader else STUDENT_PROJECT.initial
 
 
 def to_public(status: Status) -> StatusPublic:

@@ -1,6 +1,22 @@
+from typing import get_args
+
+from schemas.status import MembershipStatus
 from tests.helpers import STUDENT, SUPER_ADMIN
+from utils.statuses import (
+    DEFAULT_STATUSES,
+    MEMBER,
+    POLICIES,
+    PROJECT,
+    STUDENT_PROJECT,
+    is_member,
+    membership_initial_status,
+)
 
 URL = "/statuses"
+
+
+def _catalog_codes(ambito: str) -> set[str]:
+    return {s["code"] for s in DEFAULT_STATUSES if s["ambito"] == ambito}
 
 
 async def test_requires_authentication(client):
@@ -52,3 +68,52 @@ async def test_list_pagination(client, login):
     page2 = (await client.get(f"{URL}?limit=2&offset=2", headers=headers)).json()
     assert len(page2["items"]) == 2
     assert (await client.get(f"{URL}?limit=0", headers=headers)).status_code == 422
+
+
+# ---------- reglas por ámbito (StatusPolicy) ----------
+async def test_member_category():
+    assert is_member("active") and is_member("finished")
+    for code in ("pending_approval", "abandoned", "expelled", "rejected"):
+        assert not is_member(code), code
+    assert STUDENT_PROJECT.codes_of(MEMBER) == frozenset({"active", "finished"})
+
+
+async def test_initial_and_pending_status():
+    assert PROJECT.initial == "active"
+    assert STUDENT_PROJECT.initial == "active"
+    assert membership_initial_status(has_leader=False) == "active"
+    assert membership_initial_status(has_leader=True) == "pending_approval"
+
+
+async def test_transitions():
+    assert STUDENT_PROJECT.can_transition("pending_approval", "active")
+    assert STUDENT_PROJECT.can_transition("pending_approval", "rejected")
+    assert STUDENT_PROJECT.can_transition("active", "abandoned")
+    assert STUDENT_PROJECT.can_transition("active", "expelled")
+    assert STUDENT_PROJECT.can_transition("active", "finished")
+    assert STUDENT_PROJECT.can_transition("rejected", "pending_approval")
+    assert not STUDENT_PROJECT.can_transition("active", "pending_approval")
+    assert not STUDENT_PROJECT.can_transition("active", "rejected")
+    assert STUDENT_PROJECT.next_codes("finished") == frozenset()
+
+
+async def test_final_states_have_no_transitions():
+    for item in DEFAULT_STATUSES:
+        if item["is_final"]:
+            policy = POLICIES[item["ambito"]]
+            assert policy.next_codes(item["code"]) == frozenset(), item["code"]
+
+
+async def test_policy_codes_match_catalog():
+    for ambito, policy in POLICIES.items():
+        assert set(policy.order) == _catalog_codes(ambito)
+        codes = set(policy.order)
+        for category in policy.categories:
+            assert policy.codes_of(category) <= codes, category
+        for code, targets in policy.transitions.items():
+            assert code in codes, code
+            assert targets <= codes, code
+
+
+async def test_membership_status_literal_matches_policy():
+    assert set(get_args(MembershipStatus)) == set(STUDENT_PROJECT.order)

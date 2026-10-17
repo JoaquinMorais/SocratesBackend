@@ -11,7 +11,7 @@ from schemas.student import (
     StudentPublic,
     StudentUpdate,
 )
-from utils.statuses import MEMBERSHIP_STATUS_ORDER
+from utils.statuses import STUDENT_PROJECT
 
 async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]:
     """Todo o nada: si alguna fila falla, no se crea ninguna."""
@@ -136,16 +136,16 @@ async def _groups_by_student(
     """Trae los grupos de todos los alumnos de la página en una sola consulta.
 
     Solo los grupos cuya membresía está en `statuses`, ordenados por la prioridad
-    de `MEMBERSHIP_STATUS_ORDER` y, dentro de cada estado, del curso más reciente
+    de `STUDENT_PROJECT.order` y, dentro de cada estado, del curso más reciente
     al más viejo.
     """
     if not student_ids:
         return {}
 
     status_priority = case(
-        {code: index for index, code in enumerate(MEMBERSHIP_STATUS_ORDER)},
+        {code: index for index, code in enumerate(STUDENT_PROJECT.order)},
         value=Status.code,
-        else_=len(MEMBERSHIP_STATUS_ORDER),
+        else_=len(STUDENT_PROJECT.order),
     )
     rows = (
         await db.exec(

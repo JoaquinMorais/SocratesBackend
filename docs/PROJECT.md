@@ -45,6 +45,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - **Proyectos** (`project`): nacen `active`; el otro estado es `cancelled` (final).
 - **Membresías** (`student_project`): el catálogo es `active`, `pending_approval`, `abandoned` (final), `finished` (final), `expelled` (final) y `rejected`. El estado inicial depende de si el grupo ya tiene jefe: si no tiene, el alumno entra `active`; si ya tiene, queda `pending_approval`.
 - **Transiciones** previstas (todavía **sin implementar**): `pending_approval → active | rejected`; `active → abandoned | expelled | finished`; `rejected → pending_approval` (si un profesor habilita o el alumno vuelve a solicitar).
+- **Reglas por ámbito (`StatusPolicy`)**: en código (no en la BD) viven, por ámbito, el estado inicial, el orden, las **categorías** y las **transiciones**. Una categoría agrupa códigos: `member` (ámbito `student_project`) es `active` + `finished` y es lo que da privilegios y lo que se lista por defecto en `GET /students`. Los estados de `project` tendrán, cuando se definan, una categoría `insured` ("Asegurado"); todavía no existe.
 - Los estados son **datos**: el catálogo base se carga al arrancar el backend (en código) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
 
 ## Flujos principales

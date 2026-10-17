@@ -207,7 +207,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
 | `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin). |
-| `statuses.py` | Lógica de estados: catálogo base, estado inicial (por ámbito y por jefe de grupo), estados que dan privilegios y estados que se listan por defecto, búsqueda y listado. |
+| `statuses.py` | Lógica de estados: catálogo base, `StatusPolicy` por ámbito (estado inicial, orden, categorías como `member` y transiciones), búsqueda y listado. |
 
 ## `tests/`
 
@@ -223,7 +223,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
-| `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito y paginación. |
+| `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito, paginación y reglas por ámbito (`StatusPolicy`: categoría `member`, inicial y transiciones). |
 | `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, estados, jefes de grupo, unicidad y referencias. |
 
 El detalle de cada test está en `docs/tests.md`.

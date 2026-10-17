@@ -17,7 +17,7 @@ from models import (
     User,
 )
 from utils.statuses import (
-    INITIAL_STATUS,
+    PROJECT,
     ensure_statuses,
     membership_initial_status,
 )
@@ -137,7 +137,7 @@ async def _load_projects(
         sy = section_years.get(key)
         if sy is None:
             raise _missing("el curso lectivo", key)
-        status = statuses.get(("project", item.get("status", INITIAL_STATUS["project"])))
+        status = statuses.get(("project", item.get("status", PROJECT.initial)))
         if status is None:
             raise _missing("el estado", item.get("status"))
         project = Project(
