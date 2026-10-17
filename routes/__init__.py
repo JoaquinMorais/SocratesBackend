@@ -7,6 +7,7 @@ from routes.sections import sections_router
 from routes.section_years import section_years_router
 from routes.professor_section_years import professor_section_years_router
 from routes.projects import projects_router
+from routes.statuses import statuses_router
 
 __all__ = [
     "auth_router",
@@ -18,4 +19,5 @@ __all__ = [
     "section_years_router",
     "professor_section_years_router",
     "projects_router",
+    "statuses_router",
 ]

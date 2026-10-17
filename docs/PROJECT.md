@@ -38,6 +38,13 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   - **Privacidad**: `public`, `protected` o `private`.
 - **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un alumno puede recursar y pasar por distintos proyectos en distintos años, pero solo puede estar en uno por curso lectivo.
 
+### Estados
+
+- **Estado (`Status`)**: un estado reutilizable identificado por un `ambito` y un `code` (únicos en conjunto), con un `name` y una `description` para mostrar. Los ámbitos previstos son `project`, `student_project` y, más adelante, `document`, `idea` y `comment`.
+- Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`); por ahora no se guarda historial de cambios.
+- El estado inicial lo define el código: `active` para proyectos y `active` para membresías (`INITIAL_STATUS`). Al crear un proyecto o una membresía se les asigna ese estado.
+- Los estados son **datos**: se cargan al arrancar el backend (los base) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
+
 ## Flujos principales
 
 ### Autenticación
@@ -64,6 +71,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
 | Asignaciones de profesores | Cualquier usuario logueado | Super admin |
 | Proyectos | Cualquier usuario logueado (el detalle depende de la privacidad) | Profesores del curso lectivo y super admin |
+| Estados | Cualquier usuario logueado | n/a (por ahora se cargan con el backend) |
 
 ### Proyectos y privacidad
 
@@ -86,11 +94,12 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).
 - Proyectos: crear (individual y masivo), listar, consultar y eliminar, con visibilidad según privacidad.
+- Estados: tabla `statuses` por ámbito, estado actual de proyectos y membresías, y consulta `GET /statuses`.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**
 - Unirse a un grupo (alumnos) y modificar los datos de un proyecto.
-- Estado del proyecto (incluido cancelado) y estado de la relación alumno-proyecto (por ejemplo, abandono).
+- Cambiar el estado de un proyecto (incluido cancelado) y de la relación alumno-proyecto (por ejemplo, abandono): endpoints de transición, permisos y validaciones (por ejemplo, el rango `min_students`/`max_students`).
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).
 - Migraciones con Alembic: hoy las tablas se crean con `create_all`, que no modifica tablas existentes.
 - Envío de mails con una cuenta propia del proyecto (hoy se usa una cuenta provisoria).

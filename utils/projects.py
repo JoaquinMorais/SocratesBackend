@@ -15,6 +15,8 @@ from models import (
 )
 from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic
 from utils.section_years import get_section_year
+from utils.statuses import INITIAL_STATUS, get_status
+from utils.statuses import to_public as status_public
 
 
 @dataclass
@@ -74,6 +76,7 @@ def to_public(project: Project, restricted: bool = False) -> ProjectPublic:
         section_name=sy.section.name,
         group_number=project.group_number,
         privacy=project.privacy,
+        status=status_public(project.status),
         restricted=restricted,
         name=None if restricted else project.name,
         description=None if restricted else project.description,
@@ -131,7 +134,8 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
     else:
         number = await _next_group_number(db, sy.id_section_year)
 
-    project = Project(group_number=number, section_year=sy)
+    initial_status = await get_status(db, "project", INITIAL_STATUS["project"])
+    project = Project(group_number=number, section_year=sy, status=initial_status)
     db.add(project)
     try:
         await db.commit()
@@ -148,8 +152,10 @@ async def create_projects_bulk(
     _require_manager(access, sy.id_section_year)
 
     start = await _next_group_number(db, sy.id_section_year)
+    initial_status = await get_status(db, "project", INITIAL_STATUS["project"])
     projects = [
-        Project(group_number=start + i, section_year=sy) for i in range(data.quantity)
+        Project(group_number=start + i, section_year=sy, status=initial_status)
+        for i in range(data.quantity)
     ]
     db.add_all(projects)
     try:

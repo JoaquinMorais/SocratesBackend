@@ -1,6 +1,7 @@
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
+from utils.statuses import INITIAL_STATUS, get_status
 
 URL = "/students"
 ANA_ID, LUIS_ID = 1, 2  # ids de los alumnos del seed
@@ -56,7 +57,12 @@ async def _create_project(client, headers, id_section_year: int, name: str | Non
 
 async def _add_student(id_project: int, id_student: int) -> None:
     async with SessionLocal() as s:
-        s.add(StudentProject(id_student=id_student, id_project=id_project))
+        status = await get_status(s, "student_project", INITIAL_STATUS["student_project"])
+        s.add(
+            StudentProject(
+                id_student=id_student, id_project=id_project, id_status=status.id_status
+            )
+        )
         await s.commit()
 
 

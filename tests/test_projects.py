@@ -1,6 +1,7 @@
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import STUDENT, SUPER_ADMIN
+from utils.statuses import INITIAL_STATUS, get_status
 
 LUIS = "100002@sistemas.frc.utn.edu.ar"
 ANA_ID, LUIS_ID = 1, 2  # ids de los alumnos del seed
@@ -67,7 +68,12 @@ async def _set(id_project: int, **fields) -> None:
 
 async def _add_student(id_project: int, id_student: int) -> None:
     async with SessionLocal() as s:
-        s.add(StudentProject(id_student=id_student, id_project=id_project))
+        status = await get_status(s, "student_project", INITIAL_STATUS["student_project"])
+        s.add(
+            StudentProject(
+                id_student=id_student, id_project=id_project, id_status=status.id_status
+            )
+        )
         await s.commit()
 
 
@@ -137,6 +143,8 @@ async def test_create_project_defaults(client, login):
     assert p["id_project"]
     assert (p["id_section_year"], p["year"], p["section_name"]) == (sy, 2025, "3K1")
     assert (p["group_number"], p["privacy"], p["restricted"]) == (1, "private", False)
+    assert p["status"]["code"] == "active"
+    assert p["status"]["ambito"] == "project"
     assert [p[k] for k in ("name", "description", "objective", "problem")] == [None] * 4
 
 
@@ -191,6 +199,7 @@ async def test_bulk_create(client, login):
     assert r.status_code == 201
     assert [p["group_number"] for p in r.json()] == [1, 2, 3]
     assert {p["privacy"] for p in r.json()} == {"private"}
+    assert {p["status"]["code"] for p in r.json()} == {"active"}
     r = await client.post(BULK, json={"id_section_year": sy, "quantity": 2}, headers=admin)
     assert [p["group_number"] for p in r.json()] == [4, 5]
 

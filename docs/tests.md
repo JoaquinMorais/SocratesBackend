@@ -264,7 +264,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
 
 **Crear**
-- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado y con el grupo 1.
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado, con el grupo 1 y con el estado inicial `active` del ámbito `project`.
 - `test_create_assigns_next_group_number`: testear que sin `group_number` toma el siguiente libre, también después de un número explícito.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
@@ -272,7 +272,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_create_invalid_rejected`: testear que se rechazan campos faltantes, ids o números no positivos y campos no permitidos (privacidad, nombre).
 
 **Crear en masa**
-- `test_bulk_create`: testear que se crean grupos consecutivos y que una segunda tanda continúa la numeración.
+- `test_bulk_create`: testear que se crean grupos consecutivos, todos con el estado inicial, y que una segunda tanda continúa la numeración.
 - `test_bulk_continues_after_last_group_number`: testear que tras eliminar un grupo intermedio la numeración sigue desde el mayor.
 - `test_bulk_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
 - `test_bulk_invalid_rejected`: testear que se rechaza una cantidad fuera de 1-50, campos faltantes y campos desconocidos.
@@ -306,7 +306,21 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los estados base (`project/active` y `student_project/active`) y que todos pertenecen a un ámbito conocido.
+- `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores ni legajos de alumnos.
 - `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
+
+## `tests/test_statuses.py`
+
+**Permisos y lectura (`GET /statuses`)**
+- `test_requires_authentication`: testear que listar estados sin login responde 401.
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los estados.
+- `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name` y `description`.
+
+**Consultar**
+- `test_filter_by_ambito`: testear el filtro `ambito` (`project` y `student_project`), sin mezclar ámbitos.
+- `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
+- `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.

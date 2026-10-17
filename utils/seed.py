@@ -11,10 +11,12 @@ from models import (
     Project,
     Section,
     SectionYear,
+    Status,
     Student,
     StudentProject,
     User,
 )
+from utils.statuses import INITIAL_STATUS, ensure_statuses
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DEFAULT_SEED_PATH = DATA_DIR / "seed.json"
@@ -123,6 +125,7 @@ async def _load_projects(
     session: AsyncSession,
     data: dict,
     section_years: dict[tuple[str, int], SectionYear],
+    statuses: dict[tuple[str, str], Status],
 ) -> dict[tuple[str, int, int], Project]:
     projects: dict[tuple[str, int, int], Project] = {}
     for item in data.get("projects", []):
@@ -130,10 +133,14 @@ async def _load_projects(
         sy = section_years.get(key)
         if sy is None:
             raise _missing("el curso lectivo", key)
+        status = statuses.get(("project", item.get("status", INITIAL_STATUS["project"])))
+        if status is None:
+            raise _missing("el estado", item.get("status"))
         project = Project(
             id_section_year=sy.id_section_year,
             group_number=item["group_number"],
             privacy=item["privacy"],
+            status=status,
             name=item.get("name"),
             description=item.get("description"),
             objective=item.get("objective"),
@@ -150,6 +157,7 @@ async def _load_student_projects(
     data: dict,
     students: dict[int, Student],
     projects: dict[tuple[str, int, int], Project],
+    statuses: dict[tuple[str, str], Status],
 ) -> None:
     for item in data.get("student_projects", []):
         student = students.get(item["student"])
@@ -159,25 +167,40 @@ async def _load_student_projects(
         project = projects.get(key)
         if project is None:
             raise _missing("el proyecto", key)
+        status = statuses.get(
+            ("student_project", item.get("status", INITIAL_STATUS["student_project"]))
+        )
+        if status is None:
+            raise _missing("el estado", item.get("status"))
         session.add(
-            StudentProject(id_student=student.id_student, id_project=project.id_project)
+            StudentProject(
+                id_student=student.id_student,
+                id_project=project.id_project,
+                status=status,
+            )
         )
     await session.flush()
 
 
 async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
+    # Los estados son la base de proyectos y membresías: se aseguran siempre,
+    # exista o no la seed (más adelante la seed puede sumar los suyos).
+    statuses = await ensure_statuses(session)
+
     existing = (await session.exec(select(User.id_user).limit(1))).first()
     if existing is not None:
+        await session.commit()
         return
 
     path = Path(seed_path) if seed_path is not None else DEFAULT_SEED_PATH
     data = json.loads(path.read_text(encoding="utf-8"))
+    statuses = await ensure_statuses(session, data.get("statuses", []))
 
     students, professors = await _load_users(session, data)
     sections = await _load_sections(session, data)
     section_years = await _load_section_years(session, data, sections)
     await _load_professor_section_years(session, data, professors, section_years)
-    projects = await _load_projects(session, data, section_years)
-    await _load_student_projects(session, data, students, projects)
+    projects = await _load_projects(session, data, section_years, statuses)
+    await _load_student_projects(session, data, students, projects, statuses)
 
     await session.commit()

@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import ConfigDict
 from sqlmodel import Field, SQLModel
 
+from schemas.status import StatusPublic
+
 Privacy = Literal["public", "private", "protected"]
 
 
@@ -28,6 +30,7 @@ class ProjectPublic(SQLModel):
     section_name: str
     group_number: int
     privacy: Privacy
+    status: StatusPublic
     restricted: bool = False  # true: el detalle está oculto para este usuario
     name: str | None = None
     description: str | None = None

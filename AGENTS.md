@@ -128,4 +128,4 @@ La fixture `make_professor(mail, is_super_admin=False)` crea un profesor común 
 
 ## Pendiente y fuera de alcance por ahora
 
-Ver "Pendiente" en `docs/PROJECT.md`: unirse a un grupo, modificar proyectos, estados, campos sensibles de proyectos, Alembic, cuenta de mail propia y CORS definitivo. No implementar estas piezas sin que se defina primero el comportamiento.
+Ver "Pendiente" en `docs/PROJECT.md`: unirse a un grupo, modificar proyectos, campos sensibles de proyectos, Alembic, cuenta de mail propia y CORS definitivo. No implementar estas piezas sin que se defina primero el comportamiento.

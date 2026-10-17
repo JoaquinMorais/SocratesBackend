@@ -44,6 +44,7 @@ socrates-backend/
 │   ├── professor_section_year.py
 │   ├── project.py
 │   ├── student_project.py
+│   ├── status.py
 │   ├── token.py
 │   └── email_verification.py
 │
@@ -56,7 +57,8 @@ socrates-backend/
 │   ├── section.py
 │   ├── section_year.py
 │   ├── professor_section_year.py
-│   └── project.py
+│   ├── project.py
+│   └── status.py
 │
 ├── routes/                       # Endpoints (APIRouters)
 │   ├── __init__.py
@@ -68,7 +70,8 @@ socrates-backend/
 │   ├── sections.py
 │   ├── section_years.py
 │   ├── professor_section_years.py
-│   └── projects.py
+│   ├── projects.py
+│   └── statuses.py
 │
 ├── utils/                        # Lógica reutilizable que invocan las rutas
 │   ├── __init__.py
@@ -84,7 +87,8 @@ socrates-backend/
 │   ├── sections.py
 │   ├── section_years.py
 │   ├── professor_section_years.py
-│   └── projects.py
+│   ├── projects.py
+│   └── statuses.py
 │
 └── tests/                        # Tests automáticos (pytest)
     ├── __init__.py
@@ -98,6 +102,7 @@ socrates-backend/
     ├── test_section_years.py
     ├── test_professor_section_years.py
     ├── test_projects.py
+    ├── test_statuses.py
     └── test_seed.py
 ```
 
@@ -160,12 +165,13 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `professor_section_year.py` | `professor_section_years` | Asignación de un profesor a un curso lectivo. |
 | `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad. |
 | `student_project.py` | `student_projects` | Alumnos que integran un proyecto. |
+| `status.py` | `statuses` | Estados reutilizables por ámbito (`project`, `student_project`), con `code`, `name` y `description`. |
 | `token.py` | `refresh_tokens` | Refresh tokens vigentes, guardados hasheados. |
 | `email_verification.py` | `email_verifications` | Códigos de verificación por mail (OTP), hasheados. |
 
 ## `schemas/`
 
-Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year` y `project`.
+Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year`, `project` y `status`.
 
 ## `routes/`
 
@@ -180,6 +186,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
 | `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar y eliminar proyectos. |
+| `statuses.py` | `/statuses` | Consulta de estados por ámbito. |
 
 `routes/__init__.py` reúne todos los routers para que `index.py` los registre.
 
@@ -200,6 +207,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
 | `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad. |
+| `statuses.py` | Lógica de estados: estado inicial por ámbito, bootstrap de los base, búsqueda y listado. |
 
 ## `tests/`
 
@@ -215,6 +223,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
+| `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito y paginación. |
 | `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, unicidad y referencias. |
 
 El detalle de cada test está en `docs/tests.md`.

@@ -2,6 +2,7 @@ from sqlalchemy import CheckConstraint, Column, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.section_year import SectionYear
+from models.status import Status
 
 
 class Project(SQLModel, table=True):
@@ -17,6 +18,7 @@ class Project(SQLModel, table=True):
     id_section_year: int = Field(foreign_key="section_years.id_section_year", index=True)
     group_number: int
     privacy: str = Field(default="private", max_length=20)
+    id_status: int = Field(foreign_key="statuses.id_status", index=True)
 
     name: str | None = Field(default=None, max_length=200)
     description: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
@@ -24,3 +26,4 @@ class Project(SQLModel, table=True):
     problem: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
 
     section_year: SectionYear = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
+    status: Status = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

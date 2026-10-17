@@ -8,6 +8,7 @@ from models import (
     Project,
     Section,
     SectionYear,
+    Status,
     Student,
     StudentProject,
 )
@@ -80,6 +81,25 @@ async def test_seed_privacy_values_are_valid():
     async with SessionLocal() as session:
         projects = (await session.exec(select(Project))).all()
     assert {p.privacy for p in projects} <= {"public", "private", "protected"}
+
+
+async def test_seed_statuses_are_loaded():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        statuses = (await session.exec(select(Status))).all()
+    pairs = {(s.ambito, s.code) for s in statuses}
+    assert ("project", "active") in pairs
+    assert ("student_project", "active") in pairs
+    assert {s.ambito for s in statuses} <= {"project", "student_project"}
+
+
+async def test_seed_projects_and_memberships_have_status_of_their_ambito():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        projects = (await session.exec(select(Project))).all()
+        memberships = (await session.exec(select(StudentProject))).all()
+    assert all(p.status.ambito == "project" for p in projects)
+    assert all(m.status.ambito == "student_project" for m in memberships)
 
 
 async def test_seed_emails_and_legajos_are_unique():

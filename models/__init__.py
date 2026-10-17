@@ -6,11 +6,12 @@ from models.section_year import SectionYear
 from models.professor_section_year import ProfessorSectionYear
 from models.project import Project
 from models.student_project import StudentProject
+from models.status import Status
 from models.token import RefreshToken
 from models.email_verification import EmailVerification
 
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
-    "ProfessorSectionYear", "Project", "StudentProject",
+    "ProfessorSectionYear", "Project", "StudentProject", "Status",
     "RefreshToken", "EmailVerification",
 ]
