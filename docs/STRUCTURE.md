@@ -213,7 +213,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 
 | Archivo | Qué cubre |
 |---|---|
-| `conftest.py` | BD temporal de test, limpieza entre tests, mails interceptados y fixtures compartidas (`client`, `login`, `make_professor`). |
+| `conftest.py` | BD temporal de test (sembrada una vez por sesión), aislamiento por savepoint entre tests, mails interceptados y fixtures compartidas (`client`, `login`, `make_professor`). |
 | `helpers.py` | Constantes del seed y utilidades para leer códigos y cookies. |
 | `test_auth.py` | Login, refresh, logout, perfil y contraseña por código. |
 | `test_users.py` | Edición de datos propios y listado de usuarios. |

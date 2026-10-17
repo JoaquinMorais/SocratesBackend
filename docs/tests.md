@@ -11,7 +11,9 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 ## Cómo funcionan
 
 - Cada corrida crea una BD temporal (`<nombre_bd>_test`) y la borra al terminar. La BD principal no se toca.
-- Antes de cada test se vacían las tablas y se recarga el seed de tests (`data/seed_test.json`: Ana, Luis y Marta).
+- La BD de test se siembra **una sola vez por sesión** (`data/seed_test.json`: Ana, Luis y Marta). Cada test corre dentro de un **savepoint** que se revierte al terminar, así que no se vuelve a truncar ni sembrar entre tests: es rápido y cada test queda aislado.
+- La app y los ayudantes de los tests comparten la misma conexión (el `conftest` publica una fábrica de sesiones bindeada a la transacción de test). Por eso se ve todo lo que cada test escribe, pero nada queda entre tests.
+- En tests, Argon2 usa parámetros baratos (misma lógica de auth; el hasher de producción no cambia). Esto acelera el seed y los logins.
 - Los mails no se envían: quedan en una lista (`outbox`) de donde los tests leen los códigos OTP.
 - `httpx` llama a la app directamente y conserva las cookies como un navegador.
 
@@ -19,7 +21,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 | Archivo | Para qué sirve |
 |---|---|
-| `tests/conftest.py` | Crea y borra la BD de test, limpia las tablas entre tests, intercepta los mails y define las fixtures `client`, `login` y `make_professor`. |
+| `tests/conftest.py` | Crea y borra la BD de test, la siembra una vez por sesión, aísla cada test con un savepoint, intercepta los mails y define las fixtures `client`, `login` y `make_professor`. |
 | `tests/helpers.py` | Constantes del seed y utilidades: leer el código OTP del mail, leer la cookie de refresh y completar el flujo de contraseña. |
 
 ## `tests/test_auth.py`

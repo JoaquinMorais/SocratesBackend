@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from sqlmodel import SQLModel, func, select
 
-from config.database import SessionLocal, engine
+from config.database import SessionLocal
 from models import (
     Professor,
     ProfessorSectionYear,
@@ -21,9 +21,9 @@ FULL_SEED = DATA_DIR / "seed.json"
 async def _load_full_seed() -> None:
     """Vacía la BD (que ya trae el seed de tests) y carga el seed real."""
     tables = ", ".join(f'"{t.name}"' for t in SQLModel.metadata.sorted_tables)
-    async with engine.begin() as conn:
-        await conn.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
     async with SessionLocal() as session:
+        connection = await session.connection()
+        await connection.execute(text(f"TRUNCATE TABLE {tables} RESTART IDENTITY CASCADE"))
         await load_seed(session, seed_path=FULL_SEED)
 
 
