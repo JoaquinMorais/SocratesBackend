@@ -1,8 +1,15 @@
 from fastapi import HTTPException, status
-from sqlmodel import select
+from sqlalchemy import false
+from sqlmodel import col, func, or_, select
 
-from models import Student, User
-from schemas.student import StudentCreate, StudentPublic, StudentUpdate
+from models import Project, Section, SectionYear, Student, StudentProject, User
+from schemas.student import (
+    StudentCreate,
+    StudentGroupPublic,
+    StudentListItem,
+    StudentPublic,
+    StudentUpdate,
+)
 
 async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]:
     """Todo o nada: si alguna fila falla, no se crea ninguna."""
@@ -106,3 +113,150 @@ async def update_student(db, id_student: int, data: StudentUpdate) -> StudentPub
         email=Student.mail_from_legajo(user.legajo),
         enrollment_year=student.enrollment_year,
     )
+
+
+def to_list_item(student: Student, groups: list[StudentGroupPublic]) -> StudentListItem:
+    user = student.user
+    return StudentListItem(
+        id_student=student.id_student,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        legajo=user.legajo,
+        email=Student.mail_from_legajo(user.legajo),
+        enrollment_year=student.enrollment_year,
+        groups=groups,
+    )
+
+
+async def _groups_by_student(
+    db, student_ids: list[int], scope: list
+) -> dict[int, list[StudentGroupPublic]]:
+    """Trae los grupos de todos los alumnos de la página en una sola consulta."""
+    if not student_ids:
+        return {}
+
+    rows = (
+        await db.exec(
+            select(
+                StudentProject.id_student,
+                Project.id_project,
+                Project.name,
+                Project.group_number,
+                SectionYear.id_section_year,
+                SectionYear.year,
+                Section.id_section,
+                Section.name,
+            )
+            .join(Project, Project.id_project == StudentProject.id_project)
+            .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
+            .join(Section, Section.id_section == SectionYear.id_section)
+            .where(StudentProject.id_student.in_(student_ids), *scope)
+            .order_by(
+                col(StudentProject.id_student),
+                col(SectionYear.year).desc(),
+                col(Section.name),
+                col(Project.group_number),
+            )
+        )
+    ).all()
+
+    groups: dict[int, list[StudentGroupPublic]] = {}
+    for (
+        id_student,
+        id_project,
+        project_name,
+        group_number,
+        id_section_year,
+        year,
+        id_section,
+        section_name,
+    ) in rows:
+        groups.setdefault(id_student, []).append(
+            StudentGroupPublic(
+                id_project=id_project,
+                project_name=project_name,
+                group_number=group_number,
+                id_section_year=id_section_year,
+                year=year,
+                id_section=id_section,
+                section_name=section_name,
+            )
+        )
+    return groups
+
+
+async def list_students(
+    db,
+    access,
+    *,
+    id_section_year: int | None,
+    year: int | None,
+    id_section: int | None,
+    q: str | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[StudentListItem], int]:
+    if id_section_year is not None and not access.can_manage(id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can do this",
+        )
+
+    # Condiciones sobre el curso lectivo: los filtros pedidos y, para un profesor
+    # común, sus cursos lectivos. Si no hay ninguna, un super admin ve a todos.
+    scope = []
+    if id_section_year is not None:
+        scope.append(Project.id_section_year == id_section_year)
+    if year is not None:
+        scope.append(SectionYear.year == year)
+    if id_section is not None:
+        scope.append(SectionYear.id_section == id_section)
+    if not access.is_super_admin:
+        if access.section_year_ids:
+            scope.append(SectionYear.id_section_year.in_(access.section_year_ids))
+        else:
+            scope.append(false())  # profesor sin cursos asignados: no ve a nadie
+
+    conditions = []
+    if q:
+        like = f"%{q.strip()}%"
+        search = [col(User.first_name).ilike(like), col(User.last_name).ilike(like)]
+        if q.strip().isdigit():
+            search.append(User.legajo == int(q.strip()))
+        conditions.append(or_(*search))
+
+    if scope:
+        # Solo alumnos con al menos un grupo dentro del alcance.
+        enrolled = (
+            select(StudentProject.id_student)
+            .join(Project, Project.id_project == StudentProject.id_project)
+            .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
+            .where(*scope)
+        )
+        conditions.append(Student.id_student.in_(enrolled))
+
+    on_user = User.id_user == Student.id_student
+    total = (
+        await db.exec(
+            select(func.count())
+            .select_from(Student)
+            .join(User, on_user)
+            .where(*conditions)
+        )
+    ).one()
+    students = (
+        await db.exec(
+            select(Student)
+            .join(User, on_user)
+            .where(*conditions)
+            .order_by(
+                col(User.last_name), col(User.first_name), col(Student.id_student)
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+    ).all()
+
+    groups = await _groups_by_student(db, [s.id_student for s in students], scope)
+    items = [to_list_item(s, groups.get(s.id_student, [])) for s in students]
+    return items, total

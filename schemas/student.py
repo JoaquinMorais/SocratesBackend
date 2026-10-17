@@ -25,6 +25,33 @@ class StudentPublic(SQLModel):
     enrollment_year: int
 
 
+class StudentGroupPublic(SQLModel):
+    id_project: int
+    project_name: str | None = None
+    group_number: int
+    id_section_year: int
+    year: int
+    id_section: int
+    section_name: str
+
+
+class StudentListItem(SQLModel):
+    id_student: int
+    first_name: str
+    last_name: str
+    legajo: int
+    email: str
+    enrollment_year: int
+    groups: list[StudentGroupPublic]
+
+
+class StudentList(SQLModel):
+    items: list[StudentListItem]
+    total: int
+    limit: int
+    offset: int
+
+
 class StudentUpdate(UserUpdate):
     """Hereda first_name, last_name y birth_date de UserUpdate (y rechaza campos extra)."""
 

@@ -1,10 +1,20 @@
-from fastapi import APIRouter, BackgroundTasks, status
+from typing import Annotated
+
+from fastapi import APIRouter, BackgroundTasks, Query, status
 
 from config.database import db_dependency
-from schemas.student import StudentBulkCreate, StudentCreate, StudentPublic, StudentUpdate
+from schemas.student import (
+    StudentBulkCreate,
+    StudentCreate,
+    StudentList,
+    StudentPublic,
+    StudentUpdate,
+)
+from utils.auth import user_dependency
 from utils.email import send_welcome_emails
 from utils.permissions import professor_dependency
-from utils.students import create_students, update_student
+from utils.projects import build_access
+from utils.students import create_students, list_students, update_student
 
 students_router = APIRouter(prefix="/students", tags=["students"])
 
@@ -12,6 +22,71 @@ _AUTH_ERRORS = {
     401: {"description": "Token ausente, inválido o vencido"},
     403: {"description": "El usuario no es profesor"},
 }
+
+
+@students_router.get(
+    "",
+    response_model=StudentList,
+    summary="Listar alumnos registrados",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {
+            "description": (
+                "El usuario no es profesor, o pidió un curso lectivo del que no es "
+                "profesor (los super admin pueden cualquiera)"
+            )
+        },
+    },
+)
+async def get_students(
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+    id_section_year: Annotated[
+        int | None, Query(description="Filtrar por curso lectivo")
+    ] = None,
+    year: Annotated[int | None, Query(description="Filtrar por año")] = None,
+    id_section: Annotated[int | None, Query(description="Filtrar por comisión")] = None,
+    q: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=100,
+            description="Busca en nombre, apellido o legajo (exacto)",
+        ),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """
+    Lista los alumnos registrados junto con los grupos a los que pertenecen.
+    **Solo profesores.**
+
+    - Un **super admin** ve todos los alumnos; sin filtros, también los que no
+      están en ningún grupo (`groups` vacío). Un **profesor común** solo ve los
+      alumnos de los cursos lectivos a los que está asignado.
+    - Cada grupo incluye `id_project`, `project_name`, `group_number` y los datos
+      del curso lectivo (año, comisión). Nunca expone datos privados del alumno
+      (como la fecha de nacimiento) ni el detalle del proyecto.
+    - Filtros: `id_section_year`, `year`, `id_section` y `q` (nombre, apellido o
+      legajo exacto). Si un profesor pide un `id_section_year` que no dicta,
+      responde **403**.
+
+    Orden: apellido, nombre. Está paginado: `total` es la cantidad que cumple los
+    filtros.
+    """
+    access = await build_access(db, user)
+    items, total = await list_students(
+        db,
+        access,
+        id_section_year=id_section_year,
+        year=year,
+        id_section=id_section,
+        q=q,
+        limit=limit,
+        offset=offset,
+    )
+    return StudentList(items=items, total=total, limit=limit, offset=offset)
 
 
 @students_router.post(

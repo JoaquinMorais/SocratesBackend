@@ -38,7 +38,7 @@ app = FastAPI(
         {"name": "auth", "description": "Login, sesión y contraseña."},
         {"name": "me", "description": "Datos del usuario logueado."},
         {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
-        {"name": "students", "description": "Alta y edición de alumnos (profesores)."},
+        {"name": "students", "description": "Alta, edición y consulta de alumnos (profesores; la consulta muestra el grupo y admite super admin)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
         {"name": "sections", "description": "Comisiones (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "section-years", "description": "Cursos lectivos: comisión + año, con el mínimo y máximo de estudiantes por grupo (consulta: cualquier usuario; escritura: super admin)."},

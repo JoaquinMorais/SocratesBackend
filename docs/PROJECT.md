@@ -58,7 +58,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Recurso | Consultar | Crear / modificar / eliminar |
 |---|---|---|
 | Usuarios (listado) | Super admin | n/a |
-| Alumnos | n/a | Cualquier profesor |
+| Alumnos | Profesores (de sus cursos lectivos) y super admin | Cualquier profesor |
 | Profesores | n/a | Super admin |
 | Comisiones | Cualquier usuario logueado | Super admin |
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
@@ -81,6 +81,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos y miembros).
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores.
+- Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por curso lectivo, año o comisión.
 - Edición de datos propios y de otros usuarios; listado de usuarios.
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).

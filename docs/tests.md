@@ -99,6 +99,19 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_student_empty_body_rejected`: testear que un body vacío se rechaza.
 - `test_patch_student_invalid_values_rejected`: testear que se rechaza un año de ingreso fuera de rango y un legajo no positivo.
 
+**Consultar alumnos (`GET /students`)**
+- `test_list_requires_authentication`: testear que listar alumnos sin login responde 401.
+- `test_student_cannot_list_students`: testear que un alumno no puede listar alumnos (403).
+- `test_super_admin_lists_all_students`: testear que un super admin ve todos los alumnos ordenados por apellido, incluso los que no están en ningún grupo (`groups` vacío).
+- `test_unassigned_professor_sees_no_students`: testear que un profesor sin cursos lectivos asignados no ve alumnos.
+- `test_professor_sees_only_own_section_year`: testear que un profesor común solo ve los alumnos de sus cursos lectivos, con el nombre y número de su grupo.
+- `test_groups_list_all_memberships`: testear que un alumno en varias cursadas trae todos sus grupos, con el curso más reciente primero.
+- `test_list_filters`: testear los filtros `id_section_year`, `year` e `id_section`, solos y combinados.
+- `test_list_search`: testear la búsqueda por nombre, apellido y legajo (exacto).
+- `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
+- `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo y los datos del curso lectivo.
+- `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
+
 ## `tests/test_professors.py`
 
 **Permisos de alta**
