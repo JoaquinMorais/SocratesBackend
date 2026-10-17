@@ -146,6 +146,7 @@ async def _groups_by_student(
                 SectionYear.year,
                 Section.id_section,
                 Section.name,
+                StudentProject.is_leader,
             )
             .join(Project, Project.id_project == StudentProject.id_project)
             .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
@@ -170,6 +171,7 @@ async def _groups_by_student(
         year,
         id_section,
         section_name,
+        is_leader,
     ) in rows:
         groups.setdefault(id_student, []).append(
             StudentGroupPublic(
@@ -180,6 +182,7 @@ async def _groups_by_student(
                 year=year,
                 id_section=id_section,
                 section_name=section_name,
+                is_leader=is_leader,
             )
         )
     return groups

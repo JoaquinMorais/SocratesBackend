@@ -55,12 +55,15 @@ async def _create_project(client, headers, id_section_year: int, name: str | Non
     return project
 
 
-async def _add_student(id_project: int, id_student: int) -> None:
+async def _add_student(id_project: int, id_student: int, *, is_leader: bool = False) -> None:
     async with SessionLocal() as s:
         status = await get_status(s, "student_project", INITIAL_STATUS["student_project"])
         s.add(
             StudentProject(
-                id_student=id_student, id_project=id_project, id_status=status.id_status
+                id_student=id_student,
+                id_project=id_project,
+                id_status=status.id_status,
+                is_leader=is_leader,
             )
         )
         await s.commit()
@@ -206,6 +209,18 @@ async def test_groups_list_all_memberships(client, login):
     assert _find(body, LUIS_ID)["groups"] == []
 
 
+async def test_groups_mark_the_leader(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create_project(client, admin, sy)
+    await _add_student(project["id_project"], ANA_ID, is_leader=True)
+    await _add_student(project["id_project"], LUIS_ID)
+
+    body = (await client.get(URL, headers=admin)).json()
+    assert _find(body, ANA_ID)["groups"][0]["is_leader"] is True
+    assert _find(body, LUIS_ID)["groups"][0]["is_leader"] is False
+
+
 async def test_list_filters(client, login):
     admin = await login(SUPER_ADMIN)
     sy1 = await _section_year(client, admin, "3K1", 2025)
@@ -259,7 +274,7 @@ async def test_list_does_not_expose_private_data(client, login):
     assert "birth_date" not in ana
     assert set(ana["groups"][0]) == {
         "id_project", "project_name", "group_number",
-        "id_section_year", "year", "id_section", "section_name",
+        "id_section_year", "year", "id_section", "section_name", "is_leader",
     }
 
 

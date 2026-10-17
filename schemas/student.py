@@ -33,6 +33,7 @@ class StudentGroupPublic(SQLModel):
     year: int
     id_section: int
     section_name: str
+    is_leader: bool
 
 
 class StudentListItem(SQLModel):

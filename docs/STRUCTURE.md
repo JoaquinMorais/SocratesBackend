@@ -164,8 +164,8 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo. |
 | `professor_section_year.py` | `professor_section_years` | Asignación de un profesor a un curso lectivo. |
 | `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad. |
-| `student_project.py` | `student_projects` | Alumnos que integran un proyecto. |
-| `status.py` | `statuses` | Estados reutilizables por ámbito (`project`, `student_project`), con `code`, `name` y `description`. |
+| `student_project.py` | `student_projects` | Alumnos que integran un proyecto (con `is_leader`, un jefe por grupo como máximo). |
+| `status.py` | `statuses` | Estados reutilizables por ámbito (`project`, `student_project`), con `code`, `name`, `description` e `is_final`. |
 | `token.py` | `refresh_tokens` | Refresh tokens vigentes, guardados hasheados. |
 | `email_verification.py` | `email_verifications` | Códigos de verificación por mail (OTP), hasheados. |
 
@@ -180,7 +180,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `auth.py` | `/auth` | Login, refresh, logout y flujo de contraseña por código. |
 | `me.py` | `/me` | Datos del usuario logueado y modificación de sus datos personales. |
 | `users.py` | `/users` | Listado de usuarios registrados (super admin). |
-| `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación y listado de alumnos con sus grupos. |
+| `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación y listado de alumnos con sus grupos (incluye `is_leader`). |
 | `professors.py` | `/professors` | Alta de profesores y su modificación (super admin). |
 | `sections.py` | `/sections` | CRUD de comisiones. |
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
@@ -207,7 +207,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
 | `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad. |
-| `statuses.py` | Lógica de estados: estado inicial por ámbito, bootstrap de los base, búsqueda y listado. |
+| `statuses.py` | Lógica de estados: catálogo base, estado inicial (por ámbito y por jefe de grupo), búsqueda y listado. |
 
 ## `tests/`
 
@@ -224,7 +224,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
 | `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito y paginación. |
-| `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, unicidad y referencias. |
+| `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, estados, jefes de grupo, unicidad y referencias. |
 
 El detalle de cada test está en `docs/tests.md`.
 

@@ -36,14 +36,16 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - **Proyecto (`Project`)**: un grupo de un curso lectivo, identificado por un número de grupo único dentro de ese curso lectivo.
   - Campos opcionales, `null` al crearse y completados después: nombre, descripción, objetivo y problemática.
   - **Privacidad**: `public`, `protected` o `private`.
-- **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un alumno puede recursar y pasar por distintos proyectos en distintos años, pero solo puede estar en uno por curso lectivo.
+- **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un alumno puede recursar y pasar por distintos proyectos en distintos años, pero solo puede estar en uno por curso lectivo. Un miembro puede ser el **jefe de grupo** (`is_leader`); hay a lo sumo uno por proyecto.
 
 ### Estados
 
-- **Estado (`Status`)**: un estado reutilizable identificado por un `ambito` y un `code` (únicos en conjunto), con un `name` y una `description` para mostrar. Los ámbitos previstos son `project`, `student_project` y, más adelante, `document`, `idea` y `comment`.
+- **Estado (`Status`)**: un estado reutilizable identificado por un `ambito` y un `code` (únicos en conjunto), con un `name`, una `description` para mostrar e `is_final` (indica que es terminal: no admite más transiciones). Los ámbitos previstos son `project`, `student_project` y, más adelante, `document`, `idea` y `comment`.
 - Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`); por ahora no se guarda historial de cambios.
-- El estado inicial lo define el código: `active` para proyectos y `active` para membresías (`INITIAL_STATUS`). Al crear un proyecto o una membresía se les asigna ese estado.
-- Los estados son **datos**: se cargan al arrancar el backend (los base) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
+- **Proyectos** (`project`): nacen `active`; el otro estado es `cancelled` (final).
+- **Membresías** (`student_project`): el catálogo es `active`, `pending_approval`, `abandoned` (final), `finished` (final), `expelled` (final) y `rejected`. El estado inicial depende de si el grupo ya tiene jefe: si no tiene, el alumno entra `active`; si ya tiene, queda `pending_approval`.
+- **Transiciones** previstas (todavía **sin implementar**): `pending_approval → active | rejected`; `active → abandoned | expelled | finished`; `rejected → pending_approval` (si un profesor habilita o el alumno vuelve a solicitar).
+- Los estados son **datos**: el catálogo base se carga al arrancar el backend (en código) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
 
 ## Flujos principales
 
@@ -94,7 +96,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).
 - Proyectos: crear (individual y masivo), listar, consultar y eliminar, con visibilidad según privacidad.
-- Estados: tabla `statuses` por ámbito, estado actual de proyectos y membresías, y consulta `GET /statuses`.
+- Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**

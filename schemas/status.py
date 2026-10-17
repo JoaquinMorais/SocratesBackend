@@ -11,6 +11,7 @@ class StatusPublic(SQLModel):
     code: str
     name: str
     description: str | None = None
+    is_final: bool
 
 
 class StatusList(SQLModel):

@@ -7,6 +7,9 @@ from schemas.status import StatusPublic
 # Estado con el que nacen las entidades, por ámbito.
 INITIAL_STATUS = {"project": "active", "student_project": "active"}
 
+# Estado de una membresía que se une a un grupo que ya tiene jefe.
+PENDING_STATUS = "pending_approval"
+
 # Estados que se crean al arrancar para que siempre exista al menos el inicial.
 # La seed puede sumar más; estos no se borran.
 DEFAULT_STATUSES = [
@@ -15,26 +18,63 @@ DEFAULT_STATUSES = [
         "code": "active",
         "name": "Activo",
         "description": "El grupo está en curso.",
+        "is_final": False,
     },
     {
         "ambito": "project",
         "code": "cancelled",
         "name": "Cancelado",
         "description": "El grupo se disolvió o el proyecto no se llevó a cabo.",
+        "is_final": True,
     },
     {
         "ambito": "student_project",
         "code": "active",
         "name": "Activo",
         "description": "El alumno integra el grupo.",
+        "is_final": False,
+    },
+    {
+        "ambito": "student_project",
+        "code": "pending_approval",
+        "name": "Pendiente de aprobación",
+        "description": "El alumno solicitó unirse y espera la aprobación de un profesor.",
+        "is_final": False,
     },
     {
         "ambito": "student_project",
         "code": "abandoned",
-        "name": "Abandonó",
+        "name": "Abandono",
         "description": "El alumno dejó el grupo antes de terminar el cursado.",
+        "is_final": True,
+    },
+    {
+        "ambito": "student_project",
+        "code": "finished",
+        "name": "Finalizado",
+        "description": "El proyecto terminó y la participación quedó cerrada.",
+        "is_final": True,
+    },
+    {
+        "ambito": "student_project",
+        "code": "expelled",
+        "name": "Expulsado",
+        "description": "Un profesor sacó al alumno del grupo.",
+        "is_final": True,
+    },
+    {
+        "ambito": "student_project",
+        "code": "rejected",
+        "name": "Rechazado",
+        "description": "La solicitud de incorporación fue rechazada.",
+        "is_final": False,
     },
 ]
+
+
+def membership_initial_status(has_leader: bool) -> str:
+    """Estado inicial de una membresía nueva: con jefe en el grupo, queda pendiente."""
+    return PENDING_STATUS if has_leader else INITIAL_STATUS["student_project"]
 
 
 def to_public(status: Status) -> StatusPublic:
@@ -44,6 +84,7 @@ def to_public(status: Status) -> StatusPublic:
         code=status.code,
         name=status.name,
         description=status.description,
+        is_final=status.is_final,
     )
 
 

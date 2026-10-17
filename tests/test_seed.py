@@ -88,9 +88,39 @@ async def test_seed_statuses_are_loaded():
     async with SessionLocal() as session:
         statuses = (await session.exec(select(Status))).all()
     pairs = {(s.ambito, s.code) for s in statuses}
-    assert ("project", "active") in pairs
-    assert ("student_project", "active") in pairs
-    assert {s.ambito for s in statuses} <= {"project", "student_project"}
+    assert pairs == {
+        ("project", "active"),
+        ("project", "cancelled"),
+        ("student_project", "active"),
+        ("student_project", "pending_approval"),
+        ("student_project", "abandoned"),
+        ("student_project", "finished"),
+        ("student_project", "expelled"),
+        ("student_project", "rejected"),
+    }
+    final = {s.code for s in statuses if s.is_final}
+    assert final == {"cancelled", "abandoned", "finished", "expelled"}
+
+
+async def test_seed_each_project_with_members_has_exactly_one_leader():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        memberships = (await session.exec(select(StudentProject))).all()
+    leaders: dict[int, int] = {}
+    for m in memberships:
+        if m.is_leader:
+            leaders[m.id_project] = leaders.get(m.id_project, 0) + 1
+    assert all(count == 1 for count in leaders.values())
+    assert set(leaders) == {m.id_project for m in memberships}
+
+
+async def test_seed_membership_status_follows_leader_rule():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        memberships = (await session.exec(select(StudentProject))).all()
+    for m in memberships:
+        expected = "active" if m.is_leader else "pending_approval"
+        assert m.status.code == expected
 
 
 async def test_seed_projects_and_memberships_have_status_of_their_ambito():

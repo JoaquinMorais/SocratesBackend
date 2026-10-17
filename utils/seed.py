@@ -16,7 +16,11 @@ from models import (
     StudentProject,
     User,
 )
-from utils.statuses import INITIAL_STATUS, ensure_statuses
+from utils.statuses import (
+    INITIAL_STATUS,
+    ensure_statuses,
+    membership_initial_status,
+)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DEFAULT_SEED_PATH = DATA_DIR / "seed.json"
@@ -152,6 +156,19 @@ async def _load_projects(
     return projects
 
 
+def _leader_counts(items: list[dict]) -> dict[tuple[str, int, int], int]:
+    """Cuenta los jefes por proyecto y falla si alguno tiene más de uno."""
+    counts: dict[tuple[str, int, int], int] = {}
+    for item in items:
+        if item.get("is_leader", False):
+            key = (item["section"], item["year"], item["group_number"])
+            counts[key] = counts.get(key, 0) + 1
+    for key, count in counts.items():
+        if count > 1:
+            raise ValueError(f"Seed: el proyecto {key} tiene más de un jefe")
+    return counts
+
+
 async def _load_student_projects(
     session: AsyncSession,
     data: dict,
@@ -159,7 +176,9 @@ async def _load_student_projects(
     projects: dict[tuple[str, int, int], Project],
     statuses: dict[tuple[str, str], Status],
 ) -> None:
-    for item in data.get("student_projects", []):
+    items = data.get("student_projects", [])
+    leaders = {key for key, count in _leader_counts(items).items() if count}
+    for item in items:
         student = students.get(item["student"])
         if student is None:
             raise _missing("el alumno", item["student"])
@@ -167,16 +186,19 @@ async def _load_student_projects(
         project = projects.get(key)
         if project is None:
             raise _missing("el proyecto", key)
-        status = statuses.get(
-            ("student_project", item.get("status", INITIAL_STATUS["student_project"]))
+        is_leader = bool(item.get("is_leader", False))
+        code = item.get("status") or membership_initial_status(
+            has_leader=key in leaders and not is_leader
         )
+        status = statuses.get(("student_project", code))
         if status is None:
-            raise _missing("el estado", item.get("status"))
+            raise _missing("el estado", code)
         session.add(
             StudentProject(
                 id_student=student.id_student,
                 id_project=project.id_project,
                 status=status,
+                is_leader=is_leader,
             )
         )
     await session.flush()

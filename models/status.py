@@ -15,3 +15,4 @@ class Status(SQLModel, table=True):
     code: str = Field(max_length=30)
     name: str = Field(max_length=100)
     description: str | None = Field(default=None, max_length=200)
+    is_final: bool = Field(default=False)

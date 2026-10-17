@@ -38,13 +38,13 @@ app = FastAPI(
         {"name": "auth", "description": "Login, sesión y contraseña."},
         {"name": "me", "description": "Datos del usuario logueado."},
         {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
-        {"name": "students", "description": "Alta, edición y consulta de alumnos (profesores; la consulta muestra el grupo y admite super admin)."},
+        {"name": "students", "description": "Alta, edición y consulta de alumnos (profesores; la consulta muestra el grupo y admite super admin). Cada grupo indica si el alumno es jefe (`is_leader`)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},
         {"name": "sections", "description": "Comisiones (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "section-years", "description": "Cursos lectivos: comisión + año, con el mínimo y máximo de estudiantes por grupo (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "professor-section-years", "description": "Profesores asignados a cursos lectivos (consulta: cualquier usuario; escritura: super admin)."},
-        {"name": "projects", "description": "Proyectos (grupos) de cada curso lectivo; el detalle depende de la privacidad."},
-        {"name": "statuses", "description": "Estados por ámbito (proyecto, relación alumno-proyecto). Consulta; todavía sin alta ni edición."},
+        {"name": "projects", "description": "Proyecto (grupo) de un curso lectivo, con su privacidad. Cada proyecto tiene un estado actual (`active` o `cancelled`) y cada membresía alumno-proyecto también (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` o `rejected`)."},
+        {"name": "statuses", "description": "Estados por ámbito (`project`, `student_project`): `code`, `name`, `description` e `is_final`. La consulta sirve para etiquetas y filtros; todavía no hay alta ni edición."},
     ],
 )
 app.add_middleware(

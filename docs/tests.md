@@ -108,10 +108,11 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_unassigned_professor_sees_no_students`: testear que un profesor sin cursos lectivos asignados no ve alumnos.
 - `test_professor_sees_only_own_section_year`: testear que un profesor común solo ve los alumnos de sus cursos lectivos, con el nombre y número de su grupo.
 - `test_groups_list_all_memberships`: testear que un alumno en varias cursadas trae todos sus grupos, con el curso más reciente primero.
+- `test_groups_mark_the_leader`: testear que el grupo del alumno indica con `is_leader` si es el jefe del grupo.
 - `test_list_filters`: testear los filtros `id_section_year`, `year` e `id_section`, solos y combinados.
 - `test_list_search`: testear la búsqueda por nombre, apellido y legajo (exacto).
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
-- `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo y los datos del curso lectivo.
+- `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo y si el alumno es jefe.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
 ## `tests/test_professors.py`
@@ -308,7 +309,9 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los estados base (`project/active` y `student_project/active`) y que todos pertenecen a un ámbito conocido.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 8 estados base (2 de `project` y 6 de `student_project`) y que los finales son `cancelled`, `abandoned`, `finished` y `expelled`.
+- `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada grupo con alumnos tiene exactamente un jefe.
+- `test_seed_membership_status_follows_leader_rule`: testear que el jefe queda `active` y los demás miembros `pending_approval`.
 - `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores ni legajos de alumnos.
 - `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.
@@ -319,10 +322,10 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 
 **Permisos y lectura (`GET /statuses`)**
 - `test_requires_authentication`: testear que listar estados sin login responde 401.
-- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los estados.
-- `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name` y `description`.
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 8 estados.
+- `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description` e `is_final`.
 
 **Consultar**
-- `test_filter_by_ambito`: testear el filtro `ambito` (`project` y `student_project`), sin mezclar ámbitos.
+- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae `active` y `cancelled`; `student_project` trae `active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`.
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.

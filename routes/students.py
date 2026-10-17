@@ -65,9 +65,10 @@ async def get_students(
     - Un **super admin** ve todos los alumnos; sin filtros, también los que no
       están en ningún grupo (`groups` vacío). Un **profesor común** solo ve los
       alumnos de los cursos lectivos a los que está asignado.
-    - Cada grupo incluye `id_project`, `project_name`, `group_number` y los datos
-      del curso lectivo (año, comisión). Nunca expone datos privados del alumno
-      (como la fecha de nacimiento) ni el detalle del proyecto.
+    - Cada grupo incluye `id_project`, `project_name`, `group_number`, `is_leader`
+      (si el alumno es jefe del grupo) y los datos del curso lectivo (año,
+      comisión). Nunca expone datos privados del alumno (como la fecha de
+      nacimiento) ni el detalle del proyecto.
     - Filtros: `id_section_year`, `year`, `id_section` y `q` (nombre, apellido o
       legajo exacto). Si un profesor pide un `id_section_year` que no dicta,
       responde **403**.
