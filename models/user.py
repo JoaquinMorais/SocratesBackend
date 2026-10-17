@@ -32,6 +32,15 @@ class User(UserBase, table=True):
         sa_relationship_kwargs={"uselist": False, "lazy": "selectin"},
     )
 
+    @property
+    def age(self) -> int:
+        today = date.today()
+        return (
+            today.year
+            - self.birth_date.year
+            - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        )
+
     def get_mail(self) -> str:
         if self.student:
             return self.student.get_mail()

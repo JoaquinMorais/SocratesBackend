@@ -18,7 +18,8 @@ me_router = APIRouter(prefix="/me", tags=["me"])
 async def get_me(user: user_dependency):
     """
     Devuelve los datos del usuario del token: nombre, legajo, mail y rol
-    (`student` o `professor`). Solo los profesores incluyen `is_super_admin`.
+    (`student` o `professor`), fecha de nacimiento, edad y, según el rol,
+    `enrollment_year` (alumnos) o `is_super_admin` (profesores).
 
     Sirve para que el frontend sepa qué pantallas mostrar según el rol.
     """

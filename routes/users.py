@@ -38,9 +38,9 @@ async def get_users(
     """
     Lista los usuarios registrados. **Solo super admin.**
 
-    Devuelve solo datos públicos: nombre, legajo, mail, rol, y según el rol
-    `enrollment_year` (alumnos) o `is_super_admin` (profesores). Nunca incluye
-    contraseña ni fecha de nacimiento.
+    Devuelve datos públicos: nombre, legajo, mail, rol, fecha de nacimiento,
+    edad, y según el rol `enrollment_year` (alumnos) o `is_super_admin`
+    (profesores). Nunca incluye contraseña.
 
     Está paginado: `total` es la cantidad total que cumple los filtros y
     `limit`/`offset` controlan la página. Orden: apellido, nombre.

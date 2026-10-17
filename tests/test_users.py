@@ -76,11 +76,13 @@ async def test_list_exposes_only_public_data(client, login):
     for item in items:
         assert "password_hash" not in item
         assert "password" not in item
-        assert "birth_date" not in item
     student = next(u for u in items if u["role"] == "student")
     professor = next(u for u in items if u["role"] == "professor")
     assert "is_super_admin" not in student and student["enrollment_year"]
+    assert "age" in student and isinstance(student["age"], int)
+    assert "birth_date" in student
     assert professor["is_super_admin"] is True and "enrollment_year" not in professor
+    assert "age" in professor and "birth_date" in professor
 
 
 async def test_list_filter_by_role(client, login):

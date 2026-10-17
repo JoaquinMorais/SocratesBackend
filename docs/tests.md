@@ -32,8 +32,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_login_invalid`: testear que se rechaza (401) contraseña incorrecta, legajo inexistente, legajo suelto sin dominio y mail desconocido.
 
 **Perfil (`GET /me`)**
-- `test_me_student`: testear que un alumno ve su rol, su mail calculado por legajo y que no se le muestra `is_super_admin`.
-- `test_me_super_admin`: testear que Marta figura como profesora y super admin.
+- `test_me_student`: testear que un alumno ve su rol, su mail calculado por legajo, su `birth_date`, `enrollment_year`, `age` y que no se le muestra `is_super_admin`.
+- `test_me_super_admin`: testear que Marta figura como profesora y super admin, con `birth_date` y `age`, y sin `enrollment_year`.
 - `test_me_requires_valid_token`: testear que sin token o con token inválido responde 401.
 
 **Refresh y logout**
@@ -66,7 +66,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_student_cannot_list_users`: testear que un alumno no puede listar usuarios (403).
 - `test_regular_professor_cannot_list_users`: testear que un profesor que no es super admin no puede listar (403).
 - `test_super_admin_lists_users`: testear que un super admin ve todos los usuarios ordenados por apellido.
-- `test_list_exposes_only_public_data`: testear que nunca se expone contraseña ni fecha de nacimiento, que los alumnos no muestran `is_super_admin` y los profesores no muestran año de ingreso.
+- `test_list_exposes_only_public_data`: testear que nunca se expone la contraseña, que los alumnos muestran `birth_date`, `age` y `enrollment_year` pero no `is_super_admin`, y los profesores muestran `birth_date` y `age` pero no `enrollment_year`.
 - `test_list_filter_by_role`: testear el filtro por rol y que un rol inválido se rechaza.
 - `test_list_search`: testear la búsqueda por nombre, legajo y mail de profesor.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
@@ -132,7 +132,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_mail_is_normalized_and_unique`: testear que el mail se guarda en minúsculas y que no se puede repetir (409).
 - `test_student_domain_is_reserved`: testear que no se puede registrar un profesor con el dominio de alumnos.
 - `test_invalid_mail`: testear que un mail con formato inválido se rechaza.
-- `test_legajo_can_repeat`: testear que el legajo de un profesor puede coincidir con el de otro usuario.
+- `test_professor_legajo_must_be_unique_among_professors`: testear que el legajo de un profesor no puede coincidir con el de otro profesor (409).
 
 **Flujo de cuenta**
 - `test_created_professor_sets_password_and_logs_in`: testear que un profesor recién creado crea su contraseña por OTP y luego puede loguearse.

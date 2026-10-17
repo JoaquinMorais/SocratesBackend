@@ -14,6 +14,9 @@ class UserPublic(SQLModel):
     legajo: int
     email: str
     role: Role | None
+    birth_date: date | None = None
+    enrollment_year: int | None = None  # solo alumnos
+    age: int | None = None
     is_super_admin: bool | None = None  # solo profesores; en alumnos se omite
 
 
@@ -41,7 +44,9 @@ class UserListItem(SQLModel):
     legajo: int
     email: str
     role: Role | None
+    birth_date: date | None = None
     enrollment_year: int | None = None  # solo alumnos
+    age: int | None = None
     is_super_admin: bool | None = None  # solo profesores
 
 

@@ -42,6 +42,9 @@ async def test_me_student(client, login):
     assert body["role"] == "student"
     assert body["email"] == STUDENT
     assert body["legajo"] == 100001
+    assert body["birth_date"] is not None
+    assert body["enrollment_year"] is not None
+    assert isinstance(body["age"], int)
     assert "is_super_admin" not in body  # no aplica a alumnos
 
 
@@ -51,6 +54,9 @@ async def test_me_super_admin(client, login):
     assert body["role"] == "professor"
     assert body["email"] == SUPER_ADMIN
     assert body["is_super_admin"] is True
+    assert body["birth_date"] is not None
+    assert isinstance(body["age"], int)
+    assert "enrollment_year" not in body  # no aplica a profesores
 
 
 async def test_me_requires_valid_token(client):

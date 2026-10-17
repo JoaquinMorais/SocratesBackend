@@ -6,12 +6,26 @@ from models import EmailVerification, Professor, RefreshToken, User
 from schemas.professor import ProfessorCreate, ProfessorPublic, ProfessorUpdate
 
 
+async def _professor_legajo_taken(db, legajo: int, exclude_id: int | None = None) -> bool:
+    stmt = select(Professor.id_professor).join(
+        User, User.id_user == Professor.id_professor
+    ).where(User.legajo == legajo)
+    if exclude_id is not None:
+        stmt = stmt.where(Professor.id_professor != exclude_id)
+    return (await db.exec(stmt)).first() is not None
+
+
 async def create_professor(db, item: ProfessorCreate) -> ProfessorPublic:
     taken = (
         await db.exec(select(Professor.id_professor).where(Professor.mail == item.mail))
     ).first()
     if taken is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "A professor with this mail already exists")
+
+    if await _professor_legajo_taken(db, item.legajo):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "A professor with this legajo already exists"
+        )
 
     user = User(
         first_name=item.first_name,
@@ -70,6 +84,13 @@ async def update_professor(
         if taken is not None:
             raise HTTPException(
                 status.HTTP_409_CONFLICT, "A professor with this mail already exists"
+            )
+
+    new_legajo = changes.get("legajo")
+    if new_legajo is not None and new_legajo != user.legajo:
+        if await _professor_legajo_taken(db, new_legajo, exclude_id=id_professor):
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, "A professor with this legajo already exists"
             )
 
     for field in ("first_name", "last_name", "birth_date", "legajo"):

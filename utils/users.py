@@ -17,6 +17,9 @@ def to_public(user: User) -> UserPublic:
         legajo=user.legajo,
         email=user.get_mail(),
         role=get_role(user),
+        birth_date=user.birth_date,
+        enrollment_year=user.student.enrollment_year if user.student else None,
+        age=user.age,
         is_super_admin=user.professor.is_super_admin if user.professor else None,
     )
 
@@ -29,7 +32,9 @@ def to_list_item(user: User) -> UserListItem:
         legajo=user.legajo,
         email=user.get_mail(),
         role=get_role(user),
+        birth_date=user.birth_date,
         enrollment_year=user.student.enrollment_year if user.student else None,
+        age=user.age,
         is_super_admin=user.professor.is_super_admin if user.professor else None,
     )
 

@@ -65,13 +65,13 @@ async def test_invalid_mail(client, login):
     assert r.status_code == 422
 
 
-async def test_legajo_can_repeat(client, login):
+async def test_professor_legajo_must_be_unique_among_professors(client, login):
     r = await client.post(
         "/professors",
         json=professor("c.ruiz@frc.utn.edu.ar", legajo=200001),  # mismo legajo que Marta
         headers=await login(SUPER_ADMIN),
     )
-    assert r.status_code == 201
+    assert r.status_code == 409
 
 
 async def test_created_professor_sets_password_and_logs_in(client, login, outbox):
@@ -94,7 +94,9 @@ async def test_created_super_admin_can_create_professors(client, login, outbox):
     )
     await set_password(client, outbox, "admin2@frc.utn.edu.ar", "NuevaClave123")
     h2 = await login("admin2@frc.utn.edu.ar", "NuevaClave123")
-    r = await client.post("/professors", json=professor("otro@frc.utn.edu.ar"), headers=h2)
+    r = await client.post(
+        "/professors", json=professor("otro@frc.utn.edu.ar", legajo=200003), headers=h2
+    )
     assert r.status_code == 201
 
 
