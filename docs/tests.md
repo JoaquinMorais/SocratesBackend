@@ -279,7 +279,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
 
 **Crear**
-- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
 - `test_create_assigns_next_group_number`: testear que sin `group_number` toma el siguiente libre, también después de un número explícito.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
@@ -293,11 +293,12 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_bulk_invalid_rejected`: testear que se rechaza una cantidad fuera de 1-50, campos faltantes y campos desconocidos.
 
 **Consultar**
-- `test_list_sorted_and_filtered`: testear el orden (año, comisión, grupo) y los filtros por curso lectivo, año, comisión y privacidad.
+- `test_list_sorted_and_filtered`: testear el orden (año, comisión, grupo), los filtros por curso lectivo, año, comisión y privacidad (efectiva: un `uninsured` cuenta como `public`).
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 - `test_get_not_found`: testear que un proyecto inexistente responde 404.
 
 **Visibilidad según privacidad**
+- `test_uninsured_project_is_public_regardless_of_privacy`: testear que un proyecto `uninsured` con privacidad `private` se ve como público (`privacy` efectiva `public`, detalle completo) para cualquiera.
 - `test_public_project_detail_visible_to_everyone`: testear que un alumno cualquiera y un profesor ajeno ven el detalle de un proyecto público.
 - `test_protected_project_basic_visible_to_outsiders`: testear que en un proyecto protegido un alumno no miembro y un profesor ajeno ven solo la información básica (`restricted` en `true` y el detalle en `null`), tanto en el listado como al consultarlo.
 - `test_protected_project_detail_visible_to_privileged`: testear que un miembro, un profesor del curso lectivo y un super admin ven el detalle completo de un proyecto protegido.
@@ -350,6 +351,41 @@ Historial de estados de un proyecto (`GET /projects/{id}/status-history`).
 - `test_history_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza (422).
 - `test_history_not_found`: testear que un proyecto inexistente responde 404.
 
+## `tests/test_student_projects.py`
+
+Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), aceptar/rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`) y listar integrantes (`GET /projects/{id}/members`).
+
+**Permisos**
+- `test_requires_authentication`: testear que unirse, listar integrantes y aceptar/rechazar sin login responden 401.
+- `test_professor_cannot_join`: testear que un profesor o super admin no puede unirse a un grupo (403; solo alumnos).
+- `test_non_leader_cannot_decide`: testear que un alumno que no es el jefe, un profesor y el super admin reciben 403 al aceptar o rechazar.
+
+**Unirse**
+- `test_first_member_becomes_leader_and_active`: testear que el primer integrante de un grupo vacío entra como jefe y `active`.
+- `test_second_member_is_pending_and_not_leader`: testear que, si ya hay jefe, el siguiente queda `pending_approval` y no es jefe.
+- `test_cannot_join_insured_project`: testear que no se puede pedir entrar a un proyecto que no está `uninsured` (409).
+- `test_join_unknown_project`: testear que un proyecto inexistente responde 404.
+- `test_cannot_request_twice`: testear que no se puede volver a pedir entrar si ya se es miembro o si hay una solicitud pendiente (409).
+- `test_rejected_can_request_again`: testear que una solicitud `rejected` se puede volver a enviar (200) y queda `pending_approval`.
+- `test_cannot_join_empty_group_when_member_elsewhere`: testear que un alumno que ya es `member` de otro grupo no puede unirse a uno vacío (sería jefe/`active`): 409.
+- `test_member_can_queue_where_there_is_a_leader`: testear que un alumno `member` de un grupo sí puede solicitar entrar a otro grupo que ya tiene jefe (queda `pending_approval`).
+- `test_becoming_member_rejects_other_pending`: testear que al pasar a `member`, las otras solicitudes `pending_approval` del alumno pasan a `rejected`.
+
+**Aceptar / rechazar**
+- `test_leader_accepts_request`: testear que el jefe acepta una solicitud y el alumno queda `active` (sin ser jefe).
+- `test_leader_rejects_request`: testear que el jefe rechaza una solicitud y el alumno queda `rejected`.
+- `test_decide_invalid_transition`: testear que una transición no permitida (por ejemplo `active → active` o `active → rejected`) responde 409.
+- `test_accept_when_student_already_member`: testear que aceptar a un alumno que ya es `member` de otro grupo responde 409.
+- `test_decide_membership_not_found`: testear que una membresía inexistente o de otro proyecto responde 404.
+- `test_decide_invalid_body`: testear que un `status` faltante, distinto de `active`/`rejected` o un campo desconocido responden 422.
+
+**Consultar**
+- `test_outsider_cannot_list`: testear que un alumno sin privilegios sobre el proyecto no puede listar integrantes (403).
+- `test_member_can_list_and_leader_is_first`: testear que un miembro lista integrantes, el jefe va primero y no se expone el mail.
+- `test_staff_can_list`: testear que el profesor del curso lectivo y el super admin pueden listar integrantes.
+- `test_list_unknown_project`: testear que un proyecto inexistente responde 404.
+- `test_list_filter_and_pagination`: testear el filtro por `status`, `limit`/`offset` y que un `status` inválido o `limit=0` responden 422.
+
 ## `tests/test_seed.py`
 
 Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
@@ -366,7 +402,7 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_every_project_has_initial_status_history`: testear que cada proyecto del seed tiene al menos un registro de historial y que el primero tiene `status_from` en `null`.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores, legajos de profesores ni legajos de alumnos.
 - `test_seed_users_are_adults`: testear que todos los usuarios del seed son mayores de edad.
-- `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.
+- `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
 

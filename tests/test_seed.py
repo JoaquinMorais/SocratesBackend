@@ -176,21 +176,16 @@ async def test_seed_users_are_adults():
     assert all(u.age >= 18 for u in users)
 
 
-async def test_seed_memberships_are_unique_per_section_year():
+async def test_seed_students_have_at_most_one_member_group():
     await _load_full_seed()
     async with SessionLocal() as session:
-        rows = (
-            await session.exec(
-                select(StudentProject.id_student, Project.id_section_year).join(
-                    Project, Project.id_project == StudentProject.id_project
-                )
-            )
-        ).all()
-    seen: set[tuple[int, int]] = set()
-    for id_student, id_section_year in rows:
-        key = (id_student, id_section_year)
-        assert key not in seen, f"el alumno {id_student} está dos veces en el curso lectivo {id_section_year}"
-        seen.add(key)
+        memberships = (await session.exec(select(StudentProject))).all()
+    by_student: dict[int, int] = {}
+    for m in memberships:
+        if m.status.code in ("active", "finished"):
+            by_student[m.id_student] = by_student.get(m.id_student, 0) + 1
+    assert all(count == 1 for count in by_student.values())
+    assert by_student  # hay al menos un miembro
 
 
 async def test_seed_all_projects_belong_to_a_section_year():

@@ -33,6 +33,16 @@ async def _set_privacy(id_project: int, privacy: str) -> None:
         await s.commit()
 
 
+async def _set_project_status(id_project: int, code: str) -> None:
+    async with SessionLocal() as s:
+        from utils.statuses import get_status
+        status = await get_status(s, "project", code)
+        project = await s.get(Project, id_project)
+        project.id_status = status.id_status
+        s.add(project)
+        await s.commit()
+
+
 async def _add_history(id_project: int, from_code: str | None, to_code: str) -> None:
     async with SessionLocal() as s:
         from utils.statuses import get_status
@@ -60,7 +70,9 @@ async def test_requires_authentication(client, login):
 async def test_private_project_history_hidden_from_outsiders(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)
-    p = await _create(client, admin, sy)  # private por defecto
+    p = await _create(client, admin, sy)
+    await _set_privacy(p["id_project"], "private")
+    await _set_project_status(p["id_project"], "in_idea")  # uninsured sería público
     headers = await login(STUDENT)
     r = await client.get(f"{URL}/{p['id_project']}/status-history", headers=headers)
     assert r.status_code == 403

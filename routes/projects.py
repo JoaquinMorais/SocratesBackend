@@ -64,9 +64,10 @@ async def create_project_route(
 
     - `group_number` es opcional: si no se envía, toma el siguiente libre (el
       mayor existente + 1). No puede repetirse dentro del curso lectivo.
-    - Se crea con privacidad `private`, en estado `uninsured` (Desasegurado) y
+    - Se crea con privacidad `public`, en estado `uninsured` (Desasegurado) y
       sin nombre, descripción, objetivo ni problemática (todos `null`); se
-      completan después.
+      completan después. Mientras esté `uninsured` el proyecto se trata siempre
+      como público, sin importar su privacidad.
     """
     return await create_project(db, await build_access(db, user), data)
 
@@ -93,7 +94,7 @@ async def create_projects_bulk_route(
     Crea de 1 a 50 grupos vacíos en un curso lectivo, con números consecutivos a
     partir del siguiente libre (si hay grupos 1 a 11, `quantity=3` crea 12, 13 y
     14). Mismos permisos que `POST /projects`. Es todo o nada. Cada grupo nace
-    con privacidad `private` y en estado `uninsured` (Desasegurado).
+    con privacidad `public` y en estado `uninsured` (Desasegurado).
     """
     return await create_projects_bulk(db, await build_access(db, user), data)
 
@@ -119,12 +120,17 @@ async def get_projects(
 
     La visibilidad depende de la privacidad:
 
+    - `uninsured` (Desasegurado): se trata siempre como público, cualquiera ve
+      todo el detalle (aunque la privacidad almacenada sea `private`/`protected`).
     - `public`: cualquier usuario ve todo el detalle.
     - `protected`: los privilegiados (miembros del grupo, profesores del curso
       lectivo y super admin) ven todo; el resto ve solo la información básica
       (`restricted` es `true` y el detalle viene en `null`).
     - `private`: solo los privilegiados; para el resto **no aparece** en el
       listado ni se cuenta en `total`.
+
+    El filtro `privacy` usa la privacidad efectiva (un `uninsured` cuenta como
+    `public`).
 
     Orden: año más reciente, comisión y número de grupo. Está paginado: `total`
     es la cantidad que cumple los filtros y es visible para el usuario.
@@ -163,6 +169,7 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
     Devuelve el detalle de un proyecto. **Cualquier usuario logueado**, según la
     privacidad:
 
+    - `uninsured` (Desasegurado): se trata siempre como público.
     - `public`: cualquier usuario, con todo el detalle.
     - `protected`: los privilegiados (miembros, profesores del curso lectivo y
       super admin) ven todo; el resto recibe `200` con `restricted` en `true` y
@@ -198,7 +205,7 @@ async def get_project_status_history_route(
     registro más viejo primero). **Cualquier usuario logueado**, con la misma
     visibilidad que `GET /projects/{id}`:
 
-    - `public` y `protected`: cualquier usuario.
+    - `uninsured` (Desasegurado), `public` y `protected`: cualquier usuario.
     - `private`: solo los privilegiados (miembros, profesores del curso lectivo
       y super admin); el resto recibe **403**.
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
@@ -21,6 +21,11 @@ from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
 from utils.statuses import to_public as status_public
 
 
+def is_uninsured(project: Project) -> bool:
+    """Un proyecto `uninsured` (Desasegurado) se trata siempre como público."""
+    return project.status.code == PROJECT.initial
+
+
 @dataclass
 class Access:
     """Qué puede hacer el usuario; se arma una vez por request."""
@@ -36,15 +41,24 @@ class Access:
         return self.can_manage(project.id_section_year) or project.id_project in self.project_ids
 
     def can_see_detail(self, project: Project) -> bool:
-        # public: todo el mundo ve el detalle. protected y private: solo los privilegiados.
-        # Cuando existan los campos sensibles (documentación, GitHub), se ocultan
-        # acá a quien no sea is_privileged en proyectos que no sean public.
-        return project.privacy == "public" or self.is_privileged(project)
+        # public (y todo proyecto `uninsured`): el detalle es visible para todos.
+        # protected y private: solo los privilegiados. Cuando existan los campos
+        # sensibles (documentación, GitHub), se ocultan acá a quien no sea
+        # is_privileged en proyectos que no sean public.
+        return (
+            project.privacy == "public"
+            or is_uninsured(project)
+            or self.is_privileged(project)
+        )
 
     def can_see_project(self, project: Project) -> bool:
         # private: para el resto el proyecto no existe (no se lista y responde 403).
-        # public y protected se ven siempre (con detalle o con la información básica).
-        return project.privacy != "private" or self.is_privileged(project)
+        # public, protected y `uninsured` se ven siempre.
+        return (
+            project.privacy != "private"
+            or is_uninsured(project)
+            or self.is_privileged(project)
+        )
 
 
 async def build_access(db, user: User) -> Access:
@@ -81,7 +95,8 @@ def to_public(project: Project, restricted: bool = False) -> ProjectPublic:
         id_section=sy.id_section,
         section_name=sy.section.name,
         group_number=project.group_number,
-        privacy=project.privacy,
+        # Mientras el proyecto está `uninsured` la privacidad efectiva es `public`.
+        privacy="public" if is_uninsured(project) else project.privacy,
         status=status_public(project.status),
         restricted=restricted,
         name=None if restricted else project.name,
@@ -236,8 +251,9 @@ async def list_projects(
     conditions = []
     if not access.is_super_admin:
         # Un proyecto private solo lo ve quien tiene privilegios (miembro, profesor
-        # del curso lectivo o super admin); para el resto no existe.
-        visible = [Project.privacy != "private"]
+        # del curso lectivo o super admin); para el resto no existe. Los proyectos
+        # `uninsured` se tratan siempre como públicos.
+        visible = [Project.privacy != "private", Status.code == PROJECT.initial]
         if access.section_year_ids:
             visible.append(Project.id_section_year.in_(access.section_year_ids))
         if access.project_ids:
@@ -250,18 +266,32 @@ async def list_projects(
     if id_section is not None:
         conditions.append(SectionYear.id_section == id_section)
     if privacy is not None:
-        conditions.append(Project.privacy == privacy)
+        # La privacidad que se filtra es la efectiva: un `uninsured` cuenta como público.
+        if privacy == "public":
+            conditions.append(
+                or_(Project.privacy == "public", Status.code == PROJECT.initial)
+            )
+        else:
+            conditions.append(
+                and_(Project.privacy == privacy, Status.code != PROJECT.initial)
+            )
 
     on_sy = SectionYear.id_section_year == Project.id_section_year
+    on_status = Status.id_status == Project.id_status
     total = (
         await db.exec(
-            select(func.count()).select_from(Project).join(SectionYear, on_sy).where(*conditions)
+            select(func.count())
+            .select_from(Project)
+            .join(SectionYear, on_sy)
+            .join(Status, on_status)
+            .where(*conditions)
         )
     ).one()
     items = (
         await db.exec(
             select(Project)
             .join(SectionYear, on_sy)
+            .join(Status, on_status)
             .join(Section, Section.id_section == SectionYear.id_section)
             .where(*conditions)
             .order_by(

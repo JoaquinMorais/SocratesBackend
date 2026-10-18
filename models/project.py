@@ -17,7 +17,7 @@ class Project(SQLModel, table=True):
     id_project: int | None = Field(default=None, primary_key=True)
     id_section_year: int = Field(foreign_key="section_years.id_section_year", index=True)
     group_number: int
-    privacy: str = Field(default="private", max_length=20)
+    privacy: str = Field(default="public", max_length=20)
     id_status: int = Field(foreign_key="statuses.id_status", index=True)
 
     name: str | None = Field(default=None, max_length=200)

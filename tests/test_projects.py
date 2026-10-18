@@ -154,7 +154,7 @@ async def test_create_project_defaults(client, login):
     p = await _create(client, admin, sy)
     assert p["id_project"]
     assert (p["id_section_year"], p["year"], p["section_name"]) == (sy, 2025, "3K1")
-    assert (p["group_number"], p["privacy"], p["restricted"]) == (1, "private", False)
+    assert (p["group_number"], p["privacy"], p["restricted"]) == (1, "public", False)
     assert p["status"]["code"] == "uninsured"
     assert p["status"]["ambito"] == "project"
     assert [p[k] for k in ("name", "description", "objective", "problem")] == [None] * 4
@@ -210,7 +210,7 @@ async def test_bulk_create(client, login):
     r = await client.post(BULK, json={"id_section_year": sy, "quantity": 3}, headers=admin)
     assert r.status_code == 201
     assert [p["group_number"] for p in r.json()] == [1, 2, 3]
-    assert {p["privacy"] for p in r.json()} == {"private"}
+    assert {p["privacy"] for p in r.json()} == {"public"}
     assert {p["status"]["code"] for p in r.json()} == {"uninsured"}
     r = await client.post(BULK, json={"id_section_year": sy, "quantity": 2}, headers=admin)
     assert [p["group_number"] for p in r.json()] == [4, 5]
@@ -282,9 +282,14 @@ async def test_list_sorted_and_filtered(client, login):
     assert await total("year=2025") == 3
     id_section = body["items"][0]["id_section"]
     assert await total(f"id_section={id_section}") == 3
-    await _set(body["items"][0]["id_project"], privacy="public")
-    assert await total("privacy=public") == 1
-    assert await total("privacy=private") == 3
+    # Mientras el proyecto está `uninsured`, su privacidad efectiva es `public`.
+    assert await total("privacy=public") == 4
+    assert await total("privacy=private") == 0
+    # Al pasar a insured, la privacidad almacenada sí aplica.
+    await _set(body["items"][0]["id_project"], privacy="private")
+    await _set_status(body["items"][0]["id_project"], "in_idea")
+    assert await total("privacy=private") == 1
+    assert await total("privacy=public") == 3
     assert (await client.get(f"{URL}?privacy=otro", headers=admin)).status_code == 422
 
 
@@ -308,6 +313,8 @@ async def _project_with_data(client, admin, privacy: str) -> tuple[int, int]:
     sy = await _section_year(client, admin)
     project = await _create(client, admin, sy)
     await _set(project["id_project"], privacy=privacy, **DATA)
+    # Pasa a insured: recién ahí la privacidad almacenada aplica (uninsured es público).
+    await _set_status(project["id_project"], "in_idea")
     return sy, project["id_project"]
 
 
@@ -363,6 +370,19 @@ async def test_protected_project_detail_visible_to_privileged(client, login, mak
 
     for headers in (await login(STUDENT), await login(mail), admin):  # miembro, profesor del curso, super admin
         await _assert_detail_visible(client, headers, pid)
+
+
+async def test_uninsured_project_is_public_regardless_of_privacy(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _set(project["id_project"], privacy="private", **DATA)  # sigue uninsured
+
+    outsider_prof = await login(await make_professor("prof@frc.utn.edu.ar"))
+    for headers in (await login(LUIS), outsider_prof):
+        await _assert_detail_visible(client, headers, project["id_project"])
+        one = await client.get(f"{URL}/{project['id_project']}", headers=headers)
+        assert one.json()["privacy"] == "public"  # privacidad efectiva
 
 
 async def test_private_project_hidden_from_outsiders(client, login, make_professor):
@@ -498,6 +518,7 @@ async def test_super_admin_can_patch(client, login):
 async def test_patch_each_field(client, login):
     admin = await login(SUPER_ADMIN)
     project = await _create(client, admin, await _section_year(client, admin))
+    await _set_status(project["id_project"], "in_idea")  # insured: la privacidad almacenada aplica
     r = await client.patch(
         f"{URL}/{project['id_project']}",
         json={"name": "Nombre", "description": "Desc", "objective": "Obj", "problem": "Prob", "privacy": "protected"},
@@ -508,7 +529,7 @@ async def test_patch_each_field(client, login):
     assert [
         body["name"], body["description"], body["objective"], body["problem"], body["privacy"]
     ] == ["Nombre", "Desc", "Obj", "Prob", "protected"]
-    assert body["status"]["code"] == "uninsured"  # el estado no cambia
+    assert body["status"]["code"] == "in_idea"  # el estado no cambia
 
 
 async def test_patch_only_changes_sent_fields(client, login):

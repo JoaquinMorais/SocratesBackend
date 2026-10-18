@@ -464,15 +464,15 @@
     }
   ],
   "student_projects": [
-    { "student": 100001, "section": "3K1", "year": 2025, "group_number": 1, "is_leader": true },
+    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1, "is_leader": true },
     { "student": 100003, "section": "3K1", "year": 2025, "group_number": 1 },
-    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1 },
+    { "student": 100021, "section": "3K1", "year": 2025, "group_number": 1 },
     { "student": 100005, "section": "3K1", "year": 2025, "group_number": 2, "is_leader": true },
     { "student": 100006, "section": "3K1", "year": 2025, "group_number": 2 },
 
-    { "student": 100007, "section": "3K2", "year": 2025, "group_number": 1, "is_leader": true },
-    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1 },
+    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1, "is_leader": true },
     { "student": 100009, "section": "3K2", "year": 2025, "group_number": 1 },
+    { "student": 100022, "section": "3K2", "year": 2025, "group_number": 1 },
 
     { "student": 100010, "section": "3K3", "year": 2025, "group_number": 1, "is_leader": true },
     { "student": 100011, "section": "3K3", "year": 2025, "group_number": 1 },

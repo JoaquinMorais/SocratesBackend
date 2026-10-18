@@ -1,0 +1,239 @@
+from fastapi import HTTPException, status
+from sqlalchemy import case
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import col, func, select
+
+from models import Status, Student, StudentProject, User
+from schemas.student_project import StudentProjectMemberPublic, StudentProjectPublic
+from utils.projects import get_project, is_uninsured
+from utils.statuses import MEMBER, STUDENT_PROJECT, get_status, membership_initial_status
+from utils.statuses import to_public as status_public
+
+
+def _conflict(detail: str) -> HTTPException:
+    return HTTPException(status.HTTP_409_CONFLICT, detail)
+
+
+def _forbidden(detail: str) -> HTTPException:
+    return HTTPException(status.HTTP_403_FORBIDDEN, detail)
+
+
+def _public(membership: StudentProject) -> StudentProjectPublic:
+    return StudentProjectPublic(
+        id_student_project=membership.id_student_project,
+        id_project=membership.id_project,
+        id_student=membership.id_student,
+        is_leader=membership.is_leader,
+        status=status_public(membership.status),
+    )
+
+
+async def _get_membership(db, id_project: int, id_student_project: int) -> StudentProject:
+    membership = await db.get(StudentProject, id_student_project)
+    if not membership or membership.id_project != id_project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Membership not found")
+    return membership
+
+
+async def _leader_exists(db, id_project: int, exclude_id: int | None = None) -> bool:
+    conditions = [
+        StudentProject.id_project == id_project,
+        StudentProject.is_leader == True,  # noqa: E712
+    ]
+    if exclude_id is not None:
+        conditions.append(StudentProject.id_student_project != exclude_id)
+    found = (
+        await db.exec(select(StudentProject.id_student_project).where(*conditions).limit(1))
+    ).first()
+    return found is not None
+
+
+async def _has_member_membership(db, id_student: int, exclude_id: int | None = None) -> bool:
+    """Si el alumno ya es `member` (`active`/`finished`) de algún proyecto."""
+    conditions = [
+        StudentProject.id_student == id_student,
+        Status.ambito == "student_project",
+        Status.code.in_(STUDENT_PROJECT.codes_of(MEMBER)),
+    ]
+    if exclude_id is not None:
+        conditions.append(StudentProject.id_student_project != exclude_id)
+    found = (
+        await db.exec(
+            select(StudentProject.id_student_project)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(*conditions)
+            .limit(1)
+        )
+    ).first()
+    return found is not None
+
+
+async def _reject_other_pending(db, id_student: int, keep_id: int | None) -> None:
+    """Al pasar a `member`, sus otras solicitudes `pending_approval` se rechazan."""
+    conditions = [
+        StudentProject.id_student == id_student,
+        Status.ambito == "student_project",
+        Status.code == STUDENT_PROJECT.pending,
+    ]
+    if keep_id is not None:
+        conditions.append(StudentProject.id_student_project != keep_id)
+    rows = (
+        await db.exec(
+            select(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(*conditions)
+        )
+    ).all()
+    if not rows:
+        return
+    rejected = await get_status(db, "student_project", "rejected")
+    for membership in rows:
+        membership.status = rejected
+        membership.is_leader = False
+        db.add(membership)
+
+
+async def join_project(
+    db, id_student: int, id_project: int
+) -> tuple[StudentProjectPublic, bool]:
+    """El alumno se une a un grupo. Devuelve (membresía, se creó)."""
+    project = await get_project(db, id_project)
+    if not is_uninsured(project):  # solo se puede entrar mientras se forma
+        raise _conflict("Only an uninsured project can be joined")
+
+    existing = (
+        await db.exec(
+            select(StudentProject).where(
+                StudentProject.id_project == id_project,
+                StudentProject.id_student == id_student,
+            )
+        )
+    ).first()
+
+    if existing is not None:
+        if existing.status.code != "rejected":
+            raise _conflict("You already requested to join this project")
+        membership, created = existing, False  # una solicitud rechazada se puede repetir
+    else:
+        membership, created = (
+            StudentProject(id_student=id_student, id_project=id_project),
+            True,
+        )
+
+    has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
+    code = membership_initial_status(has_leader)
+
+    if code == "active":
+        if await _has_member_membership(
+            db, id_student, exclude_id=membership.id_student_project
+        ):
+            raise _conflict("You already belong to another project")
+        await _reject_other_pending(db, id_student, keep_id=membership.id_student_project)
+
+    membership.is_leader = code == "active"
+    membership.status = await get_status(db, "student_project", code)
+    db.add(membership)
+    try:
+        await db.commit()
+    except IntegrityError:  # dos uniones simultáneas (par único o jefe único)
+        await db.rollback()
+        raise _conflict("You already requested to join this project")
+    return _public(membership), created
+
+
+async def decide_membership(
+    db, id_user: int, id_project: int, id_student_project: int, target: str
+) -> StudentProjectPublic:
+    """El jefe acepta (`active`) o rechaza (`rejected`) una solicitud."""
+    await get_project(db, id_project)  # 404 si el proyecto no existe
+    membership = await _get_membership(db, id_project, id_student_project)
+
+    leader = (
+        await db.exec(
+            select(StudentProject.id_student_project).where(
+                StudentProject.id_project == id_project,
+                StudentProject.id_student == id_user,
+                StudentProject.is_leader == True,  # noqa: E712
+            )
+        )
+    ).first()
+    if leader is None:
+        raise _forbidden("Only the group leader can accept or reject requests")
+
+    current = membership.status.code
+    if not STUDENT_PROJECT.can_transition(current, target):
+        raise _conflict(f"A membership in '{current}' cannot change to '{target}'")
+
+    if target == "active":
+        if await _has_member_membership(
+            db, membership.id_student, exclude_id=membership.id_student_project
+        ):
+            raise _conflict("This student already belongs to another project")
+        await _reject_other_pending(
+            db, membership.id_student, keep_id=membership.id_student_project
+        )
+
+    membership.status = await get_status(db, "student_project", target)
+    db.add(membership)
+    await db.commit()
+    return _public(membership)
+
+
+async def _to_member(membership: StudentProject, user: User) -> StudentProjectMemberPublic:
+    return StudentProjectMemberPublic(
+        id_student_project=membership.id_student_project,
+        id_student=membership.id_student,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        legajo=user.legajo,
+        is_leader=membership.is_leader,
+        status=status_public(membership.status),
+    )
+
+
+async def list_members(
+    db,
+    id_project: int,
+    *,
+    statuses: list[str],
+    limit: int,
+    offset: int,
+) -> tuple[list[StudentProjectMemberPublic], int]:
+    conditions = [StudentProject.id_project == id_project, Status.ambito == "student_project"]
+    if statuses:
+        conditions.append(Status.code.in_(statuses))
+
+    on_status = Status.id_status == StudentProject.id_status
+    total = (
+        await db.exec(
+            select(func.count())
+            .select_from(StudentProject)
+            .join(Status, on_status)
+            .where(*conditions)
+        )
+    ).one()
+
+    priority = case(
+        {code: index for index, code in enumerate(STUDENT_PROJECT.order)},
+        value=Status.code,
+        else_=len(STUDENT_PROJECT.order),
+    )
+    rows = (
+        await db.exec(
+            select(StudentProject, User)
+            .join(Status, on_status)
+            .join(Student, Student.id_student == StudentProject.id_student)
+            .join(User, User.id_user == Student.id_student)
+            .where(*conditions)
+            .order_by(
+                col(StudentProject.is_leader).desc(),
+                priority,
+                col(StudentProject.id_student_project),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+    ).all()
+
+    items = [await _to_member(membership, user) for membership, user in rows]
+    return items, total
