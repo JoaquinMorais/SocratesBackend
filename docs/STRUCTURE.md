@@ -190,7 +190,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `sections.py` | `/sections` | CRUD de comisiones. |
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
-| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, eliminar proyectos y consultar su historial de estados. |
+| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos y consultar su historial de estados. |
 | `statuses.py` | `/statuses` | Consulta de estados por ámbito. |
 
 `routes/__init__.py` reúne todos los routers para que `index.py` los registre.
@@ -212,7 +212,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
 | `project_statuses.py` | Lógica del historial de estados de un proyecto: registro de transiciones y listado cronológico. |
-| `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin). |
+| `projects.py` | Lógica de proyectos: creación, modificación de atributos, eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin). |
 | `statuses.py` | Lógica de estados: catálogo base, `StatusPolicy` por ámbito (estado inicial, orden, categorías como `member` e `insured`, y transiciones), búsqueda, listado y `is_insured`. |
 
 ## `tests/`

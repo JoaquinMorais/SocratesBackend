@@ -272,7 +272,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 ## `tests/test_projects.py`
 
 **Permisos**
-- `test_requires_authentication`: testear que las cinco operaciones sin login responden 401.
+- `test_requires_authentication`: testear que las seis operaciones sin login responden 401.
 - `test_student_cannot_create_or_delete`: testear que un alumno no puede crear, crear en masa ni eliminar proyectos (403).
 - `test_unassigned_professor_cannot_create_or_delete`: testear que un profesor no asignado al curso lectivo no puede crear, crear en masa ni eliminar (403).
 - `test_assigned_professor_manages_only_own_section_year`: testear que un profesor asignado puede crear, crear en masa y eliminar solo en su curso lectivo, y no en otros.
@@ -307,6 +307,23 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_abandoned_member_loses_privileges_on_private_project`: testear que un alumno con membresía `abandoned` no ve un proyecto privado (ni en el listado ni al consultarlo).
 - `test_finished_member_keeps_privileges`: testear que un alumno con membresía `finished` sigue viendo el detalle de un proyecto privado.
 - `test_assigned_professor_sees_all_projects_of_own_section_year`: testear que un profesor asignado a un curso lectivo ve el detalle completo de todos sus proyectos (públicos, protegidos y privados) filtrando por ese curso lectivo.
+
+**Modificar**
+- `test_patch_requires_privilege`: testear que un alumno no miembro y un profesor no asignado no pueden modificar un proyecto (403).
+- `test_pending_member_cannot_patch`: testear que un alumno con membresía `pending_approval` no puede modificar el proyecto (403).
+- `test_member_can_patch_private_project`: testear que un miembro `active` modifica los atributos de un proyecto privado (200).
+- `test_finished_member_can_patch`: testear que un miembro con membresía `finished` puede modificar el proyecto.
+- `test_assigned_professor_can_patch`: testear que un profesor del curso lectivo puede modificar el proyecto.
+- `test_super_admin_can_patch`: testear que un super admin puede modificar cualquier proyecto.
+- `test_patch_each_field`: testear que se editan `name`, `description`, `objective`, `problem` y `privacy`, y que el estado no cambia.
+- `test_patch_only_changes_sent_fields`: testear que lo no enviado no cambia.
+- `test_patch_same_values_is_ok`: testear que reenviar los mismos valores no da error.
+- `test_patch_can_clear_optional_fields`: testear que enviar `null` en un campo de texto lo limpia.
+- `test_patch_privacy_null_rejected`: testear que `privacy` con `null` responde 422.
+- `test_patch_empty_body_rejected`: testear que un body vacío responde 422.
+- `test_patch_invalid_rejected`: testear que un `name` en blanco, una `privacy` inválida o un campo no permitido (`group_number`) responden 422.
+- `test_patch_not_found`: testear que un proyecto inexistente responde 404.
+- `test_cannot_patch_final_project`: testear que un proyecto en estado final (`approved`/`cancelled`) no se puede modificar (409).
 
 **Eliminar**
 - `test_delete_empty_project`: testear que se elimina un proyecto vacío (204) y deja de figurar.

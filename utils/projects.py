@@ -14,7 +14,7 @@ from models import (
     StudentProject,
     User,
 )
-from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic
+from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic, ProjectUpdate
 from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
 from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
@@ -175,6 +175,26 @@ async def create_projects_bulk(
         await db.rollback()
         raise _conflict("Group numbers changed while creating, try again")
     return [to_public(p) for p in projects]
+
+
+async def update_project(db, access: Access, id_project: int, data: ProjectUpdate) -> ProjectPublic:
+    project = await get_project(db, id_project)
+    if not access.is_privileged(project):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year, a super admin or a group member can edit this project",
+        )
+    if project.status.is_final:
+        raise _conflict("A project in a final state cannot be modified")
+
+    changes = data.model_fields_set
+    if not changes:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update")
+    for field in changes:
+        setattr(project, field, getattr(data, field))
+    db.add(project)
+    await db.commit()
+    return to_public(project)
 
 
 async def delete_project(db, access: Access, id_project: int) -> None:

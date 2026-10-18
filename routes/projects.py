@@ -9,6 +9,7 @@ from schemas.project import (
     ProjectCreate,
     ProjectList,
     ProjectPublic,
+    ProjectUpdate,
 )
 from schemas.project_status import ProjectStatusList
 from utils.auth import user_dependency
@@ -22,6 +23,7 @@ from utils.projects import (
     get_project,
     list_projects,
     to_public,
+    update_project,
 )
 
 projects_router = APIRouter(prefix="/projects", tags=["projects"])
@@ -216,6 +218,50 @@ async def get_project_status_history_route(
         limit=limit,
         offset=offset,
     )
+
+
+@projects_router.patch(
+    "/{id_project}",
+    response_model=ProjectPublic,
+    summary="Modificar un proyecto",
+    responses={
+        **_READ_ERRORS,
+        403: {
+            "description": (
+                "El usuario no es profesor del curso lectivo, super admin ni "
+                "miembro del grupo (`active`/`finished`)"
+            )
+        },
+        404: {"description": "No existe el proyecto"},
+        409: {"description": "El proyecto está en un estado final (`approved`/`cancelled`)"},
+        422: {
+            "description": (
+                "Body vacío, `privacy` nula o inválida, `name` en blanco o campos "
+                "desconocidos"
+            )
+        },
+    },
+)
+async def update_project_route(
+    id_project: int,
+    data: ProjectUpdate,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    Modifica los atributos de un proyecto. **Privilegiados**: profesores del
+    curso lectivo, super admin y miembros del grupo con membresía `active` o
+    `finished`.
+
+    **Campos editables** (opcionales, se envían solo los que cambian): `name`,
+    `description`, `objective`, `problem` y `privacy`. Enviar un campo de texto
+    con `null` lo **limpia**; `privacy` es obligatoria y no admite `null`.
+
+    No se puede modificar si el proyecto está en un estado final (`approved` o
+    `cancelled`): responde **409**. El `group_number` y el curso lectivo no se
+    pueden cambiar.
+    """
+    return await update_project(db, await build_access(db, user), id_project, data)
 
 
 @projects_router.delete(

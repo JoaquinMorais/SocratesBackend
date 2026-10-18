@@ -20,6 +20,7 @@ ENDPOINTS = [
     ("GET", URL, None),
     ("GET", f"{URL}/1", None),
     ("DELETE", f"{URL}/1", None),
+    ("PATCH", f"{URL}/1", {"name": "Proyecto X"}),
 ]
 MANAGE = [ENDPOINTS[0], ENDPOINTS[1], ENDPOINTS[4]]
 
@@ -431,6 +432,149 @@ async def test_assigned_professor_sees_all_projects_of_own_section_year(client, 
     assert listing["total"] == 3
     for pid in ids:
         await _assert_detail_visible(client, headers, pid)
+
+
+# ---------- modificar ----------
+async def test_patch_requires_privilege(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _set(project["id_project"], privacy="public")  # visible, pero no editable
+    url = f"{URL}/{project['id_project']}"
+
+    outsider = await login(STUDENT)
+    assert (await client.patch(url, json={"name": "X"}, headers=outsider)).status_code == 403
+
+    prof = await login(await make_professor("prof@frc.utn.edu.ar"))
+    assert (await client.patch(url, json={"name": "X"}, headers=prof)).status_code == 403
+
+
+async def test_pending_member_cannot_patch(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_student(project["id_project"], ANA_ID, status="pending_approval")
+    headers = await login(STUDENT)
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "X"}, headers=headers)
+    assert r.status_code == 403
+
+
+async def test_member_can_patch_private_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))  # private
+    await _add_student(project["id_project"], ANA_ID, status="active")
+    headers = await login(STUDENT)
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "Nuevo"}, headers=headers)
+    assert r.status_code == 200
+    assert r.json()["name"] == "Nuevo"
+
+
+async def test_finished_member_can_patch(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_student(project["id_project"], ANA_ID, status="finished")
+    headers = await login(STUDENT)
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "Nuevo"}, headers=headers)
+    assert r.status_code == 200
+
+
+async def test_assigned_professor_can_patch(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    sy = await _section_year(client, admin)
+    await _assign_professor(client, admin, mail, sy)
+    project = await _create(client, admin, sy)
+    prof = await login(mail)
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "Nuevo"}, headers=prof)
+    assert r.status_code == 200
+
+
+async def test_super_admin_can_patch(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "Nuevo"}, headers=admin)
+    assert r.status_code == 200
+    assert r.json()["name"] == "Nuevo"
+
+
+async def test_patch_each_field(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    r = await client.patch(
+        f"{URL}/{project['id_project']}",
+        json={"name": "Nombre", "description": "Desc", "objective": "Obj", "problem": "Prob", "privacy": "protected"},
+        headers=admin,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert [
+        body["name"], body["description"], body["objective"], body["problem"], body["privacy"]
+    ] == ["Nombre", "Desc", "Obj", "Prob", "protected"]
+    assert body["status"]["code"] == "uninsured"  # el estado no cambia
+
+
+async def test_patch_only_changes_sent_fields(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    url = f"{URL}/{project['id_project']}"
+    await client.patch(url, json={"name": "Uno", "description": "Desc"}, headers=admin)
+    body = (await client.patch(url, json={"name": "Dos"}, headers=admin)).json()
+    assert body["name"] == "Dos"
+    assert body["description"] == "Desc"  # no se envió, no cambia
+
+
+async def test_patch_same_values_is_ok(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    url = f"{URL}/{project['id_project']}"
+    await client.patch(url, json={"name": "Uno"}, headers=admin)
+    assert (await client.patch(url, json={"name": "Uno"}, headers=admin)).status_code == 200
+
+
+async def test_patch_can_clear_optional_fields(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    url = f"{URL}/{project['id_project']}"
+    await client.patch(url, json={"name": "Uno", "description": "Desc"}, headers=admin)
+    body = (await client.patch(url, json={"name": None, "description": None}, headers=admin)).json()
+    assert body["name"] is None
+    assert body["description"] is None
+
+
+async def test_patch_privacy_null_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    r = await client.patch(f"{URL}/{project['id_project']}", json={"privacy": None}, headers=admin)
+    assert r.status_code == 422
+
+
+async def test_patch_empty_body_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    r = await client.patch(f"{URL}/{project['id_project']}", json={}, headers=admin)
+    assert r.status_code == 422
+
+
+async def test_patch_invalid_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    url = f"{URL}/{project['id_project']}"
+    assert (await client.patch(url, json={"name": "   "}, headers=admin)).status_code == 422
+    assert (await client.patch(url, json={"privacy": "shiny"}, headers=admin)).status_code == 422
+    assert (await client.patch(url, json={"group_number": 5}, headers=admin)).status_code == 422
+
+
+async def test_patch_not_found(client, login):
+    admin = await login(SUPER_ADMIN)
+    assert (await client.patch(f"{URL}/999", json={"name": "X"}, headers=admin)).status_code == 404
+
+
+async def test_cannot_patch_final_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    for code in ("approved", "cancelled"):
+        project = await _create(client, admin, sy)
+        await _set_status(project["id_project"], code)
+        r = await client.patch(f"{URL}/{project['id_project']}", json={"name": "X"}, headers=admin)
+        assert r.status_code == 409
 
 
 # ---------- eliminar ----------
