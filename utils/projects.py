@@ -125,6 +125,63 @@ async def get_project(db, id_project: int) -> Project:
     return project
 
 
+async def _is_leader(db, id_user: int, id_project: int) -> bool:
+    """Si el usuario es el jefe (`is_leader`) con membresía `active` del grupo."""
+    found = (
+        await db.exec(
+            select(StudentProject.id_student_project)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_project == id_project,
+                StudentProject.id_student == id_user,
+                StudentProject.is_leader == True,  # noqa: E712
+                Status.ambito == "student_project",
+                Status.code == "active",
+            )
+            .limit(1)
+        )
+    ).first()
+    return found is not None
+
+
+async def _active_count(db, id_project: int) -> int:
+    """Cantidad de integrantes `active` del grupo (el equipo vigente)."""
+    return (
+        await db.exec(
+            select(func.count())
+            .select_from(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_project == id_project,
+                Status.ambito == "student_project",
+                Status.code == "active",
+            )
+        )
+    ).one()
+
+
+async def _reject_pending_of_project(db, id_project: int) -> None:
+    """Al asegurar, todas las solicitudes `pending_approval` del grupo se rechazan."""
+    rows = (
+        await db.exec(
+            select(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_project == id_project,
+                Status.ambito == "student_project",
+                Status.code == STUDENT_PROJECT.pending,
+            )
+        )
+    ).all()
+    if not rows:
+        return
+    rejected = await get_status(db, "student_project", "rejected")
+    for membership in rows:
+        membership.status = rejected
+        membership.is_leader = False
+        db.add(membership)
+
+
 async def _next_group_number(db, id_section_year: int) -> int:
     current = (
         await db.exec(
@@ -208,6 +265,46 @@ async def update_project(db, access: Access, id_project: int, data: ProjectUpdat
     for field in changes:
         setattr(project, field, getattr(data, field))
     db.add(project)
+    await db.commit()
+    return to_public(project)
+
+
+async def insure_project(db, access: Access, id_user: int, id_project: int) -> ProjectPublic:
+    """Asegura un grupo: pasa de `uninsured` a un estado asegurado."""
+    project = await get_project(db, id_project)
+    is_leader = await _is_leader(db, id_user, id_project)
+    if not (is_leader or access.can_manage(project.id_section_year)):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only the group leader, a professor of this section year or a super admin "
+            "can insure this project",
+        )
+    if project.status.code != PROJECT.initial:  # solo grupos en formación
+        raise _conflict("Only an uninsured project can be insured")
+
+    count = await _active_count(db, id_project)
+    sy = project.section_year
+    if count < sy.min_students:
+        raise _conflict(
+            f"At least {sy.min_students} active members are required to insure this group"
+        )
+    if count > sy.max_students:
+        raise _conflict(
+            f"At most {sy.max_students} active members are allowed to insure this group"
+        )
+
+    if project.id_status_insured is not None:
+        target = await db.get(Status, project.id_status_insured)
+    else:
+        target = await get_status(db, "project", "in_idea")
+    if target is None or not PROJECT.can_transition(PROJECT.initial, target.code):
+        raise _conflict("The remembered insured status is no longer valid")
+
+    uninsured = project.status
+    await _reject_pending_of_project(db, id_project)
+    project.status = target
+    db.add(project)
+    await record_status_change(db, id_project, uninsured.id_status, target.id_status)
     await db.commit()
     return to_public(project)
 

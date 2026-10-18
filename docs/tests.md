@@ -351,6 +351,65 @@ Historial de estados de un proyecto (`GET /projects/{id}/status-history`).
 - `test_history_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza (422).
 - `test_history_not_found`: testear que un proyecto inexistente responde 404.
 
+## `tests/test_project_overview.py`
+
+Proyecto con sus integrantes y responsable (`GET /projects/{id}/overview`).
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar el overview sin login responde 401.
+- `test_unknown_project`: testear que un proyecto inexistente responde 404.
+- `test_private_overview_hidden_from_outsiders`: testear que un alumno no miembro y un profesor no asignado reciben 403 en un proyecto privado.
+- `test_non_privileged_cannot_filter_status`: testear que un usuario no privilegiado que envía `status` recibe 403.
+
+**Visibilidad**
+- `test_uninsured_overview_shows_detail_and_members`: testear que un proyecto `uninsured` se ve completo (aunque su privacidad almacenada sea `private`, la efectiva es `public`) con sus integrantes y su responsable.
+- `test_public_overview_full_detail_and_members`: testear que en un proyecto público cualquiera ve el detalle completo, los integrantes y el responsable.
+- `test_protected_overview_basic_for_outsiders`: testear que en un proyecto protegido el no privilegiado ve `restricted` en `true` y el detalle en `null`, pero recibe igual los integrantes y el responsable.
+- `test_protected_overview_full_for_privileged`: testear que un miembro, el profesor del curso lectivo y el super admin ven el detalle completo de un proyecto protegido.
+- `test_private_overview_full_for_privileged`: testear que un miembro, el profesor del curso lectivo y el super admin ven el detalle de un proyecto privado.
+- `test_overview_without_leader`: testear que un proyecto sin integrantes devuelve `members` vacío y `responsible` en `null`.
+
+**Filtro de estados**
+- `test_overview_default_members_are_active_and_finished`: testear que por defecto se listan los estados `active` y `finished` (categoría `member`), sin los `pending_approval`.
+- `test_overview_privileged_can_filter_status`: testear que un privilegiado puede pedir repetidamente `status` (una combinación) y que el responsable se resuelve aparte del filtro.
+- `test_overview_invalid_status`: testear que un `status` fuera de los permitidos responde 422.
+
+**Datos del integrante**
+- `test_overview_member_fields_and_order`: testear que cada integrante expone los datos públicos del alumno, `is_leader`, `enrolled_at` (datetime ISO) y `status` (sin el mail) y que el jefe va primero.
+
+## `tests/test_project_insure.py`
+
+Aseguramiento de un proyecto (`POST /projects/{id}/insure`).
+
+**Permisos**
+- `test_requires_authentication`: testear que asegurar sin login responde 401.
+- `test_leader_can_insure`: testear que el jefe del grupo (`active`) asegura el proyecto (200, queda `in_idea`).
+- `test_assigned_professor_can_insure`: testear que un profesor del curso lectivo puede asegurar.
+- `test_super_admin_can_insure`: testear que un super admin puede asegurar.
+- `test_non_member_student_cannot_insure`: testear que un alumno que no es del grupo recibe 403.
+- `test_non_leader_active_member_cannot_insure`: testear que un integrante `active` que no es jefe recibe 403.
+- `test_unassigned_professor_cannot_insure`: testear que un profesor no asignado al curso lectivo recibe 403.
+- `test_pending_member_cannot_insure`: testear que un integrante `pending_approval` (no privilegiado) recibe 403.
+
+**Reglas**
+- `test_insure_moves_to_in_idea_by_default`: testear que sin memoria el proyecto queda `in_idea`, un estado asegurado.
+- `test_cannot_insure_already_insured`: testear que asegurar un proyecto ya asegurado responde 409.
+- `test_cannot_insure_final_project`: testear que asegurar un proyecto final (`approved`/`cancelled`) responde 409.
+- `test_insure_unknown_project`: testear que un proyecto inexistente responde 404.
+- `test_insure_requires_min_students`: testear que con menos de `min_students` integrantes `active` responde 409.
+- `test_insure_with_exactly_min_students`: testear que con exactamente `min_students` integrantes `active` se puede asegurar.
+- `test_insure_rejects_more_than_max_students`: testear que con más de `max_students` integrantes `active` responde 409.
+
+**Efectos**
+- `test_insure_records_history`: testear que el aseguramiento agrega la transición `uninsured → in_idea` al historial.
+- `test_cannot_join_after_insure`: testear que después de asegurar ya no se puede unir un integrante nuevo (409).
+- `test_insure_rejects_pending_requests`: testear que al asegurar las solicitudes `pending_approval` pasan a `rejected` y el jefe sigue `active`.
+- `test_insure_makes_private_privacy_apply`: testear que un proyecto guardado `private` deja de verse como público al asegurarse (antes 200 para un tercero, después 403).
+
+**Memoria del subestado**
+- `test_insure_defaults_to_in_idea_without_memory`: testear que sin subestado recordado el proyecto vuelve a `in_idea`.
+- `test_insure_returns_to_remembered_status`: testear que con el subestado recordado (`in_progress`) el proyecto vuelve a él y el historial lo refleja.
+
 ## `tests/test_student_projects.py`
 
 Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), aceptar/rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`), abandonar (`POST .../abandon`), expulsar (`POST .../expel`), delegar la jefatura (`POST .../leader`) y listar integrantes (`GET /projects/{id}/members`).

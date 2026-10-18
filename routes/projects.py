@@ -8,10 +8,12 @@ from schemas.project import (
     ProjectBulkCreate,
     ProjectCreate,
     ProjectList,
+    ProjectOverviewPublic,
     ProjectPublic,
     ProjectUpdate,
 )
 from schemas.project_status import ProjectStatusList
+from schemas.status import MembershipStatus
 from utils.auth import user_dependency
 from utils.permissions import professor_dependency
 from utils.project_statuses import list_project_status_history, to_public as status_history_public
@@ -21,10 +23,13 @@ from utils.projects import (
     create_projects_bulk,
     delete_project,
     get_project,
+    insure_project,
     list_projects,
     to_public,
     update_project,
 )
+from utils.statuses import MEMBER, STUDENT_PROJECT
+from utils.student_projects import get_responsible, list_all_members
 
 projects_router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -184,6 +189,74 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
 
 
 @projects_router.get(
+    "/{id_project}/overview",
+    response_model=ProjectOverviewPublic,
+    summary="Consultar un proyecto con sus integrantes y responsable",
+    responses={
+        **_READ_ERRORS,
+        403: {
+            "description": (
+                "El proyecto es privado y el usuario no tiene privilegios, o un "
+                "usuario no privilegiado intentó filtrar integrantes por `status`"
+            )
+        },
+        404: {"description": "No existe el proyecto"},
+        422: {"description": "Algún `status` no es un estado de membresía válido"},
+    },
+)
+async def get_project_overview_route(
+    id_project: int,
+    db: db_dependency,
+    user: user_dependency,
+    status_filter: Annotated[
+        list[MembershipStatus] | None,
+        Query(
+            alias="status",
+            description="Estados de membresía a incluir (repetible; solo privilegiados)",
+        ),
+    ] = None,
+):
+    """
+    Devuelve un proyecto junto con sus **integrantes** y su **responsable** (el
+    jefe del grupo). **Cualquier usuario logueado**, según la privacidad efectiva:
+
+    - `uninsured` (Desasegurado) y `public`: cualquier usuario ve el detalle
+      completo, los integrantes y el responsable.
+    - `protected`: los privilegiados (miembros del grupo con membresía `member`,
+      profesores del curso lectivo y super admin) ven todo; el resto ve la
+      información básica (`restricted` en `true`) y también los integrantes y el
+      responsable.
+    - `private`: solo los privilegiados; el resto recibe **403**.
+
+    Los integrantes son, por defecto, los `active` y `finished` (la categoría
+    `member`). El parámetro repetible `status` (solo privilegiados) permite pedir
+    otros estados (`pending_approval`, `abandoned`, `expelled`, `rejected`); un
+    no privilegiado que lo envíe recibe **403**, y un estado inválido **422**.
+
+    Cada integrante expone los datos públicos del alumno (nombre, apellido,
+    legajo), su antigüedad (`enrolled_at`) y su estado; **nunca** el mail. El
+    `responsible` es el jefe del grupo (`is_leader`), o `null` si no tiene.
+    """
+    access = await build_access(db, user)
+    project = await get_project(db, id_project)
+    if not access.can_see_project(project):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This project is private")
+    if status_filter and not access.is_privileged(project):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only privileged users can filter members by status",
+        )
+
+    statuses = status_filter or list(STUDENT_PROJECT.codes_of(MEMBER))
+    members = await list_all_members(db, id_project, statuses=statuses)
+    responsible = await get_responsible(db, id_project)
+    project_public = to_public(project, restricted=not access.can_see_detail(project))
+    return ProjectOverviewPublic(
+        **project_public.model_dump(), members=members, responsible=responsible
+    )
+
+
+@projects_router.get(
     "/{id_project}/status-history",
     response_model=ProjectStatusList,
     summary="Historial de estados de un proyecto",
@@ -269,6 +342,49 @@ async def update_project_route(
     pueden cambiar.
     """
     return await update_project(db, await build_access(db, user), id_project, data)
+
+
+@projects_router.post(
+    "/{id_project}/insure",
+    response_model=ProjectPublic,
+    summary="Asegurar un proyecto (grupo)",
+    responses={
+        **_READ_ERRORS,
+        403: {
+            "description": (
+                "El usuario no es el jefe del grupo, ni profesor del curso lectivo, "
+                "ni super admin"
+            )
+        },
+        404: {"description": "No existe el proyecto"},
+        409: {
+            "description": (
+                "El proyecto no está `uninsured` (ya se aseguró o está en un estado "
+                "final), o la cantidad de integrantes `active` está fuera del rango "
+                "`min_students`-`max_students` del curso lectivo"
+            )
+        },
+    },
+)
+async def insure_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    Asegura un grupo: lo saca de `uninsured` (Desasegurado) y lo pasa a un estado
+    asegurado, dejando el equipo confirmado. Lo puede hacer **el jefe del grupo**,
+    **un profesor de ese curso lectivo** o **un super admin**.
+
+    - Solo se puede desde `uninsured`: si el proyecto ya está asegurado (`in_idea`,
+      `in_progress`, `pending_approval` o `rejected`) o final (`approved` o
+      `cancelled`), responde **409**.
+    - La cantidad de integrantes `active` debe estar entre `min_students` y
+      `max_students` del curso lectivo; si no, responde **409**.
+    - El estado destino es el subestado asegurado recordado (la última vez que
+      estuvo asegurado) o, si el grupo nunca lo estuvo, `in_idea`.
+    - Al asegurar, todas las solicitudes `pending_approval` del grupo pasan a
+      `rejected`, y el proyecto pasa a aplicar su privacidad guardada (deja de
+      tratarse como público). A partir de acá **no se pueden unir** integrantes
+      nuevos.
+    """
+    return await insure_project(db, await build_access(db, user), user.id_user, id_project)
 
 
 @projects_router.delete(

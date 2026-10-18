@@ -300,6 +300,42 @@ async def _to_member(membership: StudentProject, user: User) -> StudentProjectMe
     )
 
 
+def _member_conditions(id_project: int, statuses: list[str]) -> list:
+    conditions = [StudentProject.id_project == id_project, Status.ambito == "student_project"]
+    if statuses:
+        conditions.append(Status.code.in_(statuses))
+    return conditions
+
+
+def _member_priority():
+    """Ordena por el orden del catálogo (`active`, `pending_approval`, ...)."""
+    return case(
+        {code: index for index, code in enumerate(STUDENT_PROJECT.order)},
+        value=Status.code,
+        else_=len(STUDENT_PROJECT.order),
+    )
+
+
+async def _member_rows(db, id_project: int, statuses: list[str], *, limit=None, offset=None):
+    rows_stmt = (
+        select(StudentProject, User)
+        .join(Status, Status.id_status == StudentProject.id_status)
+        .join(Student, Student.id_student == StudentProject.id_student)
+        .join(User, User.id_user == Student.id_student)
+        .where(*_member_conditions(id_project, statuses))
+        .order_by(
+            col(StudentProject.is_leader).desc(),
+            _member_priority(),
+            col(StudentProject.enrolled_at),
+            col(StudentProject.id_student_project),
+        )
+    )
+    if limit is not None:
+        rows_stmt = rows_stmt.limit(limit).offset(offset or 0)
+    rows = (await db.exec(rows_stmt)).all()
+    return [await _to_member(membership, user) for membership, user in rows]
+
+
 async def list_members(
     db,
     id_project: int,
@@ -308,42 +344,40 @@ async def list_members(
     limit: int,
     offset: int,
 ) -> tuple[list[StudentProjectMemberPublic], int]:
-    conditions = [StudentProject.id_project == id_project, Status.ambito == "student_project"]
-    if statuses:
-        conditions.append(Status.code.in_(statuses))
-
-    on_status = Status.id_status == StudentProject.id_status
+    conditions = _member_conditions(id_project, statuses)
     total = (
         await db.exec(
             select(func.count())
             .select_from(StudentProject)
-            .join(Status, on_status)
+            .join(Status, Status.id_status == StudentProject.id_status)
             .where(*conditions)
         )
     ).one()
+    items = await _member_rows(db, id_project, statuses, limit=limit, offset=offset)
+    return items, total
 
-    priority = case(
-        {code: index for index, code in enumerate(STUDENT_PROJECT.order)},
-        value=Status.code,
-        else_=len(STUDENT_PROJECT.order),
-    )
-    rows = (
+
+async def list_all_members(
+    db, id_project: int, *, statuses: list[str]
+) -> list[StudentProjectMemberPublic]:
+    """Todos los integrantes que cumplen `statuses`, sin paginar (para el overview)."""
+    return await _member_rows(db, id_project, statuses)
+
+
+async def get_responsible(db, id_project: int) -> StudentProjectMemberPublic | None:
+    """El jefe del grupo (`is_leader`), independiente del filtro de estados."""
+    row = (
         await db.exec(
             select(StudentProject, User)
-            .join(Status, on_status)
             .join(Student, Student.id_student == StudentProject.id_student)
             .join(User, User.id_user == Student.id_student)
-            .where(*conditions)
-            .order_by(
-                col(StudentProject.is_leader).desc(),
-                priority,
-                col(StudentProject.enrolled_at),
-                col(StudentProject.id_student_project),
+            .where(
+                StudentProject.id_project == id_project,
+                StudentProject.is_leader == True,  # noqa: E712
             )
-            .limit(limit)
-            .offset(offset)
         )
-    ).all()
-
-    items = [await _to_member(membership, user) for membership, user in rows]
-    return items, total
+    ).first()
+    if row is None:
+        return None
+    membership, user = row
+    return await _to_member(membership, user)

@@ -4,6 +4,7 @@ from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.status import StatusPublic
+from schemas.student_project import StudentProjectMemberPublic
 
 Privacy = Literal["public", "private", "protected"]
 
@@ -71,3 +72,10 @@ class ProjectList(SQLModel):
     total: int
     limit: int
     offset: int
+
+
+class ProjectOverviewPublic(ProjectPublic):
+    """Proyecto con sus integrantes y el responsable (el jefe del grupo)."""
+
+    members: list[StudentProjectMemberPublic]
+    responsible: StudentProjectMemberPublic | None = None

@@ -19,6 +19,11 @@ class Project(SQLModel, table=True):
     group_number: int
     privacy: str = Field(default="public", max_length=20)
     id_status: int = Field(foreign_key="statuses.id_status", index=True)
+    # Memoria del subestado asegurado: al volver de `uninsured` a insured se retoma
+    # este estado. `null` mientras el proyecto nunca estuvo asegurado.
+    id_status_insured: int | None = Field(
+        default=None, foreign_key="statuses.id_status", index=True
+    )
 
     name: str | None = Field(default=None, max_length=200)
     description: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
@@ -26,4 +31,6 @@ class Project(SQLModel, table=True):
     problem: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
 
     section_year: SectionYear = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
-    status: Status = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
+    status: Status = Relationship(
+        sa_relationship_kwargs={"lazy": "selectin", "foreign_keys": "[Project.id_status]"}
+    )
