@@ -20,6 +20,11 @@ from utils.section_years import get_section_year
 from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
 from utils.statuses import to_public as status_public
 
+# Estados desde los que se puede desasegurar (insured → uninsured).
+UNINSURE_FROM = ("in_idea", "in_progress", "pending_approval", "rejected")
+# Estados desde los que se puede cancelar (cualquier no final).
+CANCEL_FROM = ("uninsured", "in_idea", "in_progress", "pending_approval", "rejected")
+
 
 def is_uninsured(project: Project) -> bool:
     """Un proyecto `uninsured` (Desasegurado) se trata siempre como público."""
@@ -307,6 +312,133 @@ async def insure_project(db, access: Access, id_user: int, id_project: int) -> P
     await record_status_change(db, id_project, uninsured.id_status, target.id_status)
     await db.commit()
     return to_public(project)
+
+
+async def _close_memberships(db, id_project: int, active_code: str) -> None:
+    """Cierra las membresías del grupo al finalizar el proyecto.
+
+    Las `active` pasan a `active_code` (`abandoned` al cancelar, `finished` al
+    aprobar); las `pending_approval` pasan a `rejected`. Las demás no se tocan.
+    """
+    rows = (
+        await db.exec(
+            select(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_project == id_project,
+                Status.ambito == "student_project",
+                Status.code.in_(("active", "pending_approval")),
+            )
+        )
+    ).all()
+    if not rows:
+        return
+    rejected = await get_status(db, "student_project", "rejected")
+    target = await get_status(db, "student_project", active_code)
+    for membership in rows:
+        if membership.status.code == "pending_approval":
+            membership.status = rejected
+            membership.is_leader = False
+        else:
+            membership.status = target
+        db.add(membership)
+
+
+async def _transition_project(
+    db,
+    access: Access,
+    id_project: int,
+    *,
+    allowed_from: tuple[str, ...],
+    to_code: str,
+    members_code: str | None = None,
+) -> ProjectPublic:
+    """Aplica una transición de estado del proyecto y registra en el historial."""
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can change "
+            "the project status",
+        )
+    current = project.status.code
+    if current not in allowed_from:
+        raise _conflict(f"A project in '{current}' cannot change to '{to_code}'")
+
+    # La memoria del subestado se escribe al desasegurar (insured → uninsured).
+    if to_code == PROJECT.initial and current in UNINSURE_FROM:
+        project.id_status_insured = project.id_status
+
+    target = await get_status(db, "project", to_code)
+    source = project.status
+    project.status = target
+    db.add(project)
+    await record_status_change(db, id_project, source.id_status, target.id_status)
+
+    if members_code is not None:
+        await _close_memberships(db, id_project, members_code)
+
+    await db.commit()
+    return to_public(project)
+
+
+async def uninsure_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """Desasegura un grupo: insured → uninsured. Escribe la memoria del subestado."""
+    return await _transition_project(
+        db, access, id_project, allowed_from=UNINSURE_FROM, to_code=PROJECT.initial
+    )
+
+
+async def advance_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """in_idea → in_progress."""
+    return await _transition_project(
+        db, access, id_project, allowed_from=("in_idea",), to_code="in_progress"
+    )
+
+
+async def submit_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """in_progress → pending_approval."""
+    return await _transition_project(
+        db, access, id_project, allowed_from=("in_progress",), to_code="pending_approval"
+    )
+
+
+async def approve_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """pending_approval → approved. Cierra las membresías `active` como `finished`."""
+    return await _transition_project(
+        db,
+        access,
+        id_project,
+        allowed_from=("pending_approval",),
+        to_code="approved",
+        members_code="finished",
+    )
+
+
+async def reject_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """pending_approval → rejected."""
+    return await _transition_project(
+        db, access, id_project, allowed_from=("pending_approval",), to_code="rejected"
+    )
+
+
+async def retry_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """rejected → in_progress."""
+    return await _transition_project(
+        db, access, id_project, allowed_from=("rejected",), to_code="in_progress"
+    )
+
+
+async def cancel_project(db, access: Access, id_project: int) -> ProjectPublic:
+    """Cualquier no final → cancelled. Cierra las membresías `active` como `abandoned`."""
+    return await _transition_project(
+        db,
+        access,
+        id_project,
+        allowed_from=CANCEL_FROM,
+        to_code="cancelled",
+        members_code="abandoned",
+    )
 
 
 async def delete_project(db, access: Access, id_project: int) -> None:

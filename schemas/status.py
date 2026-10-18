@@ -13,6 +13,16 @@ MembershipStatus = Literal[
     "rejected",
 ]
 
+ProjectStatus = Literal[
+    "uninsured",
+    "in_idea",
+    "in_progress",
+    "pending_approval",
+    "rejected",
+    "approved",
+    "cancelled",
+]
+
 
 class StatusPublic(SQLModel):
     id_status: int

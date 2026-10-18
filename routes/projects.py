@@ -18,14 +18,21 @@ from utils.auth import user_dependency
 from utils.permissions import professor_dependency
 from utils.project_statuses import list_project_status_history, to_public as status_history_public
 from utils.projects import (
+    advance_project,
+    approve_project,
     build_access,
+    cancel_project,
     create_project,
     create_projects_bulk,
     delete_project,
     get_project,
     insure_project,
     list_projects,
+    reject_project,
+    retry_project,
+    submit_project,
     to_public,
+    uninsure_project,
     update_project,
 )
 from utils.statuses import MEMBER, STUDENT_PROJECT
@@ -421,3 +428,143 @@ async def delete_project_route(
     volver a crearse enviándolo en `group_number`.
     """
     await delete_project(db, await build_access(db, user), id_project)
+
+
+_TRANSITION_ERRORS = {
+    401: {"description": "Token ausente, inválido o vencido"},
+    403: {
+        "description": (
+            "El usuario no es profesor, o no está asignado a ese curso lectivo "
+            "(los super admin pueden en cualquiera)"
+        )
+    },
+    404: {"description": "No existe el proyecto"},
+    409: {"description": "El proyecto no está en un estado que permita esta transición"},
+}
+
+
+@projects_router.post(
+    "/{id_project}/uninsure",
+    response_model=ProjectPublic,
+    summary="Desasegurar un proyecto (grupo)",
+    responses=_TRANSITION_ERRORS,
+)
+async def uninsure_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    **Desasegura** un grupo: lo pasa de un estado asegurado a `uninsured`
+    (Desasegurado). **Solo profesores de ese curso lectivo y super admin.**
+
+    - Solo desde un estado asegurado (`in_idea`, `in_progress`, `pending_approval`
+      o `rejected`); si el proyecto ya está `uninsured` o en un estado final
+      (`approved`/`cancelled`), responde **409**.
+    - Guarda la memoria del subestado: al volver a asegurar (`POST /projects/{id}/insure`)
+      se retoma el mismo subestado desde el que se desaseguró.
+    - Al estar `uninsured`, el proyecto se trata siempre como público y **se pueden
+      unir integrantes nuevos**.
+    """
+    return await uninsure_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/start",
+    response_model=ProjectPublic,
+    summary="Pasar el proyecto de En idea a En proceso",
+    responses=_TRANSITION_ERRORS,
+)
+async def advance_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    Pasa el proyecto de **`in_idea`** (En idea) a **`in_progress`** (En proceso).
+    **Solo profesores de ese curso lectivo y super admin.**
+
+    Responde **409** si el proyecto no está en `in_idea`.
+    """
+    return await advance_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/submit",
+    response_model=ProjectPublic,
+    summary="Enviar el proyecto a aprobación",
+    responses=_TRANSITION_ERRORS,
+)
+async def submit_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    Pasa el proyecto de **`in_progress`** (En proceso) a **`pending_approval`**
+    (Pendiente de aprobación). **Solo profesores de ese curso lectivo y super admin.**
+
+    Responde **409** si el proyecto no está en `in_progress`.
+    """
+    return await submit_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/approve",
+    response_model=ProjectPublic,
+    summary="Aprobar un proyecto",
+    responses=_TRANSITION_ERRORS,
+)
+async def approve_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    **Aprueba** un proyecto: pasa de **`pending_approval`** a **`approved`**
+    (estado final). **Solo profesores de ese curso lectivo y super admin.**
+
+    Al aprobar, todas las membresías `active` pasan a `finished` (finalizadas) y
+    las solicitudes `pending_approval` pendientes pasan a `rejected`.
+
+    Responde **409** si el proyecto no está en `pending_approval`.
+    """
+    return await approve_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/reject",
+    response_model=ProjectPublic,
+    summary="Rechazar un proyecto",
+    responses=_TRANSITION_ERRORS,
+)
+async def reject_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    **Rechaza** un proyecto: pasa de **`pending_approval`** a **`rejected`**
+    (rechazado). **Solo profesores de ese curso lectivo y super admin.**
+
+    Responde **409** si el proyecto no está en `pending_approval`.
+    """
+    return await reject_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/retry",
+    response_model=ProjectPublic,
+    summary="Reintentar un proyecto rechazado",
+    responses=_TRANSITION_ERRORS,
+)
+async def retry_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    Pasa el proyecto de **`rejected`** (Rechazado) a **`in_progress`** (En proceso)
+    para que el grupo corrija y vuelva a enviarlo. **Solo profesores de ese curso
+    lectivo y super admin.**
+
+    Responde **409** si el proyecto no está en `rejected`.
+    """
+    return await retry_project(db, await build_access(db, user), id_project)
+
+
+@projects_router.post(
+    "/{id_project}/cancel",
+    response_model=ProjectPublic,
+    summary="Cancelar un proyecto",
+    responses=_TRANSITION_ERRORS,
+)
+async def cancel_project_route(id_project: int, db: db_dependency, user: user_dependency):
+    """
+    **Cancela** un proyecto: lo pasa a **`cancelled`** (Cancelado), un estado
+    final. **Solo profesores de ese curso lectivo y super admin.**
+
+    Se puede cancelar desde cualquier estado **no final** (`uninsured`, `in_idea`,
+    `in_progress`, `pending_approval` o `rejected`). Responde **409** si el
+    proyecto ya está `approved` o `cancelled`.
+
+    Al cancelar, todas las membresías `active` pasan a `abandoned` (abandono) y
+    las solicitudes `pending_approval` pasan a `rejected`.
+    """
+    return await cancel_project(db, await build_access(db, user), id_project)

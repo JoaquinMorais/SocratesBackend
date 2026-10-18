@@ -410,6 +410,44 @@ Aseguramiento de un proyecto (`POST /projects/{id}/insure`).
 - `test_insure_defaults_to_in_idea_without_memory`: testear que sin subestado recordado el proyecto vuelve a `in_idea`.
 - `test_insure_returns_to_remembered_status`: testear que con el subestado recordado (`in_progress`) el proyecto vuelve a él y el historial lo refleja.
 
+## `tests/test_project_transitions.py`
+
+Transiciones de estado del proyecto (`POST /projects/{id}/uninsure`, `/start`, `/submit`, `/approve`, `/reject`, `/retry`, `/cancel`). Todas son por un profesor del curso lectivo o un super admin.
+
+**Permisos**
+- `test_requires_authentication`: testear que cualquier transición sin login responde 401.
+- `test_student_cannot_change_status`: testear que un alumno recibe 403 en todas las transiciones.
+- `test_group_leader_cannot_change_status`: testear que el jefe del grupo (alumno) recibe 403.
+- `test_unassigned_professor_cannot_change_status`: testear que un profesor no asignado al curso lectivo recibe 403.
+- `test_assigned_professor_can_change_status`: testear que un profesor del curso lectivo puede cambiar el estado.
+- `test_super_admin_can_change_status`: testear que un super admin puede cambiar el estado.
+- `test_unknown_project`: testear que un proyecto inexistente responde 404 en todas las transiciones.
+
+**Transiciones válidas**
+- `test_uninsure_from_each_insured_status`: testear que `uninsure` funciona desde `in_idea`, `in_progress`, `pending_approval` y `rejected`, y que el proyecto vuelve a tratarse como público.
+- `test_uninsure_writes_memory`: testear que `uninsure` guarda el subestado saliente en `id_status_insured`.
+- `test_uninsure_then_insure_returns_to_same_substate`: testear que tras `uninsure` el `insure` retoma el subestado recordado.
+- `test_start_moves_idea_to_progress`: testear que `start` pasa de `in_idea` a `in_progress`.
+- `test_submit_moves_progress_to_pending`: testear que `submit` pasa de `in_progress` a `pending_approval`.
+- `test_approve_moves_pending_to_approved`: testear que `approve` pasa de `pending_approval` a `approved`.
+- `test_reject_moves_pending_to_rejected`: testear que `reject` pasa de `pending_approval` a `rejected`.
+- `test_retry_moves_rejected_to_progress`: testear que `retry` pasa de `rejected` a `in_progress`.
+- `test_cancel_from_uninsured`: testear que un proyecto `uninsured` se puede cancelar.
+- `test_cancel_from_each_insured_status`: testear que `cancel` funciona desde cada estado asegurado.
+
+**Transiciones no permitidas**
+- `test_cannot_uninsure_from_uninsured`: testear que `uninsure` desde `uninsured` responde 409.
+- `test_transition_not_allowed`: testear que una transición fuera de la máquina de estados responde 409.
+- `test_cannot_cancel_final_project`: testear que cancelar un proyecto final (`approved`) responde 409.
+- `test_cannot_change_status_of_final_project`: testear que ningún endpoint cambia el estado de un proyecto final (`cancelled`) (409).
+
+**Efectos en las membresías e historial**
+- `test_cancel_abandons_active_members`: testear que `cancel` pasa las membresías `active` a `abandoned`.
+- `test_cancel_rejects_pending_requests`: testear que `cancel` pasa las membresías `pending_approval` a `rejected`.
+- `test_approve_finishes_active_members`: testear que `approve` pasa las membresías `active` a `finished`.
+- `test_history_records_each_transition`: testear que cada transición se registra en el historial en orden.
+- `test_full_rejection_cycle`: testear que el ciclo `insure → start → submit → reject → retry → submit` funciona.
+
 ## `tests/test_student_projects.py`
 
 Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), aceptar/rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`), abandonar (`POST .../abandon`), expulsar (`POST .../expel`), delegar la jefatura (`POST .../leader`) y listar integrantes (`GET /projects/{id}/members`).
