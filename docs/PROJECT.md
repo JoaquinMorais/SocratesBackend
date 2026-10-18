@@ -21,7 +21,9 @@ Hay dos tipos de usuario, que comparten los datos de `User`:
 - **Alumno (`Student`)**: tiene año de ingreso a la carrera. Su mail institucional se calcula como `{legajo}@sistemas.frc.utn.edu.ar`.
 - **Profesor (`Professor`)**: tiene un mail propio (puede ser institucional, personal u otro) y un indicador `is_super_admin`.
 
-Datos comunes: nombre, apellido, legajo y fecha de nacimiento. El **legajo no es único** (solo lo es entre alumnos).
+Datos comunes: nombre, apellido, legajo y fecha de nacimiento. El **legajo no es único entre tipos** (un alumno y un profesor pueden compartir legajo), pero sí es único **dentro de cada tipo**: no puede repetirse entre alumnos ni entre profesores.
+
+Ambos deben ser **mayores de edad**: al crear o editar la fecha de nacimiento, el usuario debe tener **al menos 18 años** (edad a la fecha del alta), o la operación responde **422**.
 
 Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atributo.
 

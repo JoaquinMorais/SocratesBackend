@@ -6,6 +6,21 @@ from sqlmodel import Field, SQLModel
 
 Role = Literal["student", "professor"]
 
+MIN_AGE = 18
+
+
+def ensure_adult(birth_date: date) -> date:
+    """Valida que el usuario tenga al menos MIN_AGE años (edad a hoy)."""
+    today = date.today()
+    age = (
+        today.year
+        - birth_date.year
+        - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    )
+    if age < MIN_AGE:
+        raise ValueError("birth_date must make the user at least 18 years old")
+    return birth_date
+
 
 class UserPublic(SQLModel):
     id_user: int
@@ -31,10 +46,8 @@ class UserUpdate(SQLModel):
 
     @field_validator("birth_date")
     @classmethod
-    def not_in_future(cls, v: date | None) -> date | None:
-        if v is not None and v > date.today():
-            raise ValueError("birth_date cannot be in the future")
-        return v
+    def is_adult(cls, v: date | None) -> date | None:
+        return None if v is None else ensure_adult(v)
 
 
 class UserListItem(SQLModel):

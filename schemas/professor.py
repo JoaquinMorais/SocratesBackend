@@ -5,7 +5,7 @@ from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from config.settings import settings
-from schemas.user import UserUpdate
+from schemas.user import UserUpdate, ensure_adult
 
 _MAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -31,6 +31,11 @@ class ProfessorCreate(SQLModel):
     @classmethod
     def validate_mail(cls, v: str) -> str:
         return normalize_mail(v)
+
+    @field_validator("birth_date")
+    @classmethod
+    def is_adult(cls, v: date) -> date:
+        return ensure_adult(v)
 
 
 class ProfessorUpdate(UserUpdate):

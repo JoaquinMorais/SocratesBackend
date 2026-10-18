@@ -1,4 +1,16 @@
+from datetime import date
+
 from tests.helpers import STUDENT, SUPER_ADMIN
+
+
+def _birth_date_for_age(age: int) -> str:
+    """Fecha de nacimiento para cumplir exactamente `age` años hoy."""
+    today = date.today()
+    try:
+        born = date(today.year - age, today.month, today.day)
+    except ValueError:  # 29 de febrero en un año no bisiesto
+        born = date(today.year - age, today.month, 28)
+    return born.isoformat()
 
 
 # ---------- PATCH /me ----------
@@ -45,6 +57,12 @@ async def test_update_invalid_values_rejected(client, login):
     headers = await login(STUDENT)
     assert (await client.patch("/me", json={"first_name": ""}, headers=headers)).status_code == 422
     r = await client.patch("/me", json={"birth_date": "2999-01-01"}, headers=headers)
+    assert r.status_code == 422
+
+
+async def test_cannot_set_under_18_birth_date(client, login):
+    headers = await login(STUDENT)
+    r = await client.patch("/me", json={"birth_date": _birth_date_for_age(17)}, headers=headers)
     assert r.status_code == 422
 
 

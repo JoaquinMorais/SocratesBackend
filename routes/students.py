@@ -117,7 +117,12 @@ async def get_students(
     summary="Crear un alumno",
     responses={
         **_AUTH_ERRORS,
-        422: {"description": "Datos inválidos o legajo ya existente entre alumnos"},
+        422: {
+            "description": (
+                "Datos inválidos, legajo ya existente entre alumnos o el alumno "
+                "tiene menos de 18 años"
+            )
+        },
     },
 )
 async def create_student(
@@ -133,6 +138,7 @@ async def create_student(
     - El alumno se crea **sin contraseña**: no puede iniciar sesión hasta crearla
       con `POST /auth/password/request` y `POST /auth/password/confirm`.
     - El legajo no puede repetirse entre alumnos.
+    - El alumno debe tener **al menos 18 años** a la fecha de alta (422 si no).
     - Se envía un mail de bienvenida al alumno.
     """
     created = await create_students(db, [data])
@@ -171,7 +177,9 @@ async def create_students_bulk(
     del lote o ya existente) no se crea ninguna y la respuesta indica qué filas
     corregir para volver a enviar el lote completo.
 
-    Las reglas por alumno son las mismas que en `POST /students`.
+    Las reglas por alumno son las mismas que en `POST /students`, incluida la
+    mayoría de edad: si algún alumno tiene menos de 18 años, el lote entero se
+    rechaza con **422** (error de validación de campo).
     """
     created = await create_students(db, data.students)
     background.add_task(
@@ -188,7 +196,12 @@ async def create_students_bulk(
         **_AUTH_ERRORS,
         404: {"description": "No existe el alumno"},
         409: {"description": "Otro alumno ya tiene ese legajo"},
-        422: {"description": "Datos inválidos, body vacío o campos que no se pueden modificar"},
+        422: {
+            "description": (
+                "Datos inválidos, body vacío, campos que no se pueden modificar, "
+                "o una `birth_date` que deje al alumno con menos de 18 años"
+            )
+        },
     },
 )
 async def update_student_route(
@@ -206,6 +219,7 @@ async def update_student_route(
     - Cambiar el `legajo` cambia también el mail de login del alumno
       (`{legajo}@sistemas.frc.utn.edu.ar`); sus sesiones siguen abiertas.
     - El legajo no puede repetirse entre alumnos (409).
+    - La `birth_date` no puede dejar al alumno con menos de 18 años (422).
     - Cualquier otro campo responde 422. La contraseña no se puede modificar
       desde acá.
     """

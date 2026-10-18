@@ -1,4 +1,7 @@
+from datetime import date
+
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
+
 
 def professor(mail: str, **kw) -> dict:
     return {
@@ -9,6 +12,16 @@ def professor(mail: str, **kw) -> dict:
         "mail": mail,
         **kw,
     }
+
+
+def _birth_date_for_age(age: int) -> str:
+    """Fecha de nacimiento para cumplir exactamente `age` años hoy."""
+    today = date.today()
+    try:
+        born = date(today.year - age, today.month, today.day)
+    except ValueError:  # 29 de febrero en un año no bisiesto
+        born = date(today.year - age, today.month, 28)
+    return born.isoformat()
 
 
 async def test_requires_authentication(client):
@@ -74,6 +87,24 @@ async def test_professor_legajo_must_be_unique_among_professors(client, login):
     assert r.status_code == 409
 
 
+async def test_create_professor_under_18_rejected(client, login):
+    r = await client.post(
+        "/professors",
+        json=professor("c.ruiz@frc.utn.edu.ar", birth_date=_birth_date_for_age(17)),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
+
+
+async def test_create_professor_exactly_18_allowed(client, login, outbox):
+    r = await client.post(
+        "/professors",
+        json=professor("c.ruiz@frc.utn.edu.ar", birth_date=_birth_date_for_age(18)),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 201
+
+
 async def test_created_professor_sets_password_and_logs_in(client, login, outbox):
     await client.post(
         "/professors", json=professor("c.ruiz@frc.utn.edu.ar"), headers=await login(SUPER_ADMIN)
@@ -133,6 +164,18 @@ async def test_super_admin_edits_professor(client, login, make_professor):
     assert r.status_code == 200
     body = r.json()
     assert (body["first_name"], body["legajo"], body["email"]) == ("Nuevo", 300001, "nuevo@frc.utn.edu.ar")
+
+
+async def test_patch_professor_under_18_rejected(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(
+        f"/professors/{pid}",
+        json={"birth_date": _birth_date_for_age(17)},
+        headers=admin,
+    )
+    assert r.status_code == 422
 
 
 async def test_mail_change_closes_sessions_and_keeps_password(client, login, make_professor):

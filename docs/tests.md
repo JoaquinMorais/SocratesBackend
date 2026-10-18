@@ -60,6 +60,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_cannot_update_forbidden_fields`: testear que legajo, mail, año de ingreso e `is_super_admin` no se pueden modificar (422).
 - `test_update_empty_body_rejected`: testear que un body vacío se rechaza.
 - `test_update_invalid_values_rejected`: testear que se rechaza un nombre vacío y una fecha de nacimiento futura.
+- `test_cannot_set_under_18_birth_date`: testear que un usuario no puede fijar una fecha de nacimiento que lo deje con menos de 18 años (422).
 
 **Consultar usuarios (`GET /users`)**
 - `test_list_requires_authentication`: testear que sin login responde 401.
@@ -82,11 +83,14 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_created_student_can_set_password_and_login`: testear que un alumno recién creado no puede loguearse hasta crear su contraseña, y después sí.
 - `test_duplicate_legajo_rejected`: testear que no se puede crear un alumno con un legajo ya existente.
 - `test_invalid_student_data`: testear que datos inválidos (año de ingreso fuera de rango) devuelven 422.
+- `test_create_student_under_18_rejected`: testear que un alumno con menos de 18 años no se puede crear (422).
+- `test_create_student_exactly_18_allowed`: testear que un alumno que cumple 18 años hoy sí se puede crear.
 
 **Carga masiva**
 - `test_bulk_create`: testear que se pueden crear varios alumnos en una sola request.
 - `test_bulk_is_all_or_nothing`: testear que si una fila falla no se crea ninguna y el error indica el número de fila.
 - `test_bulk_duplicate_inside_request`: testear que un legajo repetido dentro del mismo lote se rechaza.
+- `test_bulk_student_under_18_rejected`: testear que si un alumno del lote tiene menos de 18 años se rechaza todo el lote (422).
 
 **Modificar un alumno (`PATCH /students/{id}`)**
 - `test_patch_requires_authentication`: testear que sin login responde 401.
@@ -95,6 +99,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_legajo_change_updates_login_mail`: testear que cambiar el legajo cambia el mail de login, conserva la contraseña y el mail viejo deja de servir.
 - `test_patch_duplicate_legajo_rejected`: testear que no se puede usar el legajo de otro alumno (409).
 - `test_patch_same_legajo_is_ok`: testear que reenviar el propio legajo no da error.
+- `test_patch_student_under_18_rejected`: testear que una modificación que deje al alumno con menos de 18 años se rechaza (422).
 - `test_student_legajo_may_match_a_professor`: testear que el legajo de un alumno puede coincidir con el de un profesor.
 - `test_patch_student_not_found`: testear que un alumno inexistente responde 404.
 - `test_patch_student_forbidden_fields`: testear que mail, `is_super_admin` y contraseña no se pueden modificar (422).
@@ -133,6 +138,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_student_domain_is_reserved`: testear que no se puede registrar un profesor con el dominio de alumnos.
 - `test_invalid_mail`: testear que un mail con formato inválido se rechaza.
 - `test_professor_legajo_must_be_unique_among_professors`: testear que el legajo de un profesor no puede coincidir con el de otro profesor (409).
+- `test_create_professor_under_18_rejected`: testear que un profesor con menos de 18 años no se puede crear (422).
+- `test_create_professor_exactly_18_allowed`: testear que un profesor que cumple 18 años hoy sí se puede crear.
 
 **Flujo de cuenta**
 - `test_created_professor_sets_password_and_logs_in`: testear que un profesor recién creado crea su contraseña por OTP y luego puede loguearse.
@@ -142,6 +149,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_student_cannot_patch_professors`: testear que un alumno no puede editar profesores (403).
 - `test_regular_professor_cannot_patch_professors`: testear que un profesor que no es super admin no puede editar profesores (403).
 - `test_super_admin_edits_professor`: testear que un super admin edita nombre, legajo y mail, y que el mail se guarda en minúsculas.
+- `test_patch_professor_under_18_rejected`: testear que una modificación que deje al profesor con menos de 18 años se rechaza (422).
 - `test_mail_change_closes_sessions_and_keeps_password`: testear que cambiar el mail cierra las sesiones del profesor, conserva su contraseña y el mail viejo deja de servir.
 - `test_patch_duplicate_mail_rejected`: testear que no se puede usar el mail de otro profesor, sin distinguir mayúsculas (409).
 - `test_patch_student_domain_is_reserved`: testear que no se puede poner un mail con el dominio de alumnos.
@@ -320,7 +328,8 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada grupo con alumnos tiene exactamente un jefe.
 - `test_seed_membership_status_follows_leader_rule`: testear que el jefe queda `active` y los demás miembros `pending_approval`.
 - `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
-- `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores ni legajos de alumnos.
+- `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores, legajos de profesores ni legajos de alumnos.
+- `test_seed_users_are_adults`: testear que todos los usuarios del seed son mayores de edad.
 - `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.

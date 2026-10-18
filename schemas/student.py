@@ -1,9 +1,10 @@
 from datetime import date
 
+from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.status import StatusPublic
-from schemas.user import UserUpdate
+from schemas.user import UserUpdate, ensure_adult
 
 class StudentCreate(SQLModel):
     first_name: str = Field(min_length=1, max_length=100)
@@ -11,6 +12,11 @@ class StudentCreate(SQLModel):
     legajo: int = Field(gt=0)
     birth_date: date
     enrollment_year: int = Field(ge=1950, le=2100)
+
+    @field_validator("birth_date")
+    @classmethod
+    def is_adult(cls, v: date) -> date:
+        return ensure_adult(v)
 
 
 class StudentBulkCreate(SQLModel):

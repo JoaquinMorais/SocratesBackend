@@ -11,6 +11,7 @@ from models import (
     Status,
     Student,
     StudentProject,
+    User,
 )
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN
 from utils.seed import DATA_DIR, load_seed
@@ -140,9 +141,18 @@ async def test_seed_emails_and_legajos_are_unique():
         legajos = (await session.exec(select(Student.id_student))).all()
     mails = [p.mail for p in professors]
     assert len(mails) == len(set(mails))
+    professor_legajos = [p.user.legajo for p in professors]
+    assert len(professor_legajos) == len(set(professor_legajos))
     student_legajos = [s.user.legajo for s in students]
     assert len(student_legajos) == len(set(student_legajos))
     assert len(legajos) == len(set(legajos))
+
+
+async def test_seed_users_are_adults():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        users = (await session.exec(select(User))).all()
+    assert all(u.age >= 18 for u in users)
 
 
 async def test_seed_memberships_are_unique_per_section_year():

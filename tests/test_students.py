@@ -1,3 +1,5 @@
+from datetime import date
+
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
@@ -16,6 +18,16 @@ def student(legajo: int, **kw) -> dict:
         "enrollment_year": 2023,
         **kw,
     }
+
+
+def _birth_date_for_age(age: int) -> str:
+    """Fecha de nacimiento para cumplir exactamente `age` años hoy."""
+    today = date.today()
+    try:
+        born = date(today.year - age, today.month, today.day)
+    except ValueError:  # 29 de febrero en un año no bisiesto
+        born = date(today.year - age, today.month, 28)
+    return born.isoformat()
 
 
 # ---------- helpers de grupos ----------
@@ -146,6 +158,36 @@ async def test_invalid_student_data(client, login):
         "/students", json=student(100010, enrollment_year=1800), headers=await login(SUPER_ADMIN)
     )
     assert r.status_code == 422
+
+
+async def test_create_student_under_18_rejected(client, login):
+    r = await client.post(
+        "/students",
+        json=student(100010, birth_date=_birth_date_for_age(17)),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
+
+
+async def test_create_student_exactly_18_allowed(client, login):
+    r = await client.post(
+        "/students",
+        json=student(100010, birth_date=_birth_date_for_age(18)),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 201
+
+
+async def test_bulk_student_under_18_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        "/students/bulk",
+        json={"students": [student(100010), student(100011, birth_date=_birth_date_for_age(17))]},
+        headers=headers,
+    )
+    assert r.status_code == 422
+    # todo o nada: la fila válida tampoco se creó
+    assert (await client.post("/students", json=student(100010), headers=headers)).status_code == 201
 
 
 # ---------- GET /students (consultar) ----------
@@ -394,6 +436,15 @@ async def test_patch_duplicate_legajo_rejected(client, login):
 async def test_patch_same_legajo_is_ok(client, login):
     r = await client.patch("/students/1", json={"legajo": 100001}, headers=await login(SUPER_ADMIN))
     assert r.status_code == 200
+
+
+async def test_patch_student_under_18_rejected(client, login):
+    r = await client.patch(
+        "/students/1",
+        json={"birth_date": _birth_date_for_age(17)},
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
 
 
 async def test_student_legajo_may_match_a_professor(client, login):

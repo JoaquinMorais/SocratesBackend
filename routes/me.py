@@ -41,7 +41,8 @@ async def update_me(data: UserUpdate, user: user_dependency, db: db_dependency):
     Modifica los datos personales del usuario logueado (alumno o profesor).
 
     **Campos editables** (opcionales, se envían solo los que cambian):
-    `first_name`, `last_name`, `birth_date` (no puede ser futura).
+    `first_name`, `last_name`, `birth_date` (no puede ser futura ni dejar al
+    usuario con menos de 18 años).
 
     Cualquier otro campo (`legajo`, `email`...) responde 422. Si hay que
     corregir el legajo o el mail, lo hace un profesor (alumnos) o un super admin

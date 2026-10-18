@@ -21,8 +21,13 @@ _AUTH_ERRORS = {
     summary="Crear un profesor",
     responses={
         **_AUTH_ERRORS,
-        409: {"description": "Ya existe un profesor con ese mail"},
-        422: {"description": "Datos inválidos, o mail con el dominio reservado a alumnos"},
+        409: {"description": "Ya existe un profesor con ese mail o con ese legajo"},
+        422: {
+            "description": (
+                "Datos inválidos, mail con el dominio reservado a alumnos, o el "
+                "profesor tiene menos de 18 años"
+            )
+        },
     },
 )
 async def create_professor_route(
@@ -37,7 +42,9 @@ async def create_professor_route(
     - El `mail` es el mail con el que inicia sesión; se guarda en minúsculas y no
       puede repetirse. No puede terminar en `@sistemas.frc.utn.edu.ar` (reservado
       a alumnos).
-    - El `legajo` puede coincidir con el de otros usuarios.
+    - El `legajo` puede coincidir con el de un alumno, pero no puede repetirse
+      entre profesores (409).
+    - El profesor debe tener **al menos 18 años** a la fecha de alta (422 si no).
     - `is_super_admin` es opcional (por defecto `false`); un super admin puede
       crear otros super admins.
     - Se crea **sin contraseña**: el profesor la define con
@@ -58,11 +65,17 @@ async def create_professor_route(
         404: {"description": "No existe el profesor"},
         409: {
             "description": (
-                "Ya existe un profesor con ese mail, o un super admin intentó "
-                "quitarse a sí mismo el rol de super admin"
+                "Ya existe un profesor con ese mail o con ese legajo, o un super "
+                "admin intentó quitarse a sí mismo el rol de super admin"
             )
         },
-        422: {"description": "Datos inválidos, body vacío, campos no modificables o mail con el dominio de alumnos"},
+        422: {
+            "description": (
+                "Datos inválidos, body vacío, campos no modificables, mail con el "
+                "dominio de alumnos, o una `birth_date` que deje al profesor con "
+                "menos de 18 años"
+            )
+        },
     },
 )
 async def update_professor_route(
@@ -82,6 +95,9 @@ async def update_professor_route(
       profesor y se invalidan sus códigos pendientes; conserva su contraseña y
       vuelve a entrar con el mail nuevo. Si el super admin edita su propio mail,
       también se cierra su sesión.
+    - El `legajo` puede coincidir con el de un alumno, pero no puede repetirse
+      entre profesores (409).
+    - La `birth_date` no puede dejar al profesor con menos de 18 años (422).
     - Un super admin **no puede quitarse a sí mismo** el rol (409); sí puede
       quitárselo a otros.
     - Cualquier otro campo responde 422. La contraseña no se puede modificar
