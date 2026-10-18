@@ -279,7 +279,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
 
 **Crear**
-- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado, con el grupo 1 y con el estado inicial `active` del ámbito `project`.
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), privado, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
 - `test_create_assigns_next_group_number`: testear que sin `group_number` toma el siguiente libre, también después de un número explícito.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
@@ -324,7 +324,7 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los 8 estados base (2 de `project` y 6 de `student_project`) y que los finales son `cancelled`, `abandoned`, `finished` y `expelled`.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 13 estados base (7 de `project` y 6 de `student_project`) y que los finales son `approved`, `cancelled`, `abandoned`, `finished` y `expelled`.
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada grupo con alumnos tiene exactamente un jefe.
 - `test_seed_membership_status_follows_leader_rule`: testear que el jefe queda `active` y los demás miembros `pending_approval`.
 - `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
@@ -338,18 +338,21 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 
 **Permisos y lectura (`GET /statuses`)**
 - `test_requires_authentication`: testear que listar estados sin login responde 401.
-- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 8 estados.
-- `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description` e `is_final`.
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 13 estados (7 de `project` y 6 de `student_project`).
+- `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description`, `is_final` e `is_insured`.
 
 **Consultar**
-- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae `active` y `cancelled`; `student_project` trae `active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`.
+- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae los 7 estados nuevos; `student_project` trae `active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`.
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
 **Reglas por ámbito (`StatusPolicy`)**
 - `test_member_category`: testear que la categoría `member` es `active` + `finished` y que ningún otro estado de membresía pertenece.
-- `test_initial_and_pending_status`: testear que el estado inicial es `active` y que una membresía que se une a un grupo con jefe queda `pending_approval`.
-- `test_transitions`: testear que solo se permiten las transiciones documentadas (`pending_approval → active | rejected`, `active → abandoned | expelled | finished`, `rejected → pending_approval`) y que un estado final no admite ninguna.
+- `test_insured_category`: testear que la categoría `insured` es `in_idea`, `in_progress`, `pending_approval` y `rejected`, que `is_insured` devuelve true solo para esos, y false para `uninsured`, `approved`, `cancelled` y los estados de membresía.
+- `test_project_final_states`: testear que `approved` y `cancelled` están marcados `is_final` y no tienen transiciones.
+- `test_initial_and_pending_status`: testear que el estado inicial de proyecto es `uninsured`, el de membresía es `active`, y que una membresía que se une a un grupo con jefe queda `pending_approval`.
+- `test_transitions`: testear que solo se permiten las transiciones de membresía documentadas y que un estado final no admite ninguna.
+- `test_project_transitions`: testear la máquina de estados del proyecto (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`, `rejected → in_progress`, insured → `uninsured`), que `approved` y `cancelled` no salen a ningún lado y que no se puede ir de `approved` a `cancelled`.
 - `test_final_states_have_no_transitions`: testear que todo estado marcado `is_final` en el catálogo no tiene transiciones en su política (coherencia dato/regla).
 - `test_policy_codes_match_catalog`: testear que el orden y las categorías de cada política referencian exactamente los códigos del catálogo de ese ámbito.
 - `test_membership_status_literal_matches_policy`: testear que el `Literal` que valida `?status=` en `GET /students` coincide con los códigos de la política de membresías.

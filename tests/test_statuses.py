@@ -4,10 +4,12 @@ from schemas.status import MembershipStatus
 from tests.helpers import STUDENT, SUPER_ADMIN
 from utils.statuses import (
     DEFAULT_STATUSES,
+    INSURED,
     MEMBER,
     POLICIES,
     PROJECT,
     STUDENT_PROJECT,
+    is_insured,
     is_member,
     membership_initial_status,
 )
@@ -32,22 +34,25 @@ async def test_any_user_can_list_statuses(client, login, make_professor):
     for headers in headers_list:
         r = await client.get(URL, headers=headers)
         assert r.status_code == 200
-        assert r.json()["total"] == 8
+        assert r.json()["total"] == 13
 
 
 async def test_list_returns_public_fields(client, login):
     body = (await client.get(URL, headers=await login(STUDENT))).json()
     assert set(body["items"][0]) == {
-        "id_status", "ambito", "code", "name", "description", "is_final",
+        "id_status", "ambito", "code", "name", "description", "is_final", "is_insured",
     }
 
 
 async def test_filter_by_ambito(client, login):
     headers = await login(STUDENT)
     body = (await client.get(URL, params={"ambito": "project"}, headers=headers)).json()
-    assert body["total"] == 2
+    assert body["total"] == 7
     assert {i["ambito"] for i in body["items"]} == {"project"}
-    assert {i["code"] for i in body["items"]} == {"active", "cancelled"}
+    assert {i["code"] for i in body["items"]} == {
+        "uninsured", "in_idea", "in_progress", "pending_approval",
+        "rejected", "approved", "cancelled",
+    }
     body = (
         await client.get(URL, params={"ambito": "student_project"}, headers=headers)
     ).json()
@@ -64,7 +69,7 @@ async def test_invalid_ambito_rejected(client, login):
 async def test_list_pagination(client, login):
     headers = await login(STUDENT)
     page1 = (await client.get(f"{URL}?limit=2", headers=headers)).json()
-    assert len(page1["items"]) == 2 and page1["total"] == 8
+    assert len(page1["items"]) == 2 and page1["total"] == 13
     page2 = (await client.get(f"{URL}?limit=2&offset=2", headers=headers)).json()
     assert len(page2["items"]) == 2
     assert (await client.get(f"{URL}?limit=0", headers=headers)).status_code == 422
@@ -78,8 +83,30 @@ async def test_member_category():
     assert STUDENT_PROJECT.codes_of(MEMBER) == frozenset({"active", "finished"})
 
 
+async def test_insured_category():
+    for code in ("in_idea", "in_progress", "pending_approval", "rejected"):
+        assert is_insured(code), code
+    for code in ("uninsured", "approved", "cancelled"):
+        assert not is_insured(code), code
+    for code in ("active", "abandoned", "finished", "expelled"):
+        assert not is_insured(code), code
+    assert PROJECT.codes_of(INSURED) == frozenset(
+        {"in_idea", "in_progress", "pending_approval", "rejected"}
+    )
+
+
+async def test_project_final_states():
+    for code in ("approved", "cancelled"):
+        item = next(
+            s for s in DEFAULT_STATUSES
+            if s["ambito"] == "project" and s["code"] == code
+        )
+        assert item["is_final"], code
+        assert PROJECT.next_codes(code) == frozenset(), code
+
+
 async def test_initial_and_pending_status():
-    assert PROJECT.initial == "active"
+    assert PROJECT.initial == "uninsured"
     assert STUDENT_PROJECT.initial == "active"
     assert membership_initial_status(has_leader=False) == "active"
     assert membership_initial_status(has_leader=True) == "pending_approval"
@@ -95,6 +122,20 @@ async def test_transitions():
     assert not STUDENT_PROJECT.can_transition("active", "pending_approval")
     assert not STUDENT_PROJECT.can_transition("active", "rejected")
     assert STUDENT_PROJECT.next_codes("finished") == frozenset()
+
+
+async def test_project_transitions():
+    assert PROJECT.can_transition("uninsured", "in_idea")
+    assert PROJECT.can_transition("in_idea", "in_progress")
+    assert PROJECT.can_transition("in_progress", "pending_approval")
+    assert PROJECT.can_transition("pending_approval", "approved")
+    assert PROJECT.can_transition("pending_approval", "rejected")
+    assert PROJECT.can_transition("rejected", "in_progress")
+    assert PROJECT.can_transition("in_progress", "uninsured")
+    assert not PROJECT.can_transition("approved", "cancelled")
+    assert not PROJECT.can_transition("cancelled", "uninsured")
+    assert PROJECT.next_codes("approved") == frozenset()
+    assert PROJECT.next_codes("cancelled") == frozenset()
 
 
 async def test_final_states_have_no_transitions():

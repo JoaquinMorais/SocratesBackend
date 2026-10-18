@@ -44,10 +44,10 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 - **Estado (`Status`)**: un estado reutilizable identificado por un `ambito` y un `code` (únicos en conjunto), con un `name`, una `description` para mostrar e `is_final` (indica que es terminal: no admite más transiciones). Los ámbitos previstos son `project`, `student_project` y, más adelante, `document`, `idea` y `comment`.
 - Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`); por ahora no se guarda historial de cambios.
-- **Proyectos** (`project`): nacen `active`; el otro estado es `cancelled` (final).
+- **Proyectos** (`project`): nacen `uninsured` (Desasegurado). La máquina de estados es: `uninsured → in_idea → in_progress → pending_approval → (approved | rejected)`; `rejected → in_progress`; cualquier estado "insured" puede pasar a `uninsured` o a `cancelled`. `approved` y `cancelled` son **finales**. Cuando un proyecto pasa de `uninsured` a un estado insured, debe volver al subestado donde estaba (por ejemplo, `in_progress → uninsured → in_progress`); esa memoria requiere una columna en `projects` y está **pendiente**. Cada membresía alumno-proyecto también tiene su estado.
 - **Membresías** (`student_project`): el catálogo es `active`, `pending_approval`, `abandoned` (final), `finished` (final), `expelled` (final) y `rejected`. El estado inicial depende de si el grupo ya tiene jefe: si no tiene, el alumno entra `active`; si ya tiene, queda `pending_approval`.
-- **Transiciones** previstas (todavía **sin implementar**): `pending_approval → active | rejected`; `active → abandoned | expelled | finished`; `rejected → pending_approval` (si un profesor habilita o el alumno vuelve a solicitar).
-- **Reglas por ámbito (`StatusPolicy`)**: en código (no en la BD) viven, por ámbito, el estado inicial, el orden, las **categorías** y las **transiciones**. Una categoría agrupa códigos: `member` (ámbito `student_project`) es `active` + `finished` y es lo que da privilegios y lo que se lista por defecto en `GET /students`. Los estados de `project` tendrán, cuando se definan, una categoría `insured` ("Asegurado"); todavía no existe.
+- **Transiciones** de membresía (todavía **sin implementar** como endpoint): `pending_approval → active | rejected`; `active → abandoned | expelled | finished`; `rejected → pending_approval` (si un profesor habilita o el alumno vuelve a solicitar).
+- **Reglas por ámbito (`StatusPolicy`)**: en código (no en la BD) viven, por ámbito, el estado inicial, el orden, las **categorías** y las **transiciones**. Una categoría agrupa códigos: `member` (ámbito `student_project`) es `active` + `finished` y es lo que da privilegios y lo que se lista por defecto en `GET /students`. `insured` (ámbito `project`) es `in_idea`, `in_progress`, `pending_approval` y `rejected`: son los estados "asegurados" (el método `is_insured` los devuelve `true`).
 - Los estados son **datos**: el catálogo base se carga al arrancar el backend (en código) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
 
 ## Flujos principales
@@ -101,11 +101,13 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Asignación de profesores a cursos lectivos (CRUD).
 - Proyectos: crear (individual y masivo), listar, consultar y eliminar, con visibilidad según privacidad.
 - Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
+- Estados de proyecto: máquina de estados (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`), categoría `insured` y método `is_insured` en la respuesta de `GET /statuses`.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**
 - Unirse a un grupo (alumnos) y modificar los datos de un proyecto.
-- Cambiar el estado de un proyecto (incluido cancelado) y de la relación alumno-proyecto (por ejemplo, abandono): endpoints de transición, permisos y validaciones (por ejemplo, el rango `min_students`/`max_students`).
+- Cambiar el estado de un proyecto: endpoints de transición, permisos y validaciones. Falta la **memoria** de subestado (columna en `projects`) para que al volver de `uninsured` a insured se retome el subestado anterior.
+- Modificar los integrantes de un grupo: solo se permitirá en estado `uninsured`; en cualquier estado insured, `approved` o `cancelled` no se podrá modificar.
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).
 - Migraciones con Alembic: hoy las tablas se crean con `create_all`, que no modifica tablas existentes.
 - Envío de mails con una cuenta propia del proyecto (hoy se usa una cuenta provisoria).

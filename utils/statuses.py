@@ -9,17 +9,17 @@ from schemas.status import StatusPublic
 
 # Categorías que puede tener un estado, por ámbito.
 MEMBER = "member"  # student_project: el alumno pertenece al grupo (`active`, `finished`).
+INSURED = "insured"  # project: el proyecto está "asegurado" (en idea, en proceso, pendiente o rechazado).
 
 
 @dataclass(frozen=True)
 class StatusPolicy:
     """Reglas de un ámbito: estado inicial, orden, categorías y transiciones.
 
-    Las categorías agrupan códigos (por ejemplo `member` = `active` y `finished`);
-    las transiciones dicen qué estados admite cada estado. Viven en código porque
-    son reglas de dominio estables: la seed puede sumar estados, pero no cambia
-    estas reglas. La categoría `insured` del ámbito `project` se sumará cuando
-    existan esos estados.
+    Las categorías agrupan códigos (por ejemplo `member` = `active` y `finished`,
+    o `insured` = los estados "asegurados" de un proyecto); las transiciones dicen
+    qué estados admite cada estado. Viven en código porque son reglas de dominio
+    estables: la seed puede sumar estados, pero no cambia estas reglas.
     """
 
     ambito: str
@@ -68,8 +68,30 @@ STUDENT_PROJECT = StatusPolicy(
 
 PROJECT = StatusPolicy(
     ambito="project",
-    initial="active",
-    order=("active", "cancelled"),
+    initial="uninsured",
+    order=(
+        "uninsured",
+        "in_idea",
+        "in_progress",
+        "pending_approval",
+        "rejected",
+        "approved",
+        "cancelled",
+    ),
+    categories={INSURED: frozenset({"in_idea", "in_progress", "pending_approval", "rejected"})},
+    transitions={
+        # Al volver a "insured" desde `uninsured`, la memoria (columna futura en
+        # `projects`) lleva al subestado anterior; sin memoria, el default es `in_idea`.
+        "uninsured": frozenset(
+            {"in_idea", "in_progress", "pending_approval", "rejected", "cancelled"}
+        ),
+        "in_idea": frozenset({"in_progress", "uninsured", "cancelled"}),
+        "in_progress": frozenset({"pending_approval", "uninsured", "cancelled"}),
+        "pending_approval": frozenset({"rejected", "approved", "uninsured", "cancelled"}),
+        "rejected": frozenset({"in_progress", "uninsured", "cancelled"}),
+        "approved": frozenset(),
+        "cancelled": frozenset(),
+    },
 )
 
 POLICIES = {policy.ambito: policy for policy in (PROJECT, STUDENT_PROJECT)}
@@ -80,15 +102,55 @@ def is_member(code: str) -> bool:
     return STUDENT_PROJECT.has(code, MEMBER)
 
 
+def is_insured(code: str) -> bool:
+    """Si un código de proyecto cuenta como 'insured' (asegurado)."""
+    return PROJECT.has(code, INSURED)
+
+
 # Estados que se crean al arrancar para que siempre exista al menos el inicial.
 # La seed puede sumar más; estos no se borran.
 DEFAULT_STATUSES = [
     {
         "ambito": "project",
-        "code": "active",
-        "name": "Activo",
-        "description": "El grupo está en curso.",
+        "code": "uninsured",
+        "name": "Desasegurado",
+        "description": "El grupo todavía no tiene una idea asegurada.",
         "is_final": False,
+    },
+    {
+        "ambito": "project",
+        "code": "in_idea",
+        "name": "En idea",
+        "description": "El grupo está trabajando en la idea del proyecto.",
+        "is_final": False,
+    },
+    {
+        "ambito": "project",
+        "code": "in_progress",
+        "name": "En proceso",
+        "description": "El grupo está desarrollando el proyecto.",
+        "is_final": False,
+    },
+    {
+        "ambito": "project",
+        "code": "pending_approval",
+        "name": "Pendiente de aprobación",
+        "description": "El proyecto espera la aprobación de un profesor.",
+        "is_final": False,
+    },
+    {
+        "ambito": "project",
+        "code": "rejected",
+        "name": "Rechazado",
+        "description": "La aprobación del proyecto fue rechazada.",
+        "is_final": False,
+    },
+    {
+        "ambito": "project",
+        "code": "approved",
+        "name": "Aprobado",
+        "description": "El proyecto fue aprobado.",
+        "is_final": True,
     },
     {
         "ambito": "project",
@@ -148,6 +210,7 @@ def membership_initial_status(has_leader: bool) -> str:
 
 
 def to_public(status: Status) -> StatusPublic:
+    policy = POLICIES.get(status.ambito)
     return StatusPublic(
         id_status=status.id_status,
         ambito=status.ambito,
@@ -155,6 +218,7 @@ def to_public(status: Status) -> StatusPublic:
         name=status.name,
         description=status.description,
         is_final=status.is_final,
+        is_insured=policy.has(status.code, INSURED) if policy else False,
     )
 
 

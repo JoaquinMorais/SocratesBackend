@@ -90,7 +90,12 @@ async def test_seed_statuses_are_loaded():
         statuses = (await session.exec(select(Status))).all()
     pairs = {(s.ambito, s.code) for s in statuses}
     assert pairs == {
-        ("project", "active"),
+        ("project", "uninsured"),
+        ("project", "in_idea"),
+        ("project", "in_progress"),
+        ("project", "pending_approval"),
+        ("project", "rejected"),
+        ("project", "approved"),
         ("project", "cancelled"),
         ("student_project", "active"),
         ("student_project", "pending_approval"),
@@ -100,7 +105,7 @@ async def test_seed_statuses_are_loaded():
         ("student_project", "rejected"),
     }
     final = {s.code for s in statuses if s.is_final}
-    assert final == {"cancelled", "abandoned", "finished", "expelled"}
+    assert final == {"approved", "cancelled", "abandoned", "finished", "expelled"}
 
 
 async def test_seed_each_project_with_members_has_exactly_one_leader():

@@ -21,6 +21,7 @@ class StatusPublic(SQLModel):
     name: str
     description: str | None = None
     is_final: bool
+    is_insured: bool = False
 
 
 class StatusList(SQLModel):

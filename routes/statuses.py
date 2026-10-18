@@ -31,7 +31,9 @@ async def get_statuses(
 
     Cada estado pertenece a un `ambito` (por ahora `project` y `student_project`)
     y tiene un `code` (identificador), un `name` y una `description` para mostrar.
-    `is_final` indica que es un estado terminal (no admite más transiciones).
+    `is_final` indica que es un estado terminal (no admite más transiciones) e
+    `is_insured` que el estado de proyecto cuenta como "asegurado" (los cuatro
+    estados internos: `in_idea`, `in_progress`, `pending_approval`, `rejected`).
     Sirve para que el frontend arme etiquetas y filtros.
 
     Por ahora los estados se cargan con el arranque del backend; todavía no hay

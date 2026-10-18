@@ -60,8 +60,9 @@ async def create_project_route(
 
     - `group_number` es opcional: si no se envía, toma el siguiente libre (el
       mayor existente + 1). No puede repetirse dentro del curso lectivo.
-    - Se crea con privacidad `private` y sin nombre, descripción, objetivo ni
-      problemática (todos `null`); se completan después.
+    - Se crea con privacidad `private`, en estado `uninsured` (Desasegurado) y
+      sin nombre, descripción, objetivo ni problemática (todos `null`); se
+      completan después.
     """
     return await create_project(db, await build_access(db, user), data)
 
@@ -87,7 +88,8 @@ async def create_projects_bulk_route(
     """
     Crea de 1 a 50 grupos vacíos en un curso lectivo, con números consecutivos a
     partir del siguiente libre (si hay grupos 1 a 11, `quantity=3` crea 12, 13 y
-    14). Mismos permisos que `POST /projects`. Es todo o nada.
+    14). Mismos permisos que `POST /projects`. Es todo o nada. Cada grupo nace
+    con privacidad `private` y en estado `uninsured` (Desasegurado).
     """
     return await create_projects_bulk(db, await build_access(db, user), data)
 

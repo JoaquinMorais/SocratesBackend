@@ -145,7 +145,7 @@ async def test_create_project_defaults(client, login):
     assert p["id_project"]
     assert (p["id_section_year"], p["year"], p["section_name"]) == (sy, 2025, "3K1")
     assert (p["group_number"], p["privacy"], p["restricted"]) == (1, "private", False)
-    assert p["status"]["code"] == "active"
+    assert p["status"]["code"] == "uninsured"
     assert p["status"]["ambito"] == "project"
     assert [p[k] for k in ("name", "description", "objective", "problem")] == [None] * 4
 
@@ -201,7 +201,7 @@ async def test_bulk_create(client, login):
     assert r.status_code == 201
     assert [p["group_number"] for p in r.json()] == [1, 2, 3]
     assert {p["privacy"] for p in r.json()} == {"private"}
-    assert {p["status"]["code"] for p in r.json()} == {"active"}
+    assert {p["status"]["code"] for p in r.json()} == {"uninsured"}
     r = await client.post(BULK, json={"id_section_year": sy, "quantity": 2}, headers=admin)
     assert [p["group_number"] for p in r.json()] == [4, 5]
 
