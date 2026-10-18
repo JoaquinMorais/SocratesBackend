@@ -1,4 +1,6 @@
-from sqlalchemy import Index, UniqueConstraint, text
+from datetime import datetime, timezone
+
+from sqlalchemy import DateTime, Index, UniqueConstraint, text
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.status import Status
@@ -21,5 +23,11 @@ class StudentProject(SQLModel, table=True):
     id_project: int = Field(foreign_key="projects.id_project", index=True)
     id_status: int = Field(foreign_key="statuses.id_status", index=True)
     is_leader: bool = Field(default=False)
+    # Antigüedad del alumno en el grupo: define el orden y la sucesión de jefe.
+    enrolled_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
+        index=True,
+    )
 
     status: Status = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

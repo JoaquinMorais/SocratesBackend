@@ -353,11 +353,12 @@ Historial de estados de un proyecto (`GET /projects/{id}/status-history`).
 
 ## `tests/test_student_projects.py`
 
-Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), aceptar/rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`) y listar integrantes (`GET /projects/{id}/members`).
+Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), aceptar/rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`), abandonar (`POST .../abandon`), expulsar (`POST .../expel`), delegar la jefatura (`POST .../leader`) y listar integrantes (`GET /projects/{id}/members`).
 
 **Permisos**
-- `test_requires_authentication`: testear que unirse, listar integrantes y aceptar/rechazar sin login responden 401.
+- `test_requires_authentication`: testear que unirse, listar, aceptar/rechazar, abandonar, expulsar y delegar sin login responden 401.
 - `test_professor_cannot_join`: testear que un profesor o super admin no puede unirse a un grupo (403; solo alumnos).
+- `test_professor_cannot_abandon`: testear que un profesor recibe 403 al querer abandonar (solo alumnos).
 - `test_non_leader_cannot_decide`: testear que un alumno que no es el jefe, un profesor y el super admin reciben 403 al aceptar o rechazar.
 
 **Unirse**
@@ -379,9 +380,37 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_decide_membership_not_found`: testear que una membresía inexistente o de otro proyecto responde 404.
 - `test_decide_invalid_body`: testear que un `status` faltante, distinto de `active`/`rejected` o un campo desconocido responden 422.
 
+**Abandonar**
+- `test_member_can_abandon`: testear que un integrante `active` abandona su grupo (204) y su membresía queda `abandoned` y sin jefatura.
+- `test_cannot_abandon_someone_else`: testear que un alumno no puede abandonar la membresía de otro (403).
+- `test_cannot_abandon_pending`: testear que una membresía `pending_approval` no se puede abandonar (409).
+- `test_cannot_abandon_insured_project`: testear que no se puede abandonar si el proyecto no está `uninsured` (409).
+- `test_abandon_unknown_membership`: testear que una membresía inexistente responde 404.
+- `test_leader_abandon_promotes_oldest_active`: testear que al abandonar el jefe, la jefatura pasa al integrante `active` más antiguo (`enrolled_at`).
+- `test_leader_abandon_without_successor_leaves_no_leader`: testear que si el jefe abandona y no queda ningún `active`, el grupo queda sin jefe.
+
+**Expulsar**
+- `test_professor_can_expel`: testear que el profesor del curso lectivo expulsa a un integrante `active` (204) y queda `expelled`.
+- `test_super_admin_can_expel`: testear que el super admin puede expulsar.
+- `test_unassigned_professor_cannot_expel`: testear que un profesor no asignado al curso lectivo recibe 403.
+- `test_leader_cannot_expel`: testear que el jefe (alumno) no puede expulsar (403).
+- `test_cannot_expel_pending`: testear que una membresía `pending_approval` no se puede expulsar (409).
+- `test_cannot_expel_in_insured_project`: testear que no se puede expulsar si el proyecto no está `uninsured` (409).
+- `test_expel_unknown_membership`: testear que una membresía inexistente responde 404.
+- `test_expel_leader_promotes_oldest_active`: testear que al expulsar al jefe, la jefatura pasa al integrante `active` más antiguo.
+
+**Delegar jefatura**
+- `test_leader_can_transfer_leadership`: testear que el jefe delega la jefatura en otro integrante `active` (200) y deja de ser jefe.
+- `test_cannot_transfer_to_pending`: testear que no se puede delegar a un integrante `pending_approval` (409).
+- `test_cannot_transfer_to_self`: testear que el jefe no puede delegarse la jefatura a sí mismo (409).
+- `test_non_leader_cannot_transfer`: testear que un integrante `active` que no es jefe recibe 403.
+- `test_transfer_allowed_in_insured_project`: testear que la delegación se permite en un proyecto asegurado (no final).
+- `test_cannot_transfer_in_final_project`: testear que no se puede delegar en un proyecto final (`approved`/`cancelled`): 409.
+- `test_transfer_unknown_membership`: testear que una membresía inexistente responde 404.
+
 **Consultar**
 - `test_outsider_cannot_list`: testear que un alumno sin privilegios sobre el proyecto no puede listar integrantes (403).
-- `test_member_can_list_and_leader_is_first`: testear que un miembro lista integrantes, el jefe va primero y no se expone el mail.
+- `test_member_can_list_and_leader_is_first`: testear que un miembro lista integrantes, el jefe va primero, no se expone el mail y se incluye `enrolled_at` como datetime ISO.
 - `test_staff_can_list`: testear que el profesor del curso lectivo y el super admin pueden listar integrantes.
 - `test_list_unknown_project`: testear que un proyecto inexistente responde 404.
 - `test_list_filter_and_pagination`: testear el filtro por `status`, `limit`/`offset` y que un `status` inválido o `limit=0` responden 422.

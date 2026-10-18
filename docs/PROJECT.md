@@ -38,7 +38,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - **Proyecto (`Project`)**: un grupo de un curso lectivo, identificado por un número de grupo único dentro de ese curso lectivo.
   - Campos opcionales, `null` al crearse y completados después: nombre, descripción, objetivo y problemática.
   - **Privacidad**: `public`, `protected` o `private`. Se crea `public`. Mientras el proyecto está en estado `uninsured` (Desasegurado) se **trata siempre como público**, sin importar la privacidad almacenada (la `privacy` que devuelve la API es la **efectiva**: `public`, en ese caso); al pasar a un estado aseguraado vuelve a valer la privacidad guardada.
-- **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un miembro puede ser el **jefe de grupo** (`is_leader`); hay a lo sumo uno por proyecto. Un alumno solo puede ser **`member`** (`active` o `finished`) de **un** proyecto en todo el sistema; sus demás membresías deben ser `pending_approval` (a la espera) o no pertenecer (`abandoned`, `expelled`, `rejected`). Al pasar a `member`, sus otras solicitudes `pending_approval` pasan a `rejected`.
+- **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un miembro puede ser el **jefe de grupo** (`is_leader`); hay a lo sumo uno por proyecto. Cada membresía guarda su **fecha de inscripción** (`enrolled_at`), que define la antigüedad y el orden de sucesión de jefe. Un alumno solo puede ser **`member`** (`active` o `finished`) de **un** proyecto en todo el sistema; sus demás membresías deben ser `pending_approval` (a la espera) o no pertenecer (`abandoned`, `expelled`, `rejected`). Al pasar a `member`, sus otras solicitudes `pending_approval` pasan a `rejected`.
 
 ### Estados
 
@@ -46,7 +46,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`). Los proyectos además guardan su historial de transiciones en `project_statuses` (estado anterior, nuevo y cuándo), consultable con `GET /projects/{id}/status-history`; las membresías todavía no tienen historial.
 - **Proyectos** (`project`): nacen `uninsured` (Desasegurado). La máquina de estados es: `uninsured → in_idea → in_progress → pending_approval → (approved | rejected)`; `rejected → in_progress`; cualquier estado "insured" puede pasar a `uninsured` o a `cancelled`. `approved` y `cancelled` son **finales**. Cuando un proyecto pasa de `uninsured` a un estado insured, debe volver al subestado donde estaba (por ejemplo, `in_progress → uninsured → in_progress`); esa memoria requiere una columna en `projects` y está **pendiente**. Cada membresía alumno-proyecto también tiene su estado.
 - **Membresías** (`student_project`): el catálogo es `active`, `pending_approval`, `abandoned` (final), `finished` (final), `expelled` (final) y `rejected`. El estado inicial depende de si el grupo ya tiene jefe: si no tiene, el alumno entra `active` (y es el jefe); si ya tiene, queda `pending_approval`.
-- **Transiciones** de membresía: el alumno puede volver a enviar una solicitud `rejected` (vuelve a `pending_approval`, implementado en `POST /projects/{id}/members`); el **jefe del grupo** acepta (`pending_approval → active`) o rechaza (`pending_approval → rejected`) con `PATCH /projects/{id}/members/{id_student_project}`. Las demás transiciones (`active → abandoned | expelled | finished`) todavía no tienen endpoint.
+- **Transiciones** de membresía: el alumno puede volver a enviar una solicitud `rejected` (vuelve a `pending_approval`, implementado en `POST /projects/{id}/members`); el **jefe del grupo** acepta (`pending_approval → active`) o rechaza (`pending_approval → rejected`) con `PATCH /projects/{id}/members/{id_student_project}`. El propio alumno `active` puede abandonar (`active → abandoned`) con `POST .../abandon` y un profesor del curso lectivo o super admin puede expulsar (`active → expelled`) con `POST .../expel`. La transición `active → finished` todavía no tiene endpoint.
 - **Reglas por ámbito (`StatusPolicy`)**: en código (no en la BD) viven, por ámbito, el estado inicial, el orden, las **categorías** y las **transiciones**. Una categoría agrupa códigos: `member` (ámbito `student_project`) es `active` + `finished` y es lo que da privilegios y lo que se lista por defecto en `GET /students`. `insured` (ámbito `project`) es `in_idea`, `in_progress`, `pending_approval` y `rejected`: son los estados "asegurados" (el método `is_insured` los devuelve `true`).
 - Los estados son **datos**: el catálogo base se carga al arrancar el backend (en código) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
 - **Operaciones y estado**: qué se puede hacer según el estado del grupo (los estados se agrupan en desasegurado, insured y finales):
@@ -56,11 +56,17 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   | Eliminar el grupo (si está vacío) | ✅ | ❌ 409 | ❌ 409 |
   | Editar datos y privacidad | ✅ | ✅ | ❌ 409 |
   | Unirse al grupo | ✅ | ❌ 409 | ❌ 409 |
-  | Modificar integrantes (**pendiente**) | ✅ | ❌ | ❌ |
+  | Abandonar el grupo (integrante `active`) | ✅ | ❌ 409 | ❌ 409 |
+  | Expulsar a un integrante `active` | ✅ | ❌ 409 | ❌ 409 |
+  | Delegar la jefatura a un integrante `active` | ✅ | ✅ | ❌ 409 |
+  | Aceptar o rechazar solicitudes | ✅ | ✅ | ✅ |
 
 - **Unirse a un grupo** (`POST /projects/{id}/members`): solo el **alumno logueado** se une a sí mismo y solo mientras el proyecto está `uninsured` (si no, **409**). Si el grupo no tiene jefe, entra como jefe y `active`; si ya tiene, queda `pending_approval`. Un proyecto no admite dos jefes. Si el alumno ya es `member` de otro grupo y este está vacío (sería jefe/`active`), responde **409**. Al convertirse en `member`, sus otras solicitudes `pending_approval` pasan a `rejected`.
 - **Aceptar o rechazar** (`PATCH /projects/{id}/members/{id_student_project}`): **solo el jefe del grupo**. Acepta (`active`) o rechaza (`rejected`) una membresía `pending_approval`; al aceptar se aplica la regla de un solo `member` (409 si el alumno ya pertenece a otro grupo).
-- **Sucesión de jefe**: si el jefe deja el grupo, el miembro (`active`/`finished`) más antiguo pasa a ser el nuevo jefe. Todavía **pendiente** (requiere el endpoint de salir/expulsar integrantes).
+- **Sucesión de jefe**: si el jefe deja el grupo —abandona o es expulsado—, el integrante **`active` más antiguo** (`enrolled_at`) pasa a ser el nuevo jefe. Si no queda ningún `active`, el grupo queda sin jefe.
+- **Abandonar** (`POST /projects/{id}/members/{id_student_project}/abandon`): **el propio alumno** abandona su membresía `active`, y solo mientras el proyecto está `uninsured` (si no, **409**).
+- **Expulsar** (`POST /projects/{id}/members/{id_student_project}/expel`): **un profesor del curso lectivo o un super admin** expulsa a un integrante `active`, y solo mientras el proyecto está `uninsured` (si no, **409**).
+- **Delegar la jefatura** (`POST /projects/{id}/members/{id_student_project}/leader`): **solo el jefe actual**, hacia otro integrante `active` del grupo, mientras el proyecto no esté en un estado final. El jefe saliente sigue en el grupo como `active`.
 
 
 ## Flujos principales
@@ -89,7 +95,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
 | Asignaciones de profesores | Cualquier usuario logueado | Super admin |
 | Proyectos | Cualquier usuario logueado (el detalle depende de la privacidad) | Profesores del curso lectivo, super admin y miembros `active`/`finished` (solo modificar atributos) |
-| Integrantes del proyecto | Privilegiados (miembros `active`/`finished`, profesores del curso lectivo y super admin) | Unirse: el propio alumno (solo en `uninsured`); aceptar/rechazar: el jefe del grupo |
+| Integrantes del proyecto | Privilegiados (miembros `active`/`finished`, profesores del curso lectivo y super admin) | Unirse y abandonar: el propio alumno; aceptar/rechazar y delegar jefatura: el jefe del grupo; expulsar: el profesor del curso lectivo o super admin |
 | Estados | Cualquier usuario logueado | n/a (por ahora se cargan con el backend) |
 
 ### Proyectos y privacidad
@@ -117,7 +123,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).
 - Proyectos: crear (individual y masivo), listar, consultar, modificar atributos (privilegiados, mientras no sea final) y eliminar (solo si están `uninsured` y vacíos), con visibilidad según privacidad (los `uninsured` se tratan como públicos; se crean `public`).
-- Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`, solo alumnos y solo en `uninsured`, el primero es jefe/`active` y el resto `pending_approval`), aceptar o rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`, solo el jefe) y listar integrantes (`GET /projects/{id}/members`, privilegiados). Regla de un solo `member` (`active`/`finished`) por alumno en todo el sistema, con cascada de `pending_approval` a `rejected`.
+- Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`, solo alumnos y solo en `uninsured`, el primero es jefe/`active` y el resto `pending_approval`), aceptar o rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`, solo el jefe), abandonar (`POST .../abandon`, el propio alumno y solo en `uninsured`), expulsar (`POST .../expel`, profesor del curso lectivo o super admin y solo en `uninsured`), delegar la jefatura (`POST .../leader`, solo el jefe, en estados no finales) y listar integrantes (`GET /projects/{id}/members`, privilegiados). Sucesión de jefe al `active` más antiguo (`enrolled_at`) al irse el jefe. Regla de un solo `member` (`active`/`finished`) por alumno en todo el sistema, con cascada de `pending_approval` a `rejected`.
 - Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
 - Estados de proyecto: máquina de estados (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`), categoría `insured` y método `is_insured` en la respuesta de `GET /statuses`.
 - Historial de estados de proyecto: tabla `project_statuses` con registro inicial al crear (estado anterior `null` y nuevo `uninsured`) y consulta `GET /projects/{id}/status-history`, con la misma visibilidad que el detalle del proyecto.
@@ -125,7 +131,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 **Pendiente**
 - Cambiar el estado de un proyecto: endpoints de transición, permisos y validaciones. Falta la **memoria** de subestado (columna en `projects`) para que al volver de `uninsured` a insured se retome el subestado anterior.
-- Modificar los integrantes de un grupo más allá de aceptar/rechazar: salir/expulsar/finalizar (`active → abandoned | expelled | finished`), con la **sucesión de jefe** (el miembro más antiguo pasa a jefe al irse el jefe). Solo se permitirá en estado `uninsured`; en cualquier estado insured, `approved` o `cancelled` no se podrá modificar.
+- Finalizar la participación de un integrante (`active → finished`): todavía no tiene endpoint.
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).
 - Migraciones con Alembic: hoy las tablas se crean con `create_all`, que no modifica tablas existentes.
 - Envío de mails con una cuenta propia del proyecto (hoy se usa una cuenta provisoria).

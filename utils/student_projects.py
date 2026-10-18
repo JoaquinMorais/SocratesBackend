@@ -24,6 +24,7 @@ def _public(membership: StudentProject) -> StudentProjectPublic:
         id_project=membership.id_project,
         id_student=membership.id_student,
         is_leader=membership.is_leader,
+        enrolled_at=membership.enrolled_at,
         status=status_public(membership.status),
     )
 
@@ -179,6 +180,113 @@ async def decide_membership(
     return _public(membership)
 
 
+async def _oldest_active(
+    db, id_project: int, exclude_id: int | None = None
+) -> StudentProject | None:
+    """El integrante `active` más antiguo del grupo (candidato a jefe)."""
+    conditions = [
+        StudentProject.id_project == id_project,
+        Status.ambito == "student_project",
+        Status.code == "active",
+    ]
+    if exclude_id is not None:
+        conditions.append(StudentProject.id_student_project != exclude_id)
+    return (
+        await db.exec(
+            select(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(*conditions)
+            .order_by(
+                col(StudentProject.enrolled_at),
+                col(StudentProject.id_student_project),
+            )
+            .limit(1)
+        )
+    ).first()
+
+
+async def _finish_leader(db, membership: StudentProject, code: str) -> None:
+    """Saca al integrante del grupo (`code`) y, si era jefe, promueve al sucesor."""
+    was_leader = membership.is_leader
+    new_status = await get_status(db, "student_project", code)
+    membership.is_leader = False
+    membership.status = new_status
+    db.add(membership)
+    await db.flush()  # libera el índice único de jefe antes de promover
+    if not was_leader:
+        return
+    successor = await _oldest_active(
+        db, membership.id_project, exclude_id=membership.id_student_project
+    )
+    if successor is not None:
+        successor.is_leader = True
+        db.add(successor)
+
+
+async def abandon_membership(
+    db, id_user: int, id_project: int, id_student_project: int
+) -> None:
+    """El propio alumno abandona su membresía `active` de un grupo `uninsured`."""
+    project = await get_project(db, id_project)
+    membership = await _get_membership(db, id_project, id_student_project)
+    if membership.id_student != id_user:
+        raise _forbidden("You can only abandon your own membership")
+    if not is_uninsured(project):
+        raise _conflict("Only an uninsured project allows members to leave")
+    if not STUDENT_PROJECT.can_transition(membership.status.code, "abandoned"):
+        raise _conflict(f"A membership in '{membership.status.code}' cannot be abandoned")
+    await _finish_leader(db, membership, "abandoned")
+    await db.commit()
+
+
+async def expel_membership(db, access, id_project: int, id_student_project: int) -> None:
+    """El profesor del curso lectivo (o super admin) expulsa a un integrante `active`."""
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise _forbidden(
+            "Only a professor of this section year or a super admin can expel members"
+        )
+    if not is_uninsured(project):
+        raise _conflict("Only an uninsured project allows members to be expelled")
+    membership = await _get_membership(db, id_project, id_student_project)
+    if not STUDENT_PROJECT.can_transition(membership.status.code, "expelled"):
+        raise _conflict(f"A membership in '{membership.status.code}' cannot be expelled")
+    await _finish_leader(db, membership, "expelled")
+    await db.commit()
+
+
+async def transfer_leadership(
+    db, id_user: int, id_project: int, id_student_project: int
+) -> StudentProjectPublic:
+    """El jefe delega la jefatura en otro integrante `active` (proyecto no final)."""
+    project = await get_project(db, id_project)
+    membership = await _get_membership(db, id_project, id_student_project)
+    leader = (
+        await db.exec(
+            select(StudentProject).where(
+                StudentProject.id_project == id_project,
+                StudentProject.id_student == id_user,
+                StudentProject.is_leader == True,  # noqa: E712
+            )
+        )
+    ).first()
+    if leader is None:
+        raise _forbidden("Only the group leader can transfer the leadership")
+    if project.status.is_final:
+        raise _conflict("A project in a final state cannot change its leader")
+    if membership.id_student_project == leader.id_student_project:
+        raise _conflict("This member is already the group leader")
+    if membership.status.code != "active":
+        raise _conflict("The leadership can only be transferred to an active member")
+    leader.is_leader = False
+    db.add(leader)
+    await db.flush()  # libera el índice único de jefe
+    membership.is_leader = True
+    db.add(membership)
+    await db.commit()
+    return _public(membership)
+
+
 async def _to_member(membership: StudentProject, user: User) -> StudentProjectMemberPublic:
     return StudentProjectMemberPublic(
         id_student_project=membership.id_student_project,
@@ -187,6 +295,7 @@ async def _to_member(membership: StudentProject, user: User) -> StudentProjectMe
         last_name=user.last_name,
         legajo=user.legajo,
         is_leader=membership.is_leader,
+        enrolled_at=membership.enrolled_at,
         status=status_public(membership.status),
     )
 
@@ -228,6 +337,7 @@ async def list_members(
             .order_by(
                 col(StudentProject.is_leader).desc(),
                 priority,
+                col(StudentProject.enrolled_at),
                 col(StudentProject.id_student_project),
             )
             .limit(limit)

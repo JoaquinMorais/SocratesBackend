@@ -1,11 +1,20 @@
+from datetime import date, datetime, timezone
+
+from sqlmodel import select
+
 from config.database import SessionLocal
-from models import Project, StudentProject
-from tests.helpers import STUDENT, SUPER_ADMIN
+from models import Project, Student, StudentProject, User
+from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN
 from utils.statuses import get_status
 
 LUIS = "100002@sistemas.frc.utn.edu.ar"
 ANA_ID, LUIS_ID = 1, 2  # ids de los alumnos del seed
 URL = "/projects"
+
+# Fechas de inscripción para probar la antigüedad y la sucesión de jefe.
+T1 = datetime(2025, 3, 1, tzinfo=timezone.utc)
+T2 = datetime(2025, 3, 2, tzinfo=timezone.utc)
+T3 = datetime(2025, 3, 3, tzinfo=timezone.utc)
 
 
 # ---------- helpers ----------
@@ -43,6 +52,36 @@ async def _decide(client, headers, id_project: int, id_student_project: int, sta
     )
 
 
+async def _abandon(client, headers, id_project: int, id_student_project: int):
+    return await client.post(
+        f"{URL}/{id_project}/members/{id_student_project}/abandon", headers=headers
+    )
+
+
+async def _expel(client, headers, id_project: int, id_student_project: int):
+    return await client.post(
+        f"{URL}/{id_project}/members/{id_student_project}/expel", headers=headers
+    )
+
+
+async def _leader(client, headers, id_project: int, id_student_project: int):
+    return await client.post(
+        f"{URL}/{id_project}/members/{id_student_project}/leader", headers=headers
+    )
+
+
+async def _find_membership(id_project: int, id_student: int) -> int:
+    async with SessionLocal() as s:
+        return (
+            await s.exec(
+                select(StudentProject.id_student_project).where(
+                    StudentProject.id_project == id_project,
+                    StudentProject.id_student == id_student,
+                )
+            )
+        ).first()
+
+
 async def _set_status(id_project: int, code: str) -> None:
     async with SessionLocal() as s:
         status = await get_status(s, "project", code)
@@ -52,18 +91,43 @@ async def _set_status(id_project: int, code: str) -> None:
         await s.commit()
 
 
-async def _add_membership(id_project: int, id_student: int, code: str = "active", is_leader: bool = False) -> None:
+async def _add_membership(
+    id_project: int,
+    id_student: int,
+    code: str = "active",
+    is_leader: bool = False,
+    enrolled_at: datetime | None = None,
+) -> int:
     async with SessionLocal() as s:
         membership_status = await get_status(s, "student_project", code)
-        s.add(
-            StudentProject(
-                id_student=id_student,
-                id_project=id_project,
-                id_status=membership_status.id_status,
-                is_leader=is_leader,
-            )
+        extra = {"enrolled_at": enrolled_at} if enrolled_at is not None else {}
+        membership = StudentProject(
+            id_student=id_student,
+            id_project=id_project,
+            id_status=membership_status.id_status,
+            is_leader=is_leader,
+            **extra,
         )
+        s.add(membership)
         await s.commit()
+        return membership.id_student_project
+
+
+async def _make_student(legajo: int = 900001) -> int:
+    """Crea un alumno directo en la BD y devuelve su id."""
+    async with SessionLocal() as s:
+        user = User(
+            first_name="Nuevo",
+            last_name="Alumno",
+            legajo=legajo,
+            birth_date=date(2003, 1, 1),
+        )
+        user.set_password(PASSWORD)
+        s.add(user)
+        await s.flush()
+        s.add(Student(id_student=user.id_user, enrollment_year=2021))
+        await s.commit()
+        return user.id_user
 
 
 async def _prof_id(client, headers, mail: str) -> int:
@@ -86,6 +150,9 @@ async def test_requires_authentication(client):
         ("POST", f"{URL}/1/members", None),
         ("GET", f"{URL}/1/members", None),
         ("PATCH", f"{URL}/1/members/1", {"status": "active"}),
+        ("POST", f"{URL}/1/members/1/abandon", None),
+        ("POST", f"{URL}/1/members/1/expel", None),
+        ("POST", f"{URL}/1/members/1/leader", None),
     ]
     for method, url, body in ends:
         r = await client.request(method, url, json=body)
@@ -108,6 +175,15 @@ async def test_non_leader_cannot_decide(client, login, make_professor):
     for headers in (await login(LUIS), await login(await make_professor("prof@frc.utn.edu.ar")), admin):
         r = await _decide(client, headers, project["id_project"], pending["id_student_project"], "active")
         assert r.status_code == 403
+
+
+async def test_professor_cannot_abandon(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana_membership = (await _join(client, await login(STUDENT), project["id_project"])).json()
+    prof = await login(await make_professor("prof@frc.utn.edu.ar"))
+    r = await _abandon(client, prof, project["id_project"], ana_membership["id_student_project"])
+    assert r.status_code == 403
 
 
 # ---------- unirse ----------
@@ -282,6 +358,252 @@ async def test_decide_invalid_body(client, login):
         assert r.status_code == 422, body
 
 
+# ---------- abandonar ----------
+async def test_member_can_abandon(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    ana_membership = (await _join(client, ana, project["id_project"])).json()
+
+    r = await _abandon(client, ana, project["id_project"], ana_membership["id_student_project"])
+    assert r.status_code == 204, r.text
+
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    assert members[0]["status"]["code"] == "abandoned"
+    assert members[0]["is_leader"] is False
+
+
+async def test_cannot_abandon_someone_else(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana_membership = (await _join(client, await login(STUDENT), project["id_project"])).json()
+    luis = await login(LUIS)
+    await _join(client, luis, project["id_project"])  # Luis pending
+
+    r = await _abandon(client, luis, project["id_project"], ana_membership["id_student_project"])
+    assert r.status_code == 403
+
+
+async def test_cannot_abandon_pending(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _join(client, await login(STUDENT), project["id_project"])  # Ana jefa
+    luis = await login(LUIS)
+    luis_membership = (await _join(client, luis, project["id_project"])).json()  # pending
+
+    r = await _abandon(client, luis, project["id_project"], luis_membership["id_student_project"])
+    assert r.status_code == 409
+
+
+async def test_cannot_abandon_insured_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    ana_membership = (await _join(client, ana, project["id_project"])).json()
+    await _set_status(project["id_project"], "in_idea")
+
+    r = await _abandon(client, ana, project["id_project"], ana_membership["id_student_project"])
+    assert r.status_code == 409
+
+
+async def test_abandon_unknown_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _join(client, await login(STUDENT), project["id_project"])
+    r = await _abandon(client, await login(STUDENT), project["id_project"], 999)
+    assert r.status_code == 404
+
+
+async def test_leader_abandon_promotes_oldest_active(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    extra = await _make_student(900001)
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T3)
+    await _add_membership(project["id_project"], extra, "active", enrolled_at=T2)
+    await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T1)  # el más antiguo
+    ana_membership = await _find_membership(project["id_project"], ANA_ID)
+
+    r = await _abandon(client, await login(STUDENT), project["id_project"], ana_membership)
+    assert r.status_code == 204, r.text
+
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    leader = next(m for m in members if m["is_leader"])
+    assert leader["id_student"] == LUIS_ID  # el active más antiguo
+
+
+async def test_leader_abandon_without_successor_leaves_no_leader(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    ana_membership = (await _join(client, ana, project["id_project"])).json()
+
+    assert (await _abandon(client, ana, project["id_project"], ana_membership["id_student_project"])).status_code == 204
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    assert members[0]["is_leader"] is False
+    assert members[0]["status"]["code"] == "abandoned"
+
+
+# ---------- expulsar ----------
+async def test_professor_can_expel(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T1)
+    await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T2)
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    luis_membership = await _find_membership(project["id_project"], LUIS_ID)
+
+    r = await _expel(client, await login(mail), project["id_project"], luis_membership)
+    assert r.status_code == 204, r.text
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    assert next(m for m in members if m["id_student"] == LUIS_ID)["status"]["code"] == "expelled"
+
+
+async def test_super_admin_can_expel(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    await _add_membership(project["id_project"], LUIS_ID, "active")
+    luis_membership = await _find_membership(project["id_project"], LUIS_ID)
+
+    assert (await _expel(client, admin, project["id_project"], luis_membership)).status_code == 204
+
+
+async def test_unassigned_professor_cannot_expel(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active")
+    other = await login(await make_professor("otro@frc.utn.edu.ar"))
+    assert (await _expel(client, other, project["id_project"], luis_membership)).status_code == 403
+
+
+async def test_leader_cannot_expel(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active")
+    r = await _expel(client, await login(STUDENT), project["id_project"], luis_membership)
+    assert r.status_code == 403
+
+
+async def test_cannot_expel_pending(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "pending_approval")
+    assert (await _expel(client, admin, project["id_project"], luis_membership)).status_code == 409
+
+
+async def test_cannot_expel_in_insured_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active")
+    await _set_status(project["id_project"], "in_idea")
+    assert (await _expel(client, admin, project["id_project"], luis_membership)).status_code == 409
+
+
+async def test_expel_unknown_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    assert (await _expel(client, admin, project["id_project"], 999)).status_code == 404
+
+
+async def test_expel_leader_promotes_oldest_active(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    extra = await _make_student(900002)
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T3)
+    await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T1)  # más antiguo
+    await _add_membership(project["id_project"], extra, "active", enrolled_at=T2)
+    ana_membership = await _find_membership(project["id_project"], ANA_ID)
+
+    assert (await _expel(client, admin, project["id_project"], ana_membership)).status_code == 204
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    leader = next(m for m in members if m["is_leader"])
+    assert leader["id_student"] == LUIS_ID
+
+
+# ---------- delegar jefatura ----------
+async def test_leader_can_transfer_leadership(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    await _join(client, ana, project["id_project"])  # Ana jefa
+    luis_membership = (await _join(client, await login(LUIS), project["id_project"])).json()
+    luis_id = luis_membership["id_student_project"]
+    # Luis está pending: primero la jefa lo acepta.
+    await _decide(client, ana, project["id_project"], luis_id, "active")
+
+    r = await _leader(client, ana, project["id_project"], luis_id)
+    assert r.status_code == 200, r.text
+    assert r.json()["is_leader"] is True and r.json()["id_student"] == LUIS_ID
+
+    members = (await _members(client, admin, project["id_project"])).json()["items"]
+    assert next(m for m in members if m["id_student"] == ANA_ID)["is_leader"] is False
+
+
+async def test_cannot_transfer_to_pending(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    await _join(client, ana, project["id_project"])  # Ana jefa
+    pending = (await _join(client, await login(LUIS), project["id_project"])).json()
+    r = await _leader(client, ana, project["id_project"], pending["id_student_project"])
+    assert r.status_code == 409
+
+
+async def test_cannot_transfer_to_self(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    ana = await login(STUDENT)
+    ana_membership = (await _join(client, ana, project["id_project"])).json()
+    r = await _leader(client, ana, project["id_project"], ana_membership["id_student_project"])
+    assert r.status_code == 409
+
+
+async def test_non_leader_cannot_transfer(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T1)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T2)
+    # Luis es active pero no jefe: no puede delegar (ni siquiera a sí mismo).
+    r = await _leader(client, await login(LUIS), project["id_project"], luis_membership)
+    assert r.status_code == 403
+
+
+async def test_transfer_allowed_in_insured_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T1)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T2)
+    await _set_status(project["id_project"], "in_progress")
+
+    r = await _leader(client, await login(STUDENT), project["id_project"], luis_membership)
+    assert r.status_code == 200, r.text
+
+
+async def test_cannot_transfer_in_final_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True, enrolled_at=T1)
+    luis_membership = await _add_membership(project["id_project"], LUIS_ID, "active", enrolled_at=T2)
+    await _set_status(project["id_project"], "cancelled")
+
+    r = await _leader(client, await login(STUDENT), project["id_project"], luis_membership)
+    assert r.status_code == 409
+
+
+async def test_transfer_unknown_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _join(client, await login(STUDENT), project["id_project"])
+    r = await _leader(client, await login(STUDENT), project["id_project"], 999)
+    assert r.status_code == 404
+
+
 # ---------- consultar ----------
 async def test_outsider_cannot_list(client, login):
     admin = await login(SUPER_ADMIN)
@@ -301,8 +623,9 @@ async def test_member_can_list_and_leader_is_first(client, login):
     assert body["total"] == 2
     assert body["items"][0]["id_student"] == ANA_ID and body["items"][0]["is_leader"] is True
     first = body["items"][0]
-    assert {"id_student_project", "id_student", "first_name", "last_name", "legajo", "is_leader", "status"} <= set(first)
+    assert {"id_student_project", "id_student", "first_name", "last_name", "legajo", "is_leader", "enrolled_at", "status"} <= set(first)
     assert "email" not in first
+    assert "T" in first["enrolled_at"]  # datetime ISO
 
 
 async def test_staff_can_list(client, login, make_professor):

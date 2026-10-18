@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from sqlmodel import select
@@ -202,12 +202,16 @@ async def _load_student_projects(
         status = statuses.get(("student_project", code))
         if status is None:
             raise _missing("el estado", code)
+        enrollment: dict = {}
+        if item.get("enrolled_at"):
+            enrollment["enrolled_at"] = datetime.fromisoformat(item["enrolled_at"])
         session.add(
             StudentProject(
                 id_student=student.id_student,
                 id_project=project.id_project,
                 status=status,
                 is_leader=is_leader,
+                **enrollment,
             )
         )
     await session.flush()

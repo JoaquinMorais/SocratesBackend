@@ -464,32 +464,32 @@
     }
   ],
   "student_projects": [
-    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1, "is_leader": true },
-    { "student": 100003, "section": "3K1", "year": 2025, "group_number": 1 },
-    { "student": 100021, "section": "3K1", "year": 2025, "group_number": 1 },
-    { "student": 100005, "section": "3K1", "year": 2025, "group_number": 2, "is_leader": true },
-    { "student": 100006, "section": "3K1", "year": 2025, "group_number": 2 },
+    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100003, "section": "3K1", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
+    { "student": 100021, "section": "3K1", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
+    { "student": 100005, "section": "3K1", "year": 2025, "group_number": 2, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100006, "section": "3K1", "year": 2025, "group_number": 2, "enrolled_at": "2025-03-02T09:00:00+00:00" },
 
-    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1, "is_leader": true },
-    { "student": 100009, "section": "3K2", "year": 2025, "group_number": 1 },
-    { "student": 100022, "section": "3K2", "year": 2025, "group_number": 1 },
+    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100009, "section": "3K2", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
+    { "student": 100022, "section": "3K2", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
 
-    { "student": 100010, "section": "3K3", "year": 2025, "group_number": 1, "is_leader": true },
-    { "student": 100011, "section": "3K3", "year": 2025, "group_number": 1 },
-    { "student": 100012, "section": "3K3", "year": 2025, "group_number": 2, "is_leader": true },
-    { "student": 100013, "section": "3K3", "year": 2025, "group_number": 2 },
+    { "student": 100010, "section": "3K3", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100011, "section": "3K3", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
+    { "student": 100012, "section": "3K3", "year": 2025, "group_number": 2, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100013, "section": "3K3", "year": 2025, "group_number": 2, "enrolled_at": "2025-03-02T09:00:00+00:00" },
 
-    { "student": 100014, "section": "3K4", "year": 2025, "group_number": 1, "is_leader": true },
-    { "student": 100015, "section": "3K4", "year": 2025, "group_number": 1 },
-    { "student": 100016, "section": "3K4", "year": 2025, "group_number": 1 },
+    { "student": 100014, "section": "3K4", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
+    { "student": 100015, "section": "3K4", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
+    { "student": 100016, "section": "3K4", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
 
-    { "student": 100001, "section": "3K1", "year": 2026, "group_number": 2, "is_leader": true },
-    { "student": 100017, "section": "3K1", "year": 2026, "group_number": 2 },
-    { "student": 100007, "section": "3K2", "year": 2026, "group_number": 1, "is_leader": true },
-    { "student": 100018, "section": "3K2", "year": 2026, "group_number": 1 },
-    { "student": 100019, "section": "3K2", "year": 2026, "group_number": 1 },
+    { "student": 100001, "section": "3K1", "year": 2026, "group_number": 2, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
+    { "student": 100017, "section": "3K1", "year": 2026, "group_number": 2, "enrolled_at": "2026-03-02T09:00:00+00:00" },
+    { "student": 100007, "section": "3K2", "year": 2026, "group_number": 1, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
+    { "student": 100018, "section": "3K2", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-02T09:00:00+00:00" },
+    { "student": 100019, "section": "3K2", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-03T09:00:00+00:00" },
 
-    { "student": 100003, "section": "3K3", "year": 2026, "group_number": 1, "is_leader": true },
-    { "student": 100020, "section": "3K3", "year": 2026, "group_number": 1 }
+    { "student": 100003, "section": "3K3", "year": 2026, "group_number": 1, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
+    { "student": 100020, "section": "3K3", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-02T09:00:00+00:00" }
   ]
 }

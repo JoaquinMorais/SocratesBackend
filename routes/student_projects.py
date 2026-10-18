@@ -13,9 +13,12 @@ from utils.auth import user_dependency
 from utils.permissions import student_dependency
 from utils.projects import build_access, get_project
 from utils.student_projects import (
+    abandon_membership,
     decide_membership,
+    expel_membership,
     join_project,
     list_members,
+    transfer_leadership,
 )
 
 student_projects_router = APIRouter(tags=["members"])
@@ -152,3 +155,106 @@ async def decide_membership_route(
     return await decide_membership(
         db, user.id_user, id_project, id_student_project, data.status
     )
+
+
+@student_projects_router.post(
+    "/projects/{id_project}/members/{id_student_project}/abandon",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Abandonar un proyecto (grupo)",
+    responses={
+        **_AUTH_ERRORS,
+        403: {"description": "El usuario no es alumno o la membresía no es suya"},
+        404: {"description": "No existe el proyecto o la membresía"},
+        409: {
+            "description": (
+                "El proyecto no está `uninsured` (Desasegurado) o la membresía no "
+                "está `active`"
+            )
+        },
+    },
+)
+async def abandon_membership_route(
+    id_project: int,
+    id_student_project: int,
+    db: db_dependency,
+    student: student_dependency,
+):
+    """
+    El **alumno logueado** abandona su propio grupo. **Solo alumnos.**
+
+    - Solo puede abandonar **su propia** membresía; la de otro responde **403**.
+    - Solo si el proyecto está **`uninsured`** (Desasegurado) y la membresía está
+      `active`; en cualquier otro caso responde **409**.
+    - Si el que abandona era el **jefe**, la jefatura pasa al integrante `active`
+      más antiguo; si no queda ninguno, el grupo queda sin jefe.
+    """
+    await abandon_membership(db, student.id_student, id_project, id_student_project)
+
+
+@student_projects_router.post(
+    "/projects/{id_project}/members/{id_student_project}/expel",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Expulsar a un integrante de un proyecto",
+    responses={
+        **_AUTH_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto o la membresía"},
+        409: {
+            "description": (
+                "El proyecto no está `uninsured` (Desasegurado) o la membresía no "
+                "está `active`"
+            )
+        },
+    },
+)
+async def expel_membership_route(
+    id_project: int,
+    id_student_project: int,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    **El profesor del curso lectivo** del proyecto (o un **super admin**) expulsa a
+    un integrante.
+
+    - Solo si el proyecto está **`uninsured`** (Desasegurado) y la membresía está
+      `active`; en cualquier otro caso responde **409**.
+    - Si el expulsado era el **jefe**, la jefatura pasa al integrante `active` más
+      antiguo; si no queda ninguno, el grupo queda sin jefe.
+    """
+    access = await build_access(db, user)
+    await expel_membership(db, access, id_project, id_student_project)
+
+
+@student_projects_router.post(
+    "/projects/{id_project}/members/{id_student_project}/leader",
+    response_model=StudentProjectPublic,
+    summary="Delegar la jefatura del grupo",
+    responses={
+        **_AUTH_ERRORS,
+        403: {"description": "El usuario no es el jefe del grupo"},
+        404: {"description": "No existe el proyecto o la membresía"},
+        409: {
+            "description": (
+                "El proyecto está en un estado final, el objetivo no está `active`, "
+                "o ya es el jefe"
+            )
+        },
+    },
+)
+async def transfer_leadership_route(
+    id_project: int,
+    id_student_project: int,
+    db: db_dependency,
+    student: student_dependency,
+):
+    """
+    **El jefe del grupo** delega la jefatura en otro integrante. Nadie más puede.
+
+    - El objetivo debe ser un integrante **`active`** del mismo grupo; reenviar al
+      jefe actual responde **409**.
+    - Se permite mientras el proyecto **no** esté en un estado final
+      (`approved`/`cancelled`), incluso si está asegurado (**409** si es final).
+    - El jefe saliente sigue en el grupo como `active`, sin jefatura.
+    """
+    return await transfer_leadership(db, student.id_student, id_project, id_student_project)

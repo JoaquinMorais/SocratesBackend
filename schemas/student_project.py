@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import ConfigDict
@@ -14,6 +15,7 @@ class StudentProjectPublic(SQLModel):
     id_project: int
     id_student: int
     is_leader: bool
+    enrolled_at: datetime
     status: StatusPublic
 
 
@@ -26,6 +28,7 @@ class StudentProjectMemberPublic(SQLModel):
     last_name: str
     legajo: int
     is_leader: bool
+    enrolled_at: datetime
     status: StatusPublic
 
 
