@@ -43,6 +43,7 @@ socrates-backend/
 │   ├── section_year.py
 │   ├── professor_section_year.py
 │   ├── project.py
+│   ├── project_status.py
 │   ├── student_project.py
 │   ├── status.py
 │   ├── token.py
@@ -58,6 +59,7 @@ socrates-backend/
 │   ├── section_year.py
 │   ├── professor_section_year.py
 │   ├── project.py
+│   ├── project_status.py
 │   └── status.py
 │
 ├── routes/                       # Endpoints (APIRouters)
@@ -87,6 +89,7 @@ socrates-backend/
 │   ├── sections.py
 │   ├── section_years.py
 │   ├── professor_section_years.py
+│   ├── project_statuses.py
 │   ├── projects.py
 │   └── statuses.py
 │
@@ -101,6 +104,7 @@ socrates-backend/
     ├── test_sections.py
     ├── test_section_years.py
     ├── test_professor_section_years.py
+    ├── test_project_statuses.py
     ├── test_projects.py
     ├── test_statuses.py
     └── test_seed.py
@@ -164,6 +168,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo. |
 | `professor_section_year.py` | `professor_section_years` | Asignación de un profesor a un curso lectivo. |
 | `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad. |
+| `project_status.py` | `project_statuses` | Historial de transiciones de estado de un proyecto (estado anterior, nuevo y cuándo ocurrió). |
 | `student_project.py` | `student_projects` | Alumnos que integran un proyecto (con `is_leader`, un jefe por grupo como máximo). |
 | `status.py` | `statuses` | Estados reutilizables por ámbito (`project`, `student_project`), con `code`, `name`, `description` e `is_final`. |
 | `token.py` | `refresh_tokens` | Refresh tokens vigentes, guardados hasheados. |
@@ -171,7 +176,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 
 ## `schemas/`
 
-Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year`, `project` y `status`.
+Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year`, `project`, `project_status` y `status`.
 
 ## `routes/`
 
@@ -185,7 +190,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `sections.py` | `/sections` | CRUD de comisiones. |
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
-| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar y eliminar proyectos. |
+| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, eliminar proyectos y consultar su historial de estados. |
 | `statuses.py` | `/statuses` | Consulta de estados por ámbito. |
 
 `routes/__init__.py` reúne todos los routers para que `index.py` los registre.
@@ -206,6 +211,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `sections.py` | Lógica del CRUD de comisiones. |
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores. |
+| `project_statuses.py` | Lógica del historial de estados de un proyecto: registro de transiciones y listado cronológico. |
 | `projects.py` | Lógica de proyectos: creación, eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin). |
 | `statuses.py` | Lógica de estados: catálogo base, `StatusPolicy` por ámbito (estado inicial, orden, categorías como `member` e `insured`, y transiciones), búsqueda, listado y `is_insured`. |
 
@@ -222,6 +228,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_sections.py` | CRUD de comisiones. |
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
+| `test_project_statuses.py` | Historial de estados de un proyecto: permisos, registro inicial, orden, paginación y 404. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad y eliminación. |
 | `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito, paginación y reglas por ámbito (`StatusPolicy`: categorías `member` e `insured`, inicial y transiciones). |
 | `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, estados, jefes de grupo, unicidad y referencias. |

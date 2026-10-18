@@ -10,8 +10,10 @@ from schemas.project import (
     ProjectList,
     ProjectPublic,
 )
+from schemas.project_status import ProjectStatusList
 from utils.auth import user_dependency
 from utils.permissions import professor_dependency
+from utils.project_statuses import list_project_status_history, to_public as status_history_public
 from utils.projects import (
     build_access,
     create_project,
@@ -172,6 +174,50 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
     return to_public(project, restricted=not access.can_see_detail(project))
 
 
+@projects_router.get(
+    "/{id_project}/status-history",
+    response_model=ProjectStatusList,
+    summary="Historial de estados de un proyecto",
+    responses={
+        **_READ_ERRORS,
+        403: {"description": "El proyecto es privado y el usuario no tiene privilegios"},
+        404: {"description": "No existe el proyecto"},
+    },
+)
+async def get_project_status_history_route(
+    id_project: int,
+    db: db_dependency,
+    user: user_dependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """
+    Devuelve el historial de estados de un proyecto, en orden cronológico (el
+    registro más viejo primero). **Cualquier usuario logueado**, con la misma
+    visibilidad que `GET /projects/{id}`:
+
+    - `public` y `protected`: cualquier usuario.
+    - `private`: solo los privilegiados (miembros, profesores del curso lectivo
+      y super admin); el resto recibe **403**.
+
+    Cada registro indica el estado anterior (`status_from`, `null` en la
+    creación), el estado nuevo (`status_to`) y cuándo ocurrió (`changed_at`).
+    """
+    access = await build_access(db, user)
+    project = await get_project(db, id_project)
+    if not access.can_see_project(project):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This project is private")
+    items, total = await list_project_status_history(
+        db, id_project, limit=limit, offset=offset
+    )
+    return ProjectStatusList(
+        items=[status_history_public(ps) for ps in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
 @projects_router.delete(
     "/{id_project}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -179,7 +225,12 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe el proyecto"},
-        409: {"description": "El proyecto tiene alumnos y no se puede eliminar"},
+        409: {
+            "description": (
+                "El proyecto tiene alumnos, o no está en estado `uninsured` "
+                "(Desasegurado)"
+            )
+        },
     },
 )
 async def delete_project_route(
@@ -192,8 +243,12 @@ async def delete_project_route(
     Elimina un proyecto. **Profesores de ese curso lectivo** y **super admin**.
     La acción es irreversible.
 
-    Solo se puede si el proyecto está **completamente vacío** (sin alumnos); si
-    no, responde 409. El número de grupo eliminado no se reutiliza
-    automáticamente, pero puede volver a crearse enviándolo en `group_number`.
+    Solo se puede si el proyecto está **completamente vacío** (sin alumnos) y
+    en estado **`uninsured`** (Desasegurado); si no, responde 409. Una vez
+    asegurado (`in_idea`, `in_progress`, `pending_approval` o `rejected`) o
+    final (`approved` o `cancelled`) ya no se puede eliminar.
+
+    El número de grupo eliminado no se reutiliza automáticamente, pero puede
+    volver a crearse enviándolo en `group_number`.
     """
     await delete_project(db, await build_access(db, user), id_project)

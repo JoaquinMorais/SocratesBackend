@@ -43,12 +43,20 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ### Estados
 
 - **Estado (`Status`)**: un estado reutilizable identificado por un `ambito` y un `code` (únicos en conjunto), con un `name`, una `description` para mostrar e `is_final` (indica que es terminal: no admite más transiciones). Los ámbitos previstos son `project`, `student_project` y, más adelante, `document`, `idea` y `comment`.
-- Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`); por ahora no se guarda historial de cambios.
+- Cada `Project` y cada `StudentProject` tiene **un estado actual** (relación obligatoria a `Status`). Los proyectos además guardan su historial de transiciones en `project_statuses` (estado anterior, nuevo y cuándo), consultable con `GET /projects/{id}/status-history`; las membresías todavía no tienen historial.
 - **Proyectos** (`project`): nacen `uninsured` (Desasegurado). La máquina de estados es: `uninsured → in_idea → in_progress → pending_approval → (approved | rejected)`; `rejected → in_progress`; cualquier estado "insured" puede pasar a `uninsured` o a `cancelled`. `approved` y `cancelled` son **finales**. Cuando un proyecto pasa de `uninsured` a un estado insured, debe volver al subestado donde estaba (por ejemplo, `in_progress → uninsured → in_progress`); esa memoria requiere una columna en `projects` y está **pendiente**. Cada membresía alumno-proyecto también tiene su estado.
 - **Membresías** (`student_project`): el catálogo es `active`, `pending_approval`, `abandoned` (final), `finished` (final), `expelled` (final) y `rejected`. El estado inicial depende de si el grupo ya tiene jefe: si no tiene, el alumno entra `active`; si ya tiene, queda `pending_approval`.
 - **Transiciones** de membresía (todavía **sin implementar** como endpoint): `pending_approval → active | rejected`; `active → abandoned | expelled | finished`; `rejected → pending_approval` (si un profesor habilita o el alumno vuelve a solicitar).
 - **Reglas por ámbito (`StatusPolicy`)**: en código (no en la BD) viven, por ámbito, el estado inicial, el orden, las **categorías** y las **transiciones**. Una categoría agrupa códigos: `member` (ámbito `student_project`) es `active` + `finished` y es lo que da privilegios y lo que se lista por defecto en `GET /students`. `insured` (ámbito `project`) es `in_idea`, `in_progress`, `pending_approval` y `rejected`: son los estados "asegurados" (el método `is_insured` los devuelve `true`).
 - Los estados son **datos**: el catálogo base se carga al arrancar el backend (en código) y la seed puede sumar los suyos. La consulta (`GET /statuses`) sirve para que el frontend arme etiquetas y filtros.
+- **Operaciones y estado**: qué se puede hacer según el estado del grupo (los estados se agrupan en desasegurado, insured y finales):
+
+  | Operación | `uninsured` | insured (`in_idea`, `in_progress`, `pending_approval`, `rejected`) | final (`approved`, `cancelled`) |
+  |---|---|---|---|
+  | Eliminar el grupo (si está vacío) | ✅ | ❌ 409 | ❌ 409 |
+  | Editar datos y privacidad (**pendiente**) | ✅ | ✅ | ❌ 409 |
+  | Unirse al grupo / modificar integrantes (**pendiente**) | ✅ | ❌ | ❌ |
+
 
 ## Flujos principales
 
@@ -82,7 +90,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 - Los profesores crean los grupos, individualmente o en masa, y los dejan vacíos. Los alumnos se unirán después.
 - Un profesor solo gestiona proyectos de los cursos lectivos a los que está asignado. Un super admin puede gestionar los de cualquiera.
-- Un proyecto solo se elimina si no tiene ningún alumno (basta una membresía en cualquier estado).
+- Un proyecto solo se elimina si está en estado **`uninsured`** (Desasegurado) y **sin ningún alumno** (basta una membresía en cualquier estado); si no, responde **409**.
 - Visibilidad del detalle. Los **privilegiados** son los miembros del grupo con membresía **`active` o `finished`**, los profesores del curso lectivo y los super admin (una membresía `pending_approval`, `abandoned`, `expelled` o `rejected` no da privilegios):
   - **`public`**: cualquier usuario ve todo el detalle.
   - **`protected`**: los privilegiados ven todo; el resto ve la información básica (el proyecto aparece con `restricted` en `true` y nombre, descripción, objetivo y problemática en `null`). Los datos sensibles (documentación, repositorio de GitHub), cuando existan, se ocultan a quien no sea privilegiado.
@@ -99,13 +107,14 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Edición de datos propios y de otros usuarios; listado de usuarios.
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).
-- Proyectos: crear (individual y masivo), listar, consultar y eliminar, con visibilidad según privacidad.
+- Proyectos: crear (individual y masivo), listar, consultar y eliminar (solo si están `uninsured` y vacíos), con visibilidad según privacidad.
 - Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
 - Estados de proyecto: máquina de estados (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`), categoría `insured` y método `is_insured` en la respuesta de `GET /statuses`.
+- Historial de estados de proyecto: tabla `project_statuses` con registro inicial al crear (estado anterior `null` y nuevo `uninsured`) y consulta `GET /projects/{id}/status-history`, con la misma visibilidad que el detalle del proyecto.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**
-- Unirse a un grupo (alumnos) y modificar los datos de un proyecto.
+- Unirse a un grupo (alumnos) y modificar los datos de un proyecto: reglas de estado ya definidas (ver la tabla de operaciones y estado).
 - Cambiar el estado de un proyecto: endpoints de transición, permisos y validaciones. Falta la **memoria** de subestado (columna en `projects`) para que al volver de `uninsured` a insured se retome el subestado anterior.
 - Modificar los integrantes de un grupo: solo se permitirá en estado `uninsured`; en cualquier estado insured, `approved` o `cancelled` no se podrá modificar.
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).

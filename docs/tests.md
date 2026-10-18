@@ -312,8 +312,26 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_empty_project`: testear que se elimina un proyecto vacío (204) y deja de figurar.
 - `test_delete_not_found`: testear que eliminar un proyecto inexistente responde 404.
 - `test_cannot_delete_project_with_students`: testear que no se puede eliminar un proyecto con alumnos (409).
+- `test_cannot_delete_insured_project`: testear que no se puede eliminar un proyecto asegurado (por ejemplo `in_idea`) aunque esté vacío (409).
+- `test_cannot_delete_final_project`: testear que no se puede eliminar un proyecto en estado final (por ejemplo `approved`) aunque esté vacío (409).
 - `test_deleted_group_number_can_be_reused`: testear que un número de grupo eliminado puede volver a crearse enviándolo.
 - `test_cannot_delete_section_year_with_projects`: testear que no se puede eliminar un curso lectivo con proyectos (409) y que sí se puede después de eliminarlos.
+
+## `tests/test_project_statuses.py`
+
+Historial de estados de un proyecto (`GET /projects/{id}/status-history`).
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar el historial sin login responde 401.
+- `test_private_project_history_hidden_from_outsiders`: testear que un alumno no privilegiado recibe 403 al pedir el historial de un proyecto privado.
+- `test_history_visible_for_public_project`: testear que un alumno cualquiera puede ver el historial de un proyecto público.
+
+**Consultar**
+- `test_history_has_initial_record_after_create`: testear que al crear un proyecto queda un registro inicial con `status_from` en `null` y `status_to` en `uninsured`.
+- `test_history_returns_public_fields`: testear que cada registro expone `id_project_status`, `id_project`, `status_from`, `status_to` y `changed_at`, y que no se filtra nada.
+- `test_history_order_is_chronological`: testear que los registros vienen en orden cronológico (el más viejo primero).
+- `test_history_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza (422).
+- `test_history_not_found`: testear que un proyecto inexistente responde 404.
 
 ## `tests/test_seed.py`
 
@@ -328,6 +346,7 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada grupo con alumnos tiene exactamente un jefe.
 - `test_seed_membership_status_follows_leader_rule`: testear que el jefe queda `active` y los demás miembros `pending_approval`.
 - `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
+- `test_seed_every_project_has_initial_status_history`: testear que cada proyecto del seed tiene al menos un registro de historial y que el primero tiene `status_from` en `null`.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores, legajos de profesores ni legajos de alumnos.
 - `test_seed_users_are_adults`: testear que todos los usuarios del seed son mayores de edad.
 - `test_seed_memberships_are_unique_per_section_year`: testear que un alumno no integra dos grupos del mismo curso lectivo.

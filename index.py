@@ -43,7 +43,7 @@ app = FastAPI(
         {"name": "sections", "description": "Comisiones (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "section-years", "description": "Cursos lectivos: comisión + año, con el mínimo y máximo de estudiantes por grupo (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "professor-section-years", "description": "Profesores asignados a cursos lectivos (consulta: cualquier usuario; escritura: super admin)."},
-        {"name": "projects", "description": "Proyecto (grupo) de un curso lectivo, con su privacidad. El proyecto nace `uninsured` (Desasegurado) y pasa por `in_idea`, `in_progress`, `pending_approval`, `rejected` (los cuatro son 'insured' o asegurados) hasta `approved` o `cancelled` (finales). Cada membresía alumno-proyecto también tiene su estado (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` o `rejected`)."},
+        {"name": "projects", "description": "Proyecto (grupo) de un curso lectivo, con su privacidad. El proyecto nace `uninsured` (Desasegurado) y pasa por `in_idea`, `in_progress`, `pending_approval`, `rejected` (los cuatro son 'insured' o asegurados) hasta `approved` o `cancelled` (finales). Cada membresía alumno-proyecto también tiene su estado (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` o `rejected`). El historial de transiciones se consulta con `GET /projects/{id}/status-history`."},
         {"name": "statuses", "description": "Estados por ámbito (`project`, `student_project`): `code`, `name`, `description`, `is_final` e `is_insured` (si el estado de proyecto cuenta como asegurado). La consulta sirve para etiquetas y filtros; todavía no hay alta ni edición."},
     ],
 )

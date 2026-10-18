@@ -6,6 +6,7 @@ from models import (
     Professor,
     ProfessorSectionYear,
     Project,
+    ProjectStatus,
     Section,
     SectionYear,
     Status,
@@ -136,6 +137,21 @@ async def test_seed_projects_and_memberships_have_status_of_their_ambito():
         memberships = (await session.exec(select(StudentProject))).all()
     assert all(p.status.ambito == "project" for p in projects)
     assert all(m.status.ambito == "student_project" for m in memberships)
+
+
+async def test_seed_every_project_has_initial_status_history():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        projects = (await session.exec(select(Project))).all()
+        histories = (await session.exec(select(ProjectStatus))).all()
+    by_project: dict[int, list[ProjectStatus]] = {}
+    for h in histories:
+        by_project.setdefault(h.id_project, []).append(h)
+    assert set(by_project) == {p.id_project for p in projects}
+    for pid, records in by_project.items():
+        ordered = sorted(records, key=lambda r: r.id_project_status)
+        assert ordered[0].id_status_from is None, f"proyecto {pid}: el primer registro debe tener status_from null"
+        assert len(records) >= 1
 
 
 async def test_seed_emails_and_legajos_are_unique():

@@ -9,6 +9,7 @@ from models import (
     Professor,
     ProfessorSectionYear,
     Project,
+    ProjectStatus,
     Section,
     SectionYear,
     Status,
@@ -151,6 +152,14 @@ async def _load_projects(
             problem=item.get("problem"),
         )
         session.add(project)
+        await session.flush()  # obtiene id_project
+        session.add(
+            ProjectStatus(
+                id_project=project.id_project,
+                id_status_from=None,
+                id_status_to=status.id_status,
+            )
+        )
         projects[(item["section"], item["year"], item["group_number"])] = project
     await session.flush()
     return projects

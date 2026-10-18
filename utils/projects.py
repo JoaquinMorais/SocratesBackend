@@ -15,6 +15,7 @@ from models import (
     User,
 )
 from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic
+from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
 from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
 from utils.statuses import to_public as status_public
@@ -142,6 +143,8 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
     initial_status = await get_status(db, "project", PROJECT.initial)
     project = Project(group_number=number, section_year=sy, status=initial_status)
     db.add(project)
+    await db.flush()  # obtiene id_project
+    await record_status_change(db, project.id_project, None, initial_status.id_status)
     try:
         await db.commit()
     except IntegrityError:  # dos altas simultáneas con el mismo número
@@ -163,6 +166,9 @@ async def create_projects_bulk(
         for i in range(data.quantity)
     ]
     db.add_all(projects)
+    await db.flush()  # obtiene los id_project
+    for project in projects:
+        await record_status_change(db, project.id_project, None, initial_status.id_status)
     try:
         await db.commit()
     except IntegrityError:  # otro profesor creó grupos al mismo tiempo
@@ -174,6 +180,9 @@ async def create_projects_bulk(
 async def delete_project(db, access: Access, id_project: int) -> None:
     project = await get_project(db, id_project)
     _require_manager(access, project.id_section_year)
+
+    if project.status.code != PROJECT.initial:  # solo grupos en formación (uninsured)
+        raise _conflict("Only an uninsured project can be deleted")
 
     has_students = (
         await db.exec(

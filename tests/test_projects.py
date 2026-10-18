@@ -79,6 +79,15 @@ async def _add_student(id_project: int, id_student: int, *, status: str = "activ
         await s.commit()
 
 
+async def _set_status(id_project: int, code: str) -> None:
+    async with SessionLocal() as s:
+        status = await get_status(s, "project", code)
+        project = await s.get(Project, id_project)
+        project.id_status = status.id_status
+        s.add(project)
+        await s.commit()
+
+
 # ---------- permisos ----------
 async def test_requires_authentication(client):
     for method, url, body in ENDPOINTS:
@@ -442,6 +451,24 @@ async def test_cannot_delete_project_with_students(client, login):
     admin = await login(SUPER_ADMIN)
     project = await _create(client, admin, await _section_year(client, admin))
     await _add_student(project["id_project"], ANA_ID)
+    url = f"{URL}/{project['id_project']}"
+    assert (await client.delete(url, headers=admin)).status_code == 409
+    assert (await client.get(url, headers=admin)).status_code == 200  # sigue existiendo
+
+
+async def test_cannot_delete_insured_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _set_status(project["id_project"], "in_idea")
+    url = f"{URL}/{project['id_project']}"
+    assert (await client.delete(url, headers=admin)).status_code == 409
+    assert (await client.get(url, headers=admin)).status_code == 200  # sigue existiendo
+
+
+async def test_cannot_delete_final_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    await _set_status(project["id_project"], "approved")
     url = f"{URL}/{project['id_project']}"
     assert (await client.delete(url, headers=admin)).status_code == 409
     assert (await client.get(url, headers=admin)).status_code == 200  # sigue existiendo
