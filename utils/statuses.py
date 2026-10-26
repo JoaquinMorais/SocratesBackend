@@ -1,216 +1,50 @@
-from collections.abc import Mapping
-from dataclasses import dataclass, field
-
 from fastapi import HTTPException, status
 from sqlmodel import col, func, select
 
 from models import Status
+from models.state import (
+    MEMBER_CODES,
+    PROJECT_CATALOG,
+    PROJECT_INITIAL,
+    PROJECT_INSURED,
+    STUDENT_PROJECT_CATALOG,
+    STUDENT_PROJECT_INITIAL,
+    STUDENT_PROJECT_PENDING,
+    state_for,
+)
 from schemas.status import StatusPublic
-
-# Categorías que puede tener un estado, por ámbito.
-MEMBER = "member"  # student_project: el alumno pertenece al grupo (`active`, `finished`).
-INSURED = "insured"  # project: el proyecto está "asegurado" (en idea, en proceso, pendiente o rechazado).
-
-
-@dataclass(frozen=True)
-class StatusPolicy:
-    """Reglas de un ámbito: estado inicial, orden, categorías y transiciones.
-
-    Las categorías agrupan códigos (por ejemplo `member` = `active` y `finished`,
-    o `insured` = los estados "asegurados" de un proyecto); las transiciones dicen
-    qué estados admite cada estado. Viven en código porque son reglas de dominio
-    estables: la seed puede sumar estados, pero no cambia estas reglas.
-    """
-
-    ambito: str
-    initial: str
-    order: tuple[str, ...]
-    categories: Mapping[str, frozenset[str]] = field(default_factory=dict)
-    pending: str | None = None
-    transitions: Mapping[str, frozenset[str]] = field(default_factory=dict)
-
-    def has(self, code: str, category: str) -> bool:
-        """Si el código `code` pertenece a `category`."""
-        return code in self.categories.get(category, frozenset())
-
-    def codes_of(self, category: str) -> frozenset[str]:
-        """Códigos de `category`, para usar en un `IN` de SQL."""
-        return self.categories.get(category, frozenset())
-
-    def next_codes(self, code: str) -> frozenset[str]:
-        """Estados a los que se puede pasar desde `code` (vacío si es terminal)."""
-        return self.transitions.get(code, frozenset())
-
-    def can_transition(self, from_code: str, to_code: str) -> bool:
-        """Si se puede pasar de `from_code` a `to_code`."""
-        return to_code in self.next_codes(from_code)
-
-
-STUDENT_PROJECT = StatusPolicy(
-    ambito="student_project",
-    initial="active",
-    pending="pending_approval",
-    order=(
-        "active",
-        "pending_approval",
-        "finished",
-        "abandoned",
-        "expelled",
-        "rejected",
-    ),
-    categories={MEMBER: frozenset({"active", "finished"})},
-    transitions={
-        "pending_approval": frozenset({"active", "rejected"}),
-        "active": frozenset({"abandoned", "expelled", "finished"}),
-        "rejected": frozenset({"pending_approval"}),
-    },
-)
-
-PROJECT = StatusPolicy(
-    ambito="project",
-    initial="uninsured",
-    order=(
-        "uninsured",
-        "in_idea",
-        "in_progress",
-        "pending_approval",
-        "rejected",
-        "approved",
-        "cancelled",
-    ),
-    categories={INSURED: frozenset({"in_idea", "in_progress", "pending_approval", "rejected"})},
-    transitions={
-        # Al volver a "insured" desde `uninsured`, la memoria (columna futura en
-        # `projects`) lleva al subestado anterior; sin memoria, el default es `in_idea`.
-        "uninsured": frozenset(
-            {"in_idea", "in_progress", "pending_approval", "rejected", "cancelled"}
-        ),
-        "in_idea": frozenset({"in_progress", "uninsured", "cancelled"}),
-        "in_progress": frozenset({"pending_approval", "uninsured", "cancelled"}),
-        "pending_approval": frozenset({"rejected", "approved", "uninsured", "cancelled"}),
-        "rejected": frozenset({"in_progress", "uninsured", "cancelled"}),
-        "approved": frozenset(),
-        "cancelled": frozenset(),
-    },
-)
-
-POLICIES = {policy.ambito: policy for policy in (PROJECT, STUDENT_PROJECT)}
 
 
 def is_member(code: str) -> bool:
     """Si un código de membresía cuenta como 'pertenece al grupo'."""
-    return STUDENT_PROJECT.has(code, MEMBER)
+    return code in MEMBER_CODES
 
 
 def is_insured(code: str) -> bool:
     """Si un código de proyecto cuenta como 'insured' (asegurado)."""
-    return PROJECT.has(code, INSURED)
+    return code in PROJECT_INSURED
 
 
 # Estados que se crean al arrancar para que siempre exista al menos el inicial.
 # La seed puede sumar más; estos no se borran.
 DEFAULT_STATUSES = [
     {
-        "ambito": "project",
-        "code": "uninsured",
-        "name": "Desasegurado",
-        "description": "El grupo todavía no tiene una idea asegurada.",
-        "is_final": False,
-    },
-    {
-        "ambito": "project",
-        "code": "in_idea",
-        "name": "En idea",
-        "description": "El grupo está trabajando en la idea del proyecto.",
-        "is_final": False,
-    },
-    {
-        "ambito": "project",
-        "code": "in_progress",
-        "name": "En proceso",
-        "description": "El grupo está desarrollando el proyecto.",
-        "is_final": False,
-    },
-    {
-        "ambito": "project",
-        "code": "pending_approval",
-        "name": "Pendiente de aprobación",
-        "description": "El proyecto espera la aprobación de un profesor.",
-        "is_final": False,
-    },
-    {
-        "ambito": "project",
-        "code": "rejected",
-        "name": "Rechazado",
-        "description": "La aprobación del proyecto fue rechazada.",
-        "is_final": False,
-    },
-    {
-        "ambito": "project",
-        "code": "approved",
-        "name": "Aprobado",
-        "description": "El proyecto fue aprobado.",
-        "is_final": True,
-    },
-    {
-        "ambito": "project",
-        "code": "cancelled",
-        "name": "Cancelado",
-        "description": "El grupo se disolvió o el proyecto no se llevó a cabo.",
-        "is_final": True,
-    },
-    {
-        "ambito": "student_project",
-        "code": "active",
-        "name": "Activo",
-        "description": "El alumno integra el grupo.",
-        "is_final": False,
-    },
-    {
-        "ambito": "student_project",
-        "code": "pending_approval",
-        "name": "Pendiente de aprobación",
-        "description": "El alumno solicitó unirse y espera la aprobación de un profesor.",
-        "is_final": False,
-    },
-    {
-        "ambito": "student_project",
-        "code": "abandoned",
-        "name": "Abandono",
-        "description": "El alumno dejó el grupo antes de terminar el cursado.",
-        "is_final": True,
-    },
-    {
-        "ambito": "student_project",
-        "code": "finished",
-        "name": "Finalizado",
-        "description": "El proyecto terminó y la participación quedó cerrada.",
-        "is_final": True,
-    },
-    {
-        "ambito": "student_project",
-        "code": "expelled",
-        "name": "Expulsado",
-        "description": "Un profesor sacó al alumno del grupo.",
-        "is_final": True,
-    },
-    {
-        "ambito": "student_project",
-        "code": "rejected",
-        "name": "Rechazado",
-        "description": "La solicitud de incorporación fue rechazada.",
-        "is_final": False,
-    },
+        "ambito": state.ambito,
+        "code": state.code,
+        "name": state.name,
+        "description": state.description,
+        "is_final": state.is_final,
+    }
+    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG)
 ]
 
 
 def membership_initial_status(has_leader: bool) -> str:
     """Estado inicial de una membresía nueva: con jefe en el grupo, queda pendiente."""
-    return STUDENT_PROJECT.pending if has_leader else STUDENT_PROJECT.initial
+    return STUDENT_PROJECT_PENDING if has_leader else STUDENT_PROJECT_INITIAL
 
 
 def to_public(status: Status) -> StatusPublic:
-    policy = POLICIES.get(status.ambito)
     return StatusPublic(
         id_status=status.id_status,
         ambito=status.ambito,
@@ -218,7 +52,7 @@ def to_public(status: Status) -> StatusPublic:
         name=status.name,
         description=status.description,
         is_final=status.is_final,
-        is_insured=policy.has(status.code, INSURED) if policy else False,
+        is_insured=state_for(status).is_insured,
     )
 
 

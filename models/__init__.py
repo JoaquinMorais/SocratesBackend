@@ -10,9 +10,10 @@ from models.student_project import StudentProject
 from models.status import Status
 from models.token import RefreshToken
 from models.email_verification import EmailVerification
+from models.state import ProjectState, State, StudentProjectState
 
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
     "ProfessorSectionYear", "Project", "ProjectStatus", "StudentProject", "Status",
-    "RefreshToken", "EmailVerification",
+    "RefreshToken", "EmailVerification", "State", "ProjectState", "StudentProjectState",
 ]

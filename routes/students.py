@@ -14,8 +14,8 @@ from schemas.student import (
 from utils.auth import user_dependency
 from utils.email import send_welcome_emails
 from utils.permissions import professor_dependency
+from models.state import MEMBER_CODES
 from utils.projects import build_access
-from utils.statuses import MEMBER, STUDENT_PROJECT
 from utils.students import create_students, list_students, update_student
 
 students_router = APIRouter(prefix="/students", tags=["students"])
@@ -54,7 +54,7 @@ async def get_students(
                 "`active` y `finished`"
             ),
         ),
-    ] = list(STUDENT_PROJECT.codes_of(MEMBER)),
+    ] = list(MEMBER_CODES),
     id_section_year: Annotated[
         int | None, Query(description="Filtrar por curso lectivo")
     ] = None,

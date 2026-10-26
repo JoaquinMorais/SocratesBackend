@@ -4,9 +4,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
 from models import Status, Student, StudentProject, User
+from models.state import MEMBER_CODES
+from models.state.state_student_project import (
+    STUDENT_PROJECT_ORDER,
+    Abandoned,
+    Active,
+    Expelled,
+)
 from schemas.student_project import StudentProjectMemberPublic, StudentProjectPublic
 from utils.projects import get_project, is_uninsured
-from utils.statuses import MEMBER, STUDENT_PROJECT, get_status, membership_initial_status
+from utils.state import MembershipEffector, apply_transition
+from utils.statuses import get_status, membership_initial_status
 from utils.statuses import to_public as status_public
 
 
@@ -54,7 +62,7 @@ async def _has_member_membership(db, id_student: int, exclude_id: int | None = N
     conditions = [
         StudentProject.id_student == id_student,
         Status.ambito == "student_project",
-        Status.code.in_(STUDENT_PROJECT.codes_of(MEMBER)),
+        Status.code.in_(MEMBER_CODES),
     ]
     if exclude_id is not None:
         conditions.append(StudentProject.id_student_project != exclude_id)
@@ -67,31 +75,6 @@ async def _has_member_membership(db, id_student: int, exclude_id: int | None = N
         )
     ).first()
     return found is not None
-
-
-async def _reject_other_pending(db, id_student: int, keep_id: int | None) -> None:
-    """Al pasar a `member`, sus otras solicitudes `pending_approval` se rechazan."""
-    conditions = [
-        StudentProject.id_student == id_student,
-        Status.ambito == "student_project",
-        Status.code == STUDENT_PROJECT.pending,
-    ]
-    if keep_id is not None:
-        conditions.append(StudentProject.id_student_project != keep_id)
-    rows = (
-        await db.exec(
-            select(StudentProject)
-            .join(Status, Status.id_status == StudentProject.id_status)
-            .where(*conditions)
-        )
-    ).all()
-    if not rows:
-        return
-    rejected = await get_status(db, "student_project", "rejected")
-    for membership in rows:
-        membership.status = rejected
-        membership.is_leader = False
-        db.add(membership)
 
 
 async def join_project(
@@ -124,14 +107,14 @@ async def join_project(
     has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
     code = membership_initial_status(has_leader)
 
-    if code == "active":
+    if code == Active.code:
         if await _has_member_membership(
             db, id_student, exclude_id=membership.id_student_project
         ):
             raise _conflict("You already belong to another project")
-        await _reject_other_pending(db, id_student, keep_id=membership.id_student_project)
+        await MembershipEffector(db).reject_other_pending(membership)
 
-    membership.is_leader = code == "active"
+    membership.is_leader = code == Active.code
     membership.status = await get_status(db, "student_project", code)
     db.add(membership)
     try:
@@ -161,66 +144,15 @@ async def decide_membership(
     if leader is None:
         raise _forbidden("Only the group leader can accept or reject requests")
 
-    current = membership.status.code
-    if not STUDENT_PROJECT.can_transition(current, target):
-        raise _conflict(f"A membership in '{current}' cannot change to '{target}'")
-
-    if target == "active":
+    if target == Active.code:
         if await _has_member_membership(
             db, membership.id_student, exclude_id=membership.id_student_project
         ):
             raise _conflict("This student already belongs to another project")
-        await _reject_other_pending(
-            db, membership.id_student, keep_id=membership.id_student_project
-        )
 
-    membership.status = await get_status(db, "student_project", target)
-    db.add(membership)
+    await apply_transition(db, membership, target, effector=MembershipEffector(db))
     await db.commit()
     return _public(membership)
-
-
-async def _oldest_active(
-    db, id_project: int, exclude_id: int | None = None
-) -> StudentProject | None:
-    """El integrante `active` más antiguo del grupo (candidato a jefe)."""
-    conditions = [
-        StudentProject.id_project == id_project,
-        Status.ambito == "student_project",
-        Status.code == "active",
-    ]
-    if exclude_id is not None:
-        conditions.append(StudentProject.id_student_project != exclude_id)
-    return (
-        await db.exec(
-            select(StudentProject)
-            .join(Status, Status.id_status == StudentProject.id_status)
-            .where(*conditions)
-            .order_by(
-                col(StudentProject.enrolled_at),
-                col(StudentProject.id_student_project),
-            )
-            .limit(1)
-        )
-    ).first()
-
-
-async def _finish_leader(db, membership: StudentProject, code: str) -> None:
-    """Saca al integrante del grupo (`code`) y, si era jefe, promueve al sucesor."""
-    was_leader = membership.is_leader
-    new_status = await get_status(db, "student_project", code)
-    membership.is_leader = False
-    membership.status = new_status
-    db.add(membership)
-    await db.flush()  # libera el índice único de jefe antes de promover
-    if not was_leader:
-        return
-    successor = await _oldest_active(
-        db, membership.id_project, exclude_id=membership.id_student_project
-    )
-    if successor is not None:
-        successor.is_leader = True
-        db.add(successor)
 
 
 async def abandon_membership(
@@ -233,9 +165,9 @@ async def abandon_membership(
         raise _forbidden("You can only abandon your own membership")
     if not is_uninsured(project):
         raise _conflict("Only an uninsured project allows members to leave")
-    if not STUDENT_PROJECT.can_transition(membership.status.code, "abandoned"):
-        raise _conflict(f"A membership in '{membership.status.code}' cannot be abandoned")
-    await _finish_leader(db, membership, "abandoned")
+    await apply_transition(
+        db, membership, Abandoned.code, effector=MembershipEffector(db)
+    )
     await db.commit()
 
 
@@ -249,9 +181,9 @@ async def expel_membership(db, access, id_project: int, id_student_project: int)
     if not is_uninsured(project):
         raise _conflict("Only an uninsured project allows members to be expelled")
     membership = await _get_membership(db, id_project, id_student_project)
-    if not STUDENT_PROJECT.can_transition(membership.status.code, "expelled"):
-        raise _conflict(f"A membership in '{membership.status.code}' cannot be expelled")
-    await _finish_leader(db, membership, "expelled")
+    await apply_transition(
+        db, membership, Expelled.code, effector=MembershipEffector(db)
+    )
     await db.commit()
 
 
@@ -276,7 +208,7 @@ async def transfer_leadership(
         raise _conflict("A project in a final state cannot change its leader")
     if membership.id_student_project == leader.id_student_project:
         raise _conflict("This member is already the group leader")
-    if membership.status.code != "active":
+    if membership.status.code != Active.code:
         raise _conflict("The leadership can only be transferred to an active member")
     leader.is_leader = False
     db.add(leader)
@@ -310,9 +242,9 @@ def _member_conditions(id_project: int, statuses: list[str]) -> list:
 def _member_priority():
     """Ordena por el orden del catálogo (`active`, `pending_approval`, ...)."""
     return case(
-        {code: index for index, code in enumerate(STUDENT_PROJECT.order)},
+        {code: index for index, code in enumerate(STUDENT_PROJECT_ORDER)},
         value=Status.code,
-        else_=len(STUDENT_PROJECT.order),
+        else_=len(STUDENT_PROJECT_ORDER),
     )
 
 

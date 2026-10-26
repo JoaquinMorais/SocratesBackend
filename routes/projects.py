@@ -35,7 +35,7 @@ from utils.projects import (
     uninsure_project,
     update_project,
 )
-from utils.statuses import MEMBER, STUDENT_PROJECT
+from models.state import MEMBER_CODES
 from utils.student_projects import get_responsible, list_all_members
 
 projects_router = APIRouter(prefix="/projects", tags=["projects"])
@@ -254,7 +254,7 @@ async def get_project_overview_route(
             "Only privileged users can filter members by status",
         )
 
-    statuses = status_filter or list(STUDENT_PROJECT.codes_of(MEMBER))
+    statuses = status_filter or list(MEMBER_CODES)
     members = await list_all_members(db, id_project, statuses=statuses)
     responsible = await get_responsible(db, id_project)
     project_public = to_public(project, restricted=not access.can_see_detail(project))

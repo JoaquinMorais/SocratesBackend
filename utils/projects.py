@@ -15,20 +15,27 @@ from models import (
     User,
 )
 from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic, ProjectUpdate
+from models.state import MEMBER_CODES, PROJECT_INITIAL
+from models.state.state_project import (
+    Approved,
+    Cancelled,
+    InIdea,
+    InProgress,
+    PendingApprovalProject,
+    RejectedProject,
+    Uninsured,
+)
+from models.state.state_student_project import PendingApprovalMember, RejectedMember
 from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
-from utils.statuses import MEMBER, PROJECT, STUDENT_PROJECT, get_status
+from utils.state import ProjectEffector, apply_transition
+from utils.statuses import get_status
 from utils.statuses import to_public as status_public
-
-# Estados desde los que se puede desasegurar (insured → uninsured).
-UNINSURE_FROM = ("in_idea", "in_progress", "pending_approval", "rejected")
-# Estados desde los que se puede cancelar (cualquier no final).
-CANCEL_FROM = ("uninsured", "in_idea", "in_progress", "pending_approval", "rejected")
 
 
 def is_uninsured(project: Project) -> bool:
     """Un proyecto `uninsured` (Desasegurado) se trata siempre como público."""
-    return project.status.code == PROJECT.initial
+    return project.status.code == PROJECT_INITIAL
 
 
 @dataclass
@@ -84,7 +91,7 @@ async def build_access(db, user: User) -> Access:
             .where(
                 StudentProject.id_student == user.id_user,
                 Status.ambito == "student_project",
-                Status.code.in_(STUDENT_PROJECT.codes_of(MEMBER)),
+                Status.code.in_(MEMBER_CODES),
             )
         )
         access.project_ids = set(rows.all())
@@ -174,13 +181,13 @@ async def _reject_pending_of_project(db, id_project: int) -> None:
             .where(
                 StudentProject.id_project == id_project,
                 Status.ambito == "student_project",
-                Status.code == STUDENT_PROJECT.pending,
+                Status.code == PendingApprovalMember.code,
             )
         )
     ).all()
     if not rows:
         return
-    rejected = await get_status(db, "student_project", "rejected")
+    rejected = await get_status(db, "student_project", RejectedMember.code)
     for membership in rows:
         membership.status = rejected
         membership.is_leader = False
@@ -217,7 +224,7 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
     else:
         number = await _next_group_number(db, sy.id_section_year)
 
-    initial_status = await get_status(db, "project", PROJECT.initial)
+    initial_status = await get_status(db, "project", PROJECT_INITIAL)
     project = Project(group_number=number, section_year=sy, status=initial_status)
     db.add(project)
     await db.flush()  # obtiene id_project
@@ -237,7 +244,7 @@ async def create_projects_bulk(
     _require_manager(access, sy.id_section_year)
 
     start = await _next_group_number(db, sy.id_section_year)
-    initial_status = await get_status(db, "project", PROJECT.initial)
+    initial_status = await get_status(db, "project", PROJECT_INITIAL)
     projects = [
         Project(group_number=start + i, section_year=sy, status=initial_status)
         for i in range(data.quantity)
@@ -284,7 +291,7 @@ async def insure_project(db, access: Access, id_user: int, id_project: int) -> P
             "Only the group leader, a professor of this section year or a super admin "
             "can insure this project",
         )
-    if project.status.code != PROJECT.initial:  # solo grupos en formación
+    if project.status.code != PROJECT_INITIAL:  # solo grupos en formación
         raise _conflict("Only an uninsured project can be insured")
 
     count = await _active_count(db, id_project)
@@ -299,59 +306,24 @@ async def insure_project(db, access: Access, id_user: int, id_project: int) -> P
         )
 
     if project.id_status_insured is not None:
-        target = await db.get(Status, project.id_status_insured)
+        remembered = await db.get(Status, project.id_status_insured)
+        target_code = remembered.code if remembered is not None else None
     else:
-        target = await get_status(db, "project", "in_idea")
-    if target is None or not PROJECT.can_transition(PROJECT.initial, target.code):
+        target_code = InIdea.code
+    if target_code is None or not Uninsured.can_transition_to(target_code):
         raise _conflict("The remembered insured status is no longer valid")
 
-    uninsured = project.status
     await _reject_pending_of_project(db, id_project)
-    project.status = target
-    db.add(project)
-    await record_status_change(db, id_project, uninsured.id_status, target.id_status)
+    previous, target = await apply_transition(
+        db, project, target_code, effector=ProjectEffector(db)
+    )
+    await record_status_change(db, id_project, previous.id_status, target.id_status)
     await db.commit()
     return to_public(project)
 
 
-async def _close_memberships(db, id_project: int, active_code: str) -> None:
-    """Cierra las membresías del grupo al finalizar el proyecto.
-
-    Las `active` pasan a `active_code` (`abandoned` al cancelar, `finished` al
-    aprobar); las `pending_approval` pasan a `rejected`. Las demás no se tocan.
-    """
-    rows = (
-        await db.exec(
-            select(StudentProject)
-            .join(Status, Status.id_status == StudentProject.id_status)
-            .where(
-                StudentProject.id_project == id_project,
-                Status.ambito == "student_project",
-                Status.code.in_(("active", "pending_approval")),
-            )
-        )
-    ).all()
-    if not rows:
-        return
-    rejected = await get_status(db, "student_project", "rejected")
-    target = await get_status(db, "student_project", active_code)
-    for membership in rows:
-        if membership.status.code == "pending_approval":
-            membership.status = rejected
-            membership.is_leader = False
-        else:
-            membership.status = target
-        db.add(membership)
-
-
 async def _transition_project(
-    db,
-    access: Access,
-    id_project: int,
-    *,
-    allowed_from: tuple[str, ...],
-    to_code: str,
-    members_code: str | None = None,
+    db, access: Access, id_project: int, *, to_code: str
 ) -> ProjectPublic:
     """Aplica una transición de estado del proyecto y registra en el historial."""
     project = await get_project(db, id_project)
@@ -361,91 +333,56 @@ async def _transition_project(
             "Only a professor of this section year or a super admin can change "
             "the project status",
         )
-    current = project.status.code
-    if current not in allowed_from:
-        raise _conflict(f"A project in '{current}' cannot change to '{to_code}'")
-
-    # La memoria del subestado se escribe al desasegurar (insured → uninsured).
-    if to_code == PROJECT.initial and current in UNINSURE_FROM:
-        project.id_status_insured = project.id_status
-
-    target = await get_status(db, "project", to_code)
-    source = project.status
-    project.status = target
-    db.add(project)
-    await record_status_change(db, id_project, source.id_status, target.id_status)
-
-    if members_code is not None:
-        await _close_memberships(db, id_project, members_code)
-
+    previous, target = await apply_transition(
+        db, project, to_code, effector=ProjectEffector(db)
+    )
+    await record_status_change(db, id_project, previous.id_status, target.id_status)
     await db.commit()
     return to_public(project)
 
 
 async def uninsure_project(db, access: Access, id_project: int) -> ProjectPublic:
     """Desasegura un grupo: insured → uninsured. Escribe la memoria del subestado."""
-    return await _transition_project(
-        db, access, id_project, allowed_from=UNINSURE_FROM, to_code=PROJECT.initial
-    )
+    return await _transition_project(db, access, id_project, to_code=Uninsured.code)
 
 
 async def advance_project(db, access: Access, id_project: int) -> ProjectPublic:
     """in_idea → in_progress."""
-    return await _transition_project(
-        db, access, id_project, allowed_from=("in_idea",), to_code="in_progress"
-    )
+    return await _transition_project(db, access, id_project, to_code=InProgress.code)
 
 
 async def submit_project(db, access: Access, id_project: int) -> ProjectPublic:
     """in_progress → pending_approval."""
     return await _transition_project(
-        db, access, id_project, allowed_from=("in_progress",), to_code="pending_approval"
+        db, access, id_project, to_code=PendingApprovalProject.code
     )
 
 
 async def approve_project(db, access: Access, id_project: int) -> ProjectPublic:
     """pending_approval → approved. Cierra las membresías `active` como `finished`."""
-    return await _transition_project(
-        db,
-        access,
-        id_project,
-        allowed_from=("pending_approval",),
-        to_code="approved",
-        members_code="finished",
-    )
+    return await _transition_project(db, access, id_project, to_code=Approved.code)
 
 
 async def reject_project(db, access: Access, id_project: int) -> ProjectPublic:
     """pending_approval → rejected."""
-    return await _transition_project(
-        db, access, id_project, allowed_from=("pending_approval",), to_code="rejected"
-    )
+    return await _transition_project(db, access, id_project, to_code=RejectedProject.code)
 
 
 async def retry_project(db, access: Access, id_project: int) -> ProjectPublic:
     """rejected → in_progress."""
-    return await _transition_project(
-        db, access, id_project, allowed_from=("rejected",), to_code="in_progress"
-    )
+    return await _transition_project(db, access, id_project, to_code=InProgress.code)
 
 
 async def cancel_project(db, access: Access, id_project: int) -> ProjectPublic:
     """Cualquier no final → cancelled. Cierra las membresías `active` como `abandoned`."""
-    return await _transition_project(
-        db,
-        access,
-        id_project,
-        allowed_from=CANCEL_FROM,
-        to_code="cancelled",
-        members_code="abandoned",
-    )
+    return await _transition_project(db, access, id_project, to_code=Cancelled.code)
 
 
 async def delete_project(db, access: Access, id_project: int) -> None:
     project = await get_project(db, id_project)
     _require_manager(access, project.id_section_year)
 
-    if project.status.code != PROJECT.initial:  # solo grupos en formación (uninsured)
+    if project.status.code != PROJECT_INITIAL:  # solo grupos en formación (uninsured)
         raise _conflict("Only an uninsured project can be deleted")
 
     has_students = (
@@ -482,7 +419,7 @@ async def list_projects(
         # Un proyecto private solo lo ve quien tiene privilegios (miembro, profesor
         # del curso lectivo o super admin); para el resto no existe. Los proyectos
         # `uninsured` se tratan siempre como públicos.
-        visible = [Project.privacy != "private", Status.code == PROJECT.initial]
+        visible = [Project.privacy != "private", Status.code == PROJECT_INITIAL]
         if access.section_year_ids:
             visible.append(Project.id_section_year.in_(access.section_year_ids))
         if access.project_ids:
@@ -498,11 +435,11 @@ async def list_projects(
         # La privacidad que se filtra es la efectiva: un `uninsured` cuenta como público.
         if privacy == "public":
             conditions.append(
-                or_(Project.privacy == "public", Status.code == PROJECT.initial)
+                or_(Project.privacy == "public", Status.code == PROJECT_INITIAL)
             )
         else:
             conditions.append(
-                and_(Project.privacy == privacy, Status.code != PROJECT.initial)
+                and_(Project.privacy == privacy, Status.code != PROJECT_INITIAL)
             )
 
     on_sy = SectionYear.id_section_year == Project.id_section_year

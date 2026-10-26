@@ -544,13 +544,16 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
-**Reglas por ámbito (`StatusPolicy`)**
+**Reglas por ámbito (jerarquía `State`)**
 - `test_member_category`: testear que la categoría `member` es `active` + `finished` y que ningún otro estado de membresía pertenece.
 - `test_insured_category`: testear que la categoría `insured` es `in_idea`, `in_progress`, `pending_approval` y `rejected`, que `is_insured` devuelve true solo para esos, y false para `uninsured`, `approved`, `cancelled` y los estados de membresía.
 - `test_project_final_states`: testear que `approved` y `cancelled` están marcados `is_final` y no tienen transiciones.
 - `test_initial_and_pending_status`: testear que el estado inicial de proyecto es `uninsured`, el de membresía es `active`, y que una membresía que se une a un grupo con jefe queda `pending_approval`.
-- `test_transitions`: testear que solo se permiten las transiciones de membresía documentadas y que un estado final no admite ninguna.
+- `test_membership_transitions`: testear que solo se permiten las transiciones de membresía documentadas y que un estado final no admite ninguna.
 - `test_project_transitions`: testear la máquina de estados del proyecto (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`, `rejected → in_progress`, insured → `uninsured`), que `approved` y `cancelled` no salen a ningún lado y que no se puede ir de `approved` a `cancelled`.
-- `test_final_states_have_no_transitions`: testear que todo estado marcado `is_final` en el catálogo no tiene transiciones en su política (coherencia dato/regla).
-- `test_policy_codes_match_catalog`: testear que el orden y las categorías de cada política referencian exactamente los códigos del catálogo de ese ámbito.
-- `test_membership_status_literal_matches_policy`: testear que el `Literal` que valida `?status=` en `GET /students` coincide con los códigos de la política de membresías.
+- `test_final_states_have_no_transitions`: testear que toda clase de estado marcada `is_final` no tiene transiciones (coherencia dato/regla).
+- `test_catalog_codes_match_states`: testear que los códigos de cada catálogo de la jerarquía coinciden exactamente con los del catálogo persistido de ese ámbito y que los destinos de las transiciones existen.
+- `test_default_statuses_match_state_metadata`: testear que el catálogo base (`name`, `description`, `is_final`) coincide con los metadatos de las clases de estado.
+- `test_registry_maps_catalog_states`: testear que el registro `(ambito, code) → clase` resuelve cada estado del catálogo a su clase de dominio.
+- `test_unknown_state_falls_back_to_base`: testear que un estado que no está en la jerarquía cae en `State`, que no admite transiciones.
+- `test_membership_status_literal_matches_order`: testear que el `Literal` que valida `?status=` en `GET /students` coincide con los códigos de membresía.

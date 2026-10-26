@@ -1,14 +1,22 @@
 from typing import get_args
 
+from models import Status
+from models.state import (
+    MEMBER_CODES,
+    PROJECT_CATALOG,
+    PROJECT_INITIAL,
+    PROJECT_INSURED,
+    STUDENT_PROJECT_CATALOG,
+    STUDENT_PROJECT_INITIAL,
+    STUDENT_PROJECT_ORDER,
+    State,
+    state_class,
+    state_for,
+)
 from schemas.status import MembershipStatus
 from tests.helpers import STUDENT, SUPER_ADMIN
 from utils.statuses import (
     DEFAULT_STATUSES,
-    INSURED,
-    MEMBER,
-    POLICIES,
-    PROJECT,
-    STUDENT_PROJECT,
     is_insured,
     is_member,
     membership_initial_status,
@@ -19,6 +27,10 @@ URL = "/statuses"
 
 def _catalog_codes(ambito: str) -> set[str]:
     return {s["code"] for s in DEFAULT_STATUSES if s["ambito"] == ambito}
+
+
+def _state(ambito: str, code: str):
+    return state_class(ambito, code)
 
 
 async def test_requires_authentication(client):
@@ -75,12 +87,13 @@ async def test_list_pagination(client, login):
     assert (await client.get(f"{URL}?limit=0", headers=headers)).status_code == 422
 
 
-# ---------- reglas por ámbito (StatusPolicy) ----------
+# ---------- jerarquía de estados (State) ----------
 async def test_member_category():
     assert is_member("active") and is_member("finished")
     for code in ("pending_approval", "abandoned", "expelled", "rejected"):
         assert not is_member(code), code
-    assert STUDENT_PROJECT.codes_of(MEMBER) == frozenset({"active", "finished"})
+    assert MEMBER_CODES == frozenset({"active", "finished"})
+    assert {state.code for state in STUDENT_PROJECT_CATALOG if state.is_member} == MEMBER_CODES
 
 
 async def test_insured_category():
@@ -90,9 +103,11 @@ async def test_insured_category():
         assert not is_insured(code), code
     for code in ("active", "abandoned", "finished", "expelled"):
         assert not is_insured(code), code
-    assert PROJECT.codes_of(INSURED) == frozenset(
+    assert PROJECT_INSURED == frozenset(
         {"in_idea", "in_progress", "pending_approval", "rejected"}
     )
+    for state in PROJECT_CATALOG:
+        assert is_insured(state.code) == state.is_insured
 
 
 async def test_project_final_states():
@@ -102,59 +117,81 @@ async def test_project_final_states():
             if s["ambito"] == "project" and s["code"] == code
         )
         assert item["is_final"], code
-        assert PROJECT.next_codes(code) == frozenset(), code
+        assert _state("project", code).next_codes == frozenset(), code
 
 
 async def test_initial_and_pending_status():
-    assert PROJECT.initial == "uninsured"
-    assert STUDENT_PROJECT.initial == "active"
+    assert PROJECT_INITIAL == "uninsured"
+    assert STUDENT_PROJECT_INITIAL == "active"
     assert membership_initial_status(has_leader=False) == "active"
     assert membership_initial_status(has_leader=True) == "pending_approval"
 
 
-async def test_transitions():
-    assert STUDENT_PROJECT.can_transition("pending_approval", "active")
-    assert STUDENT_PROJECT.can_transition("pending_approval", "rejected")
-    assert STUDENT_PROJECT.can_transition("active", "abandoned")
-    assert STUDENT_PROJECT.can_transition("active", "expelled")
-    assert STUDENT_PROJECT.can_transition("active", "finished")
-    assert STUDENT_PROJECT.can_transition("rejected", "pending_approval")
-    assert not STUDENT_PROJECT.can_transition("active", "pending_approval")
-    assert not STUDENT_PROJECT.can_transition("active", "rejected")
-    assert STUDENT_PROJECT.next_codes("finished") == frozenset()
+async def test_membership_transitions():
+    pending = _state("student_project", "pending_approval")
+    active = _state("student_project", "active")
+    rejected = _state("student_project", "rejected")
+    assert pending.can_transition_to("active")
+    assert pending.can_transition_to("rejected")
+    assert active.can_transition_to("abandoned")
+    assert active.can_transition_to("expelled")
+    assert active.can_transition_to("finished")
+    assert rejected.can_transition_to("pending_approval")
+    assert not active.can_transition_to("pending_approval")
+    assert not active.can_transition_to("rejected")
+    assert _state("student_project", "finished").next_codes == frozenset()
 
 
 async def test_project_transitions():
-    assert PROJECT.can_transition("uninsured", "in_idea")
-    assert PROJECT.can_transition("in_idea", "in_progress")
-    assert PROJECT.can_transition("in_progress", "pending_approval")
-    assert PROJECT.can_transition("pending_approval", "approved")
-    assert PROJECT.can_transition("pending_approval", "rejected")
-    assert PROJECT.can_transition("rejected", "in_progress")
-    assert PROJECT.can_transition("in_progress", "uninsured")
-    assert not PROJECT.can_transition("approved", "cancelled")
-    assert not PROJECT.can_transition("cancelled", "uninsured")
-    assert PROJECT.next_codes("approved") == frozenset()
-    assert PROJECT.next_codes("cancelled") == frozenset()
+    assert _state("project", "uninsured").can_transition_to("in_idea")
+    assert _state("project", "in_idea").can_transition_to("in_progress")
+    assert _state("project", "in_progress").can_transition_to("pending_approval")
+    assert _state("project", "pending_approval").can_transition_to("approved")
+    assert _state("project", "pending_approval").can_transition_to("rejected")
+    assert _state("project", "rejected").can_transition_to("in_progress")
+    assert _state("project", "in_progress").can_transition_to("uninsured")
+    assert not _state("project", "approved").can_transition_to("cancelled")
+    assert not _state("project", "cancelled").can_transition_to("uninsured")
+    assert _state("project", "approved").next_codes == frozenset()
+    assert _state("project", "cancelled").next_codes == frozenset()
 
 
 async def test_final_states_have_no_transitions():
+    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG):
+        if state.is_final:
+            assert state.next_codes == frozenset(), state.code
+
+
+async def test_catalog_codes_match_states():
+    for ambito, catalog in (
+        ("project", PROJECT_CATALOG),
+        ("student_project", STUDENT_PROJECT_CATALOG),
+    ):
+        assert {state.code for state in catalog} == _catalog_codes(ambito)
+        codes = {state.code for state in catalog}
+        for state in catalog:
+            assert state.next_codes <= codes, state.code
+
+
+async def test_default_statuses_match_state_metadata():
     for item in DEFAULT_STATUSES:
-        if item["is_final"]:
-            policy = POLICIES[item["ambito"]]
-            assert policy.next_codes(item["code"]) == frozenset(), item["code"]
+        state = state_class(item["ambito"], item["code"])
+        assert item["name"] == state.name
+        assert item["description"] == state.description
+        assert item["is_final"] == state.is_final
 
 
-async def test_policy_codes_match_catalog():
-    for ambito, policy in POLICIES.items():
-        assert set(policy.order) == _catalog_codes(ambito)
-        codes = set(policy.order)
-        for category in policy.categories:
-            assert policy.codes_of(category) <= codes, category
-        for code, targets in policy.transitions.items():
-            assert code in codes, code
-            assert targets <= codes, code
+async def test_registry_maps_catalog_states():
+    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG):
+        row = Status(ambito=state.ambito, code=state.code, name=state.name)
+        assert state_for(row) is state
 
 
-async def test_membership_status_literal_matches_policy():
-    assert set(get_args(MembershipStatus)) == set(STUDENT_PROJECT.order)
+async def test_unknown_state_falls_back_to_base():
+    row = Status(ambito="project", code="custom", name="Custom")
+    assert state_for(row) is State
+    assert not State.can_transition_to("anything")
+
+
+async def test_membership_status_literal_matches_order():
+    assert set(get_args(MembershipStatus)) == set(STUDENT_PROJECT_ORDER)

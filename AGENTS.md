@@ -42,6 +42,7 @@ Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + Pos
 ### Modelos (`models/`)
 - Relaciones con `sa_relationship_kwargs={"lazy": "selectin"}`; sin eso, fallan en async.
 - Herencia ORM entre tablas **no se usa**: `students` y `professors` tienen como clave el id de `users` (composición).
+- **Estados**: son clases de dominio en `models/state/` (sin tabla ni herencia ORM) y sus reglas/efectos viven en `utils/state/`; `Status` es solo la persistencia. Un estado nuevo requiere su clase, sus transiciones (`next_codes`) y su efecto (`on_enter`) si aplica.
 - **Tablas intermedias** (muchos a muchos): id propio + `UniqueConstraint` sobre el par.
 - Restricciones simples en la BD (`UniqueConstraint`, `CheckConstraint`) y también validadas en el código para dar un error claro.
 - Todo modelo nuevo se exporta en `models/__init__.py`.
