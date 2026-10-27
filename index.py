@@ -36,7 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=[
         {"name": "auth", "description": "Login, sesión y contraseña."},
-        {"name": "me", "description": "Datos del usuario logueado."},
+        {"name": "me", "description": "Datos del usuario logueado y su proyecto (`GET /me/project`, solo alumnos): el grupo donde es miembro con integrantes, responsables y jefe, y sus solicitudes de ingreso pendientes o rechazadas."},
         {"name": "users", "description": "Consulta de usuarios (solo super admin)."},
         {"name": "students", "description": "Alta, edición y consulta de alumnos (profesores; la consulta muestra el grupo y admite super admin). Cada grupo indica si el alumno es jefe (`is_leader`) y su `status` de membresía; la consulta se filtra por esos estados (por defecto `active` y `finished`)."},
         {"name": "professors", "description": "Alta y edición de profesores (solo super admin)."},

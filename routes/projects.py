@@ -36,8 +36,7 @@ from utils.projects import (
     update_project,
 )
 from models.state import MEMBER_CODES
-from utils.professor_section_years import list_section_year_professors
-from utils.student_projects import get_leader, list_all_members
+from utils.student_projects import build_overview
 
 projects_router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -258,15 +257,11 @@ async def get_project_overview_route(
         )
 
     statuses = status_filter or list(MEMBER_CODES)
-    members = await list_all_members(db, id_project, statuses=statuses)
-    responsible = await list_section_year_professors(db, project.id_section_year)
-    leader = await get_leader(db, id_project)
-    project_public = to_public(project, restricted=not access.can_see_detail(project))
-    return ProjectOverviewPublic(
-        **project_public.model_dump(),
-        members=members,
-        responsible=responsible,
-        leader=leader,
+    return await build_overview(
+        db,
+        project,
+        restricted=not access.can_see_detail(project),
+        statuses=statuses,
     )
 
 

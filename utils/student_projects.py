@@ -3,19 +3,29 @@ from sqlalchemy import case
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
-from models import Status, Student, StudentProject, User
+from models import Project, Section, SectionYear, Status, Student, StudentProject, User
 from models.state import MEMBER_CODES
 from models.state.state_student_project import (
     STUDENT_PROJECT_ORDER,
     Abandoned,
     Active,
     Expelled,
+    PendingApprovalMember,
+    RejectedMember,
 )
+from schemas.me_project import MyProjectPublic
+from schemas.project import ProjectOverviewPublic
+from schemas.status import StatusPublic
+from schemas.student import StudentGroupPublic
 from schemas.student_project import StudentProjectMemberPublic, StudentProjectPublic
-from utils.projects import get_project, is_uninsured
+from utils.professor_section_years import list_section_year_professors
+from utils.projects import get_project, is_uninsured, to_public as project_public
 from utils.state import MembershipEffector, apply_transition
 from utils.statuses import get_status, membership_initial_status
 from utils.statuses import to_public as status_public
+
+# Membresías que son solicitudes de ingreso (mi equipo "no existe" con estas).
+REQUEST_CODES = (PendingApprovalMember.code, RejectedMember.code)
 
 
 def _conflict(detail: str) -> HTTPException:
@@ -314,3 +324,134 @@ async def get_leader(db, id_project: int) -> StudentProjectMemberPublic | None:
         return None
     membership, user = row
     return await _to_member(membership, user)
+
+
+async def build_overview(
+    db, project: Project, *, restricted: bool = False, statuses: list[str] | None = None
+) -> ProjectOverviewPublic:
+    """Proyecto + integrantes (según `statuses`), responsables y jefe."""
+    members = await list_all_members(
+        db, project.id_project, statuses=list(statuses) if statuses else list(MEMBER_CODES)
+    )
+    return ProjectOverviewPublic(
+        **project_public(project, restricted=restricted).model_dump(),
+        members=members,
+        responsible=await list_section_year_professors(db, project.id_section_year),
+        leader=await get_leader(db, project.id_project),
+    )
+
+
+async def get_team_membership(db, id_student: int) -> StudentProject | None:
+    """La membresía `member` (`active`/`finished`) del alumno en todo el sistema.
+
+    Si hubiera más de una (no debería, por las reglas de ingreso), toma la más
+    reciente.
+    """
+    return (
+        await db.exec(
+            select(StudentProject)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student == id_student,
+                Status.ambito == "student_project",
+                Status.code.in_(MEMBER_CODES),
+            )
+            .order_by(
+                col(StudentProject.enrolled_at).desc(),
+                col(StudentProject.id_student_project).desc(),
+            )
+            .limit(1)
+        )
+    ).first()
+
+
+async def list_my_requests(db, id_student: int) -> list[StudentGroupPublic]:
+    """Las solicitudes de ingreso del alumno (`pending_approval` y `rejected`).
+
+    Resumen de cada grupo (comisión, año y número de grupo, estado del proyecto
+    no). Orden: pendientes primero y, dentro de cada estado, de la más nueva a
+    la más vieja.
+    """
+    rows = (
+        await db.exec(
+            select(
+                Project.id_project,
+                Project.name,
+                Project.group_number,
+                SectionYear.id_section_year,
+                SectionYear.year,
+                Section.id_section,
+                Section.name,
+                StudentProject.is_leader,
+                Status.id_status,
+                Status.ambito,
+                Status.code,
+                Status.name,
+                Status.description,
+                Status.is_final,
+            )
+            .join(Project, Project.id_project == StudentProject.id_project)
+            .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
+            .join(Section, Section.id_section == SectionYear.id_section)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student == id_student,
+                Status.ambito == "student_project",
+                Status.code.in_(REQUEST_CODES),
+            )
+            .order_by(
+                _member_priority(),
+                col(StudentProject.enrolled_at).desc(),
+                col(StudentProject.id_student_project).desc(),
+            )
+        )
+    ).all()
+    return [
+        StudentGroupPublic(
+            id_project=id_project,
+            project_name=project_name,
+            group_number=group_number,
+            id_section_year=id_section_year,
+            year=year,
+            id_section=id_section,
+            section_name=section_name,
+            is_leader=is_leader,
+            status=StatusPublic(
+                id_status=id_status,
+                ambito=ambito,
+                code=code,
+                name=name,
+                description=description,
+                is_final=is_final,
+            ),
+        )
+        for (
+            id_project,
+            project_name,
+            group_number,
+            id_section_year,
+            year,
+            id_section,
+            section_name,
+            is_leader,
+            id_status,
+            ambito,
+            code,
+            name,
+            description,
+            is_final,
+        ) in rows
+    ]
+
+
+async def get_my_project(db, id_student: int) -> MyProjectPublic:
+    """Mi proyecto (mi equipo: membresía `member`) y mis solicitudes de ingreso."""
+    membership = await get_team_membership(db, id_student)
+    if membership is None:
+        return MyProjectPublic(requests=await list_my_requests(db, id_student))
+    project = await get_project(db, membership.id_project)
+    # Siendo miembro tiene privilegios, así que el detalle no queda restringido.
+    return MyProjectPublic(
+        project=await build_overview(db, project, restricted=False),
+        requests=await list_my_requests(db, id_student),
+    )

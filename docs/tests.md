@@ -521,6 +521,25 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_list_unknown_project`: testear que un proyecto inexistente responde 404.
 - `test_list_filter_and_pagination`: testear el filtro por `status`, `limit`/`offset` y que un `status` inválido o `limit=0` responden 422.
 
+## `tests/test_me_project.py`
+
+Mi proyecto (`GET /me/project`): el equipo donde el alumno es miembro y sus solicitudes de ingreso.
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_professor_and_super_admin_forbidden`: testear que un profesor (común o super admin) recibe 403 (solo alumnos).
+
+**Consultar**
+- `test_no_team_and_no_requests`: testear que un alumno sin equipo y sin solicitudes recibe `{"project": null, "requests": []}`.
+- `test_team_with_leader_responsible_and_overview_fields`: testear que el proyecto propio viene con el overview completo (estado, privacidad efectiva, integrantes, `leader`, responsables del curso lectivo) y sin `restricted`.
+- `test_member_data_has_no_private_fields`: testear que los integrantes exponen solo datos públicos (sin mail ni fecha de nacimiento).
+- `test_finished_membership_is_still_the_team`: testear que una membresía `finished` sigue siendo el equipo (proyecto finalizado) y que conserva la jefatura en `leader`.
+- `test_private_team_seen_in_full_by_its_member`: testear que en un proyecto `private` el miembro ve todo el detalle (`restricted` en `false`).
+- `test_pending_request_with_no_team`: testear que una solicitud `pending_approval` aparece en `requests` con el resumen del grupo y `project` en `null`.
+- `test_rejected_request_while_member_of_another_project`: testear que una solicitud `rejected` se ve aunque el alumno ya tenga equipo.
+- `test_requests_ordered_pending_first_then_by_newest`: testear que `requests` ordena pendientes primero y, entre rechazadas, de la más nueva a la más vieja.
+- `test_abandoned_and_expelled_are_not_requests`: testear que `abandoned` y `expelled` no cuentan como equipo ni como solicitudes.
+
 ## `tests/test_technologies.py`
 
 Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies`, `GET /technologies`, `GET /technologies/{id}`, `PATCH /technologies/{id}`, `DELETE /technologies/{id}`); escritura para profesores y super admin, lectura para cualquier usuario logueado.
