@@ -143,7 +143,8 @@ async def test_uninsured_overview_shows_detail_and_members(client, login, make_p
     assert body["name"] == "Proyecto"  # uninsured se trata como público
     assert body["privacy"] == "public"  # privacidad efectiva
     assert len(body["members"]) == 2
-    assert body["responsible"]["id_student"] == ANA_ID
+    assert body["leader"]["id_student"] == ANA_ID
+    assert body["responsible"] == []  # el profesor está creado, pero no asignado
 
 
 async def test_public_overview_full_detail_and_members(client, login, make_professor):
@@ -158,8 +159,8 @@ async def test_public_overview_full_detail_and_members(client, login, make_profe
     body = (await _overview(client, prof, project["id_project"])).json()
     assert body["restricted"] is False and body["name"] == "Proyecto"
     assert len(body["members"]) == 2
-    assert body["responsible"]["id_student"] == ANA_ID
-    assert body["responsible"]["is_leader"] is True
+    assert body["leader"]["id_student"] == ANA_ID
+    assert body["leader"]["is_leader"] is True
 
 
 async def test_protected_overview_basic_for_outsiders(client, login, make_professor):
@@ -175,7 +176,8 @@ async def test_protected_overview_basic_for_outsiders(client, login, make_profes
     assert body["restricted"] is True
     assert body["name"] is None
     assert len(body["members"]) == 2  # igual ve los integrantes
-    assert body["responsible"]["id_student"] == ANA_ID
+    assert body["leader"]["id_student"] == ANA_ID
+    assert body["responsible"] == []
 
 
 async def test_protected_overview_full_for_privileged(client, login, make_professor):
@@ -203,9 +205,12 @@ async def test_private_overview_full_for_privileged(client, login, make_professo
     mail = await make_professor("prof@frc.utn.edu.ar")
     await _assign_professor(client, admin, mail, sy)
 
+    prof_id = await _prof_id(client, admin, mail)
     for headers in (await login(STUDENT), await login(mail), admin):
-        r = await _overview(client, headers, project["id_project"])
-        assert r.status_code == 200 and r.json()["name"] == "Proyecto"
+        body = (await _overview(client, headers, project["id_project"])).json()
+        assert body["restricted"] is False and body["name"] == "Proyecto"
+        assert [p["id_professor"] for p in body["responsible"]] == [prof_id]
+        assert body["leader"]["id_student"] == ANA_ID
 
 
 async def test_overview_without_leader(client, login):
@@ -213,7 +218,8 @@ async def test_overview_without_leader(client, login):
     project = await _create(client, admin, await _section_year(client, admin))
     body = (await _overview(client, admin, project["id_project"])).json()
     assert body["members"] == []
-    assert body["responsible"] is None
+    assert body["leader"] is None
+    assert body["responsible"] == []  # sin profesores asignados al curso
 
 
 # ---------- filtro de estados ----------
@@ -227,7 +233,7 @@ async def test_overview_default_members_are_active_and_finished(client, login):
 
     body = (await _overview(client, admin, project["id_project"])).json()
     assert {m["id_student"] for m in body["members"]} == {ANA_ID, LUIS_ID}
-    assert body["responsible"]["id_student"] == ANA_ID
+    assert body["leader"]["id_student"] == ANA_ID
 
 
 async def test_overview_privileged_can_filter_status(client, login):
@@ -239,7 +245,7 @@ async def test_overview_privileged_can_filter_status(client, login):
 
     body = (await _overview(client, admin, project["id_project"], status="pending_approval")).json()
     assert [m["id_student"] for m in body["members"]] == [extra]
-    assert body["responsible"]["id_student"] == ANA_ID  # el jefe se resuelve aparte del filtro
+    assert body["leader"]["id_student"] == ANA_ID  # el jefe se resuelve aparte del filtro
 
     both = (await _overview(client, admin, project["id_project"], status=["active", "pending_approval"])).json()
     assert {m["id_student"] for m in both["members"]} == {ANA_ID, extra}
@@ -261,6 +267,7 @@ async def test_overview_member_fields_and_order(client, login):
     body = (await _overview(client, admin, project["id_project"])).json()
     first = body["members"][0]
     assert first["is_leader"] is True and first["id_student"] == ANA_ID  # el jefe va primero
+    assert body["leader"]["id_student"] == ANA_ID and body["leader"]["is_leader"] is True
     assert {
         "id_student_project",
         "id_student",
@@ -273,3 +280,61 @@ async def test_overview_member_fields_and_order(client, login):
     } <= set(first)
     assert "email" not in first
     assert "T" in first["enrolled_at"]  # datetime ISO
+
+
+# ---------- responsables (profesores del curso lectivo) ----------
+async def test_overview_responsible_are_section_year_professors(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], ANA_ID, is_leader=True)
+    mail_a = await make_professor("prof-a@frc.utn.edu.ar", legajo=300001)
+    mail_b = await make_professor("prof-b@frc.utn.edu.ar", legajo=300002)
+    await _assign_professor(client, admin, mail_a, sy)
+    await _assign_professor(client, admin, mail_b, sy)
+
+    body = (await _overview(client, admin, project["id_project"])).json()
+    responsible = body["responsible"]
+    assert [p["id_professor"] for p in responsible] == [
+        await _prof_id(client, admin, mail_a),
+        await _prof_id(client, admin, mail_b),
+    ]
+    for p in responsible:
+        assert set(p) == {"id_professor", "first_name", "last_name", "legajo"}
+        assert "email" not in p and "mail" not in p and "is_super_admin" not in p
+
+
+async def test_overview_responsible_visible_to_outsider_in_protected(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], ANA_ID, is_leader=True)
+    prof_mail = await make_professor("prof-r@frc.utn.edu.ar")
+    await _assign_professor(client, admin, prof_mail, sy)
+    await _patch(client, admin, project["id_project"], privacy="protected")
+    await _set_status(project["id_project"], "in_idea")
+
+    body = (await _overview(client, await login(LUIS), project["id_project"])).json()
+    assert body["restricted"] is True
+    assert [p["id_professor"] for p in body["responsible"]] == [
+        await _prof_id(client, admin, prof_mail)
+    ]
+
+
+async def test_overview_responsible_empty_after_assignment_removed(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    mail = await make_professor("prof-x@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    assignment_id = (
+        await client.get(
+            "/professor-section-years",
+            params={"id_section_year": sy, "id_professor": await _prof_id(client, admin, mail)},
+            headers=admin,
+        )
+    ).json()["items"][0]["id_professor_section_year"]
+    assert (await client.delete(f"/professor-section-years/{assignment_id}", headers=admin)).status_code == 204
+
+    body = (await _overview(client, admin, project["id_project"])).json()
+    assert body["responsible"] == []

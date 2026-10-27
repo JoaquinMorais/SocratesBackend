@@ -297,7 +297,7 @@ async def list_all_members(
     return await _member_rows(db, id_project, statuses)
 
 
-async def get_responsible(db, id_project: int) -> StudentProjectMemberPublic | None:
+async def get_leader(db, id_project: int) -> StudentProjectMemberPublic | None:
     """El jefe del grupo (`is_leader`), independiente del filtro de estados."""
     row = (
         await db.exec(

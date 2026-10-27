@@ -355,7 +355,7 @@ Historial de estados de un proyecto (`GET /projects/{id}/status-history`).
 
 ## `tests/test_project_overview.py`
 
-Proyecto con sus integrantes y responsable (`GET /projects/{id}/overview`).
+Proyecto con sus integrantes, sus responsables (los profesores asignados a su curso lectivo, sin mail) y su jefe (`GET /projects/{id}/overview`).
 
 **Permisos**
 - `test_requires_authentication`: testear que consultar el overview sin login responde 401.
@@ -364,20 +364,25 @@ Proyecto con sus integrantes y responsable (`GET /projects/{id}/overview`).
 - `test_non_privileged_cannot_filter_status`: testear que un usuario no privilegiado que envía `status` recibe 403.
 
 **Visibilidad**
-- `test_uninsured_overview_shows_detail_and_members`: testear que un proyecto `uninsured` se ve completo (aunque su privacidad almacenada sea `private`, la efectiva es `public`) con sus integrantes y su responsable.
-- `test_public_overview_full_detail_and_members`: testear que en un proyecto público cualquiera ve el detalle completo, los integrantes y el responsable.
-- `test_protected_overview_basic_for_outsiders`: testear que en un proyecto protegido el no privilegiado ve `restricted` en `true` y el detalle en `null`, pero recibe igual los integrantes y el responsable.
+- `test_uninsured_overview_shows_detail_and_members`: testear que un proyecto `uninsured` se ve completo (aunque su privacidad almacenada sea `private`, la efectiva es `public`) con sus integrantes, su jefe y `responsible` vacío si el curso no tiene profesores asignados.
+- `test_public_overview_full_detail_and_members`: testear que en un proyecto público cualquiera ve el detalle completo, los integrantes y el jefe.
+- `test_protected_overview_basic_for_outsiders`: testear que en un proyecto protegido el no privilegiado ve `restricted` en `true` y el detalle en `null`, pero recibe igual los integrantes y el jefe.
 - `test_protected_overview_full_for_privileged`: testear que un miembro, el profesor del curso lectivo y el super admin ven el detalle completo de un proyecto protegido.
-- `test_private_overview_full_for_privileged`: testear que un miembro, el profesor del curso lectivo y el super admin ven el detalle de un proyecto privado.
-- `test_overview_without_leader`: testear que un proyecto sin integrantes devuelve `members` vacío y `responsible` en `null`.
+- `test_private_overview_full_for_privileged`: testear que un miembro, el profesor del curso lectivo y el super admin ven el detalle de un proyecto privado, con los responsables (profesores del curso) y el jefe.
+- `test_overview_without_leader`: testear que un proyecto sin integrantes devuelve `members` vacío, `leader` en `null` y `responsible` vacío.
 
 **Filtro de estados**
 - `test_overview_default_members_are_active_and_finished`: testear que por defecto se listan los estados `active` y `finished` (categoría `member`), sin los `pending_approval`.
-- `test_overview_privileged_can_filter_status`: testear que un privilegiado puede pedir repetidamente `status` (una combinación) y que el responsable se resuelve aparte del filtro.
+- `test_overview_privileged_can_filter_status`: testear que un privilegiado puede pedir repetidamente `status` (una combinación) y que el jefe se resuelve aparte del filtro.
 - `test_overview_invalid_status`: testear que un `status` fuera de los permitidos responde 422.
 
 **Datos del integrante**
-- `test_overview_member_fields_and_order`: testear que cada integrante expone los datos públicos del alumno, `is_leader`, `enrolled_at` (datetime ISO) y `status` (sin el mail) y que el jefe va primero.
+- `test_overview_member_fields_and_order`: testear que cada integrante expone los datos públicos del alumno, `is_leader`, `enrolled_at` (datetime ISO) y `status` (sin el mail), que el jefe va primero y que `leader` coincide con el integrante marcado como jefe.
+
+**Responsables (profesores del curso lectivo)**
+- `test_overview_responsible_are_section_year_professors`: testear que `responsible` lista los profesores asignados al curso lectivo (orden, campos `id_professor`/`first_name`/`last_name`/`legajo` y sin mail ni `is_super_admin`).
+- `test_overview_responsible_visible_to_outsider_in_protected`: testear que en un proyecto protegido el no privilegiado igual recibe los responsables.
+- `test_overview_responsible_empty_after_assignment_removed`: testear que al quitar una asignación el overview refleja los responsables al momento (lista vacía).
 
 ## `tests/test_project_insure.py`
 

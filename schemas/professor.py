@@ -58,3 +58,12 @@ class ProfessorPublic(SQLModel):
     legajo: int
     email: str
     is_super_admin: bool
+
+
+class ProfessorResponsiblePublic(SQLModel):
+    """Profesor responsable del seguimiento de un grupo (sin mail)."""
+
+    id_professor: int
+    first_name: str
+    last_name: str
+    legajo: int

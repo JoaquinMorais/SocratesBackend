@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
+from schemas.professor import ProfessorResponsiblePublic
 from schemas.status import StatusPublic
 from schemas.student_project import StudentProjectMemberPublic
 
@@ -75,7 +76,10 @@ class ProjectList(SQLModel):
 
 
 class ProjectOverviewPublic(ProjectPublic):
-    """Proyecto con sus integrantes y el responsable (el jefe del grupo)."""
+    """Proyecto con sus integrantes y sus responsables (profesores del curso)."""
 
     members: list[StudentProjectMemberPublic]
-    responsible: StudentProjectMemberPublic | None = None
+    # Profesores asignados al curso lectivo, quienes hacen el seguimiento del grupo.
+    responsible: list[ProfessorResponsiblePublic] = []
+    # El jefe del grupo (`is_leader`), se resuelve aparte del filtro de estados.
+    leader: StudentProjectMemberPublic | None = None

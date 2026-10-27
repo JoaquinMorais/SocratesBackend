@@ -36,7 +36,8 @@ from utils.projects import (
     update_project,
 )
 from models.state import MEMBER_CODES
-from utils.student_projects import get_responsible, list_all_members
+from utils.professor_section_years import list_section_year_professors
+from utils.student_projects import get_leader, list_all_members
 
 projects_router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -198,7 +199,7 @@ async def get_project_route(id_project: int, db: db_dependency, user: user_depen
 @projects_router.get(
     "/{id_project}/overview",
     response_model=ProjectOverviewPublic,
-    summary="Consultar un proyecto con sus integrantes y responsable",
+    summary="Consultar un proyecto con sus integrantes y responsables",
     responses={
         **_READ_ERRORS,
         403: {
@@ -224,15 +225,16 @@ async def get_project_overview_route(
     ] = None,
 ):
     """
-    Devuelve un proyecto junto con sus **integrantes** y su **responsable** (el
-    jefe del grupo). **Cualquier usuario logueado**, según la privacidad efectiva:
+    Devuelve un proyecto junto con sus **integrantes**, sus **responsables** (los
+    profesores asignados a su curso lectivo) y su **jefe**. **Cualquier usuario
+    logueado**, según la privacidad efectiva:
 
     - `uninsured` (Desasegurado) y `public`: cualquier usuario ve el detalle
-      completo, los integrantes y el responsable.
+      completo, los integrantes, los responsables y el jefe.
     - `protected`: los privilegiados (miembros del grupo con membresía `member`,
       profesores del curso lectivo y super admin) ven todo; el resto ve la
-      información básica (`restricted` en `true`) y también los integrantes y el
-      responsable.
+      información básica (`restricted` en `true`) y también los integrantes, los
+      responsables y el jefe.
     - `private`: solo los privilegiados; el resto recibe **403**.
 
     Los integrantes son, por defecto, los `active` y `finished` (la categoría
@@ -242,7 +244,8 @@ async def get_project_overview_route(
 
     Cada integrante expone los datos públicos del alumno (nombre, apellido,
     legajo), su antigüedad (`enrolled_at`) y su estado; **nunca** el mail. El
-    `responsible` es el jefe del grupo (`is_leader`), o `null` si no tiene.
+    `responsible` es la lista de profesores del curso lectivo (sin mail), y el
+    `leader` es el jefe del grupo (`is_leader`), o `null` si no tiene.
     """
     access = await build_access(db, user)
     project = await get_project(db, id_project)
@@ -256,10 +259,14 @@ async def get_project_overview_route(
 
     statuses = status_filter or list(MEMBER_CODES)
     members = await list_all_members(db, id_project, statuses=statuses)
-    responsible = await get_responsible(db, id_project)
+    responsible = await list_section_year_professors(db, project.id_section_year)
+    leader = await get_leader(db, id_project)
     project_public = to_public(project, restricted=not access.can_see_detail(project))
     return ProjectOverviewPublic(
-        **project_public.model_dump(), members=members, responsible=responsible
+        **project_public.model_dump(),
+        members=members,
+        responsible=responsible,
+        leader=leader,
     )
 
 

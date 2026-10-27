@@ -244,10 +244,10 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `professors.py` | Alta y modificación de profesores. |
 | `sections.py` | Lógica del CRUD de comisiones. |
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
-| `professor_section_years.py` | Lógica de asignaciones de profesores. |
+| `professor_section_years.py` | Lógica de asignaciones de profesores, con el listado de los profesores de un curso lectivo (`list_section_year_professors`, usado por el overview de proyectos). |
 | `project_statuses.py` | Lógica del historial de estados de un proyecto: registro de transiciones y listado cronológico. |
 | `projects.py` | Lógica de proyectos: creación, modificación de atributos, aseguramiento (`insure_project`: jefe, profesor del curso lectivo o super admin; valida `min_students`/`max_students` y rechaza las solicitudes pendientes), transiciones de estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry` y `cancel`, solo profesor del curso lectivo o super admin; delega la validación y los efectos en `utils/state/state_project.py`), eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin; los `uninsured` se tratan como públicos). |
-| `student_projects.py` | Lógica de membresías: unirse, aceptar/rechazar, abandonar, expulsar y delegar jefatura, listar integrantes (paginado y completo), obtener el responsable (`get_responsible`) y las reglas de un solo `member` por alumno; las transiciones y sus efectos (cascada de pendientes, sucesión de jefe por `enrolled_at`) viven en `utils/state/state_student_project.py`. |
+| `student_projects.py` | Lógica de membresías: unirse, aceptar/rechazar, abandonar, expulsar y delegar jefatura, listar integrantes (paginado y completo), obtener el jefe del grupo (`get_leader`) y las reglas de un solo `member` por alumno; las transiciones y sus efectos (cascada de pendientes, sucesión de jefe por `enrolled_at`) viven en `utils/state/state_student_project.py`. |
 | `technologies.py` | Lógica de tecnologías: CRUD, unicidad del nombre sin distinguir mayúsculas (índice sobre `lower(name)` + captura de `IntegrityError`), listado con `q` y paginación, y bloqueo de borrado de una tecnología en uso (409). |
 | `project_technologies.py` | Lógica del vínculo proyecto–tecnología: asociar de a una o en lote (todo o nada con detalle por fila), quitar y listar, con los chequeos de privilegiados, estado final y visibilidad según privacidad (reutiliza `Access` de `utils/projects.py`). |
 | `statuses.py` | Lógica de estados: catálogo base derivado de la jerarquía (`DEFAULT_STATUSES`), búsqueda, listado, `to_public`, `membership_initial_status`, `is_member` e `is_insured`. |
@@ -269,7 +269,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_project_statuses.py` | Historial de estados de un proyecto: permisos, registro inicial, orden, paginación y 404. |
-| `test_project_overview.py` | Overview de un proyecto: permisos, visibilidad según privacidad, filtro de integrantes por estado y datos del responsable. |
+| `test_project_overview.py` | Overview de un proyecto: permisos, visibilidad según privacidad, filtro de integrantes por estado, responsables (los profesores del curso lectivo) y jefe (`leader`). |
 | `test_project_insure.py` | Aseguramiento de un proyecto: permisos, reglas (memoria del subestado, rango de integrantes), efectos (historial, rechazo de pendientes, privacidad) y 409/404. |
 | `test_project_transitions.py` | Transiciones de estado del proyecto (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`): permisos, transiciones válidas e inválidas, estados finales, memoria del subestado, efectos en las membresías e historial. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación y eliminación. |

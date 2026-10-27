@@ -3,12 +3,23 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
 from models import Professor, ProfessorSectionYear, Section, SectionYear, User
+from schemas.professor import ProfessorResponsiblePublic
 from schemas.professor_section_year import (
     ProfessorSectionYearCreate,
     ProfessorSectionYearPublic,
     ProfessorSectionYearUpdate,
 )
 from utils.section_years import get_section_year
+
+
+def to_responsible(professor: Professor) -> ProfessorResponsiblePublic:
+    user = professor.user
+    return ProfessorResponsiblePublic(
+        id_professor=professor.id_professor,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        legajo=user.legajo,
+    )
 
 
 def to_public(
@@ -164,3 +175,27 @@ async def list_assignments(
         )
     ).all()
     return list(items), total
+
+
+async def list_section_year_professors(
+    db, id_section_year: int
+) -> list[ProfessorResponsiblePublic]:
+    """Los profesores asignados a un curso lectivo (los responsables del
+    seguimiento de sus grupos), ordenados por apellido, nombre e id."""
+    rows = (
+        await db.exec(
+            select(Professor)
+            .join(
+                ProfessorSectionYear,
+                ProfessorSectionYear.id_professor == Professor.id_professor,
+            )
+            .join(User, User.id_user == Professor.id_professor)
+            .where(ProfessorSectionYear.id_section_year == id_section_year)
+            .order_by(
+                col(User.last_name),
+                col(User.first_name),
+                col(Professor.id_professor),
+            )
+        )
+    ).all()
+    return [to_responsible(professor) for professor in rows]
