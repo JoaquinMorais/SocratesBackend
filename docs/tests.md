@@ -151,6 +151,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_super_admin_edits_professor`: testear que un super admin edita nombre, legajo y mail, y que el mail se guarda en minúsculas.
 - `test_patch_professor_under_18_rejected`: testear que una modificación que deje al profesor con menos de 18 años se rechaza (422).
 - `test_mail_change_closes_sessions_and_keeps_password`: testear que cambiar el mail cierra las sesiones del profesor, conserva su contraseña y el mail viejo deja de servir.
+- `test_mail_change_notifies_old_and_new_addresses`: testear que al cambiar el mail se envía un aviso a la dirección vieja y a la nueva.
+- `test_same_mail_does_not_notify`: testear que reenviar el mismo mail (sin distinguir mayúsculas) no envía ningún aviso.
 - `test_patch_duplicate_mail_rejected`: testear que no se puede usar el mail de otro profesor, sin distinguir mayúsculas (409).
 - `test_patch_student_domain_is_reserved`: testear que no se puede poner un mail con el dominio de alumnos.
 - `test_promote_and_demote_other_professor`: testear que un super admin puede dar y quitar el rol de super admin a otro profesor.

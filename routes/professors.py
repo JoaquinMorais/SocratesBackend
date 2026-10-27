@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, status
 
 from config.database import db_dependency
 from schemas.professor import ProfessorCreate, ProfessorPublic, ProfessorUpdate
-from utils.email import send_welcome_emails
+from utils.email import send_mail_change_notifications, send_welcome_emails
 from utils.permissions import super_admin_dependency
 from utils.professors import create_professor, update_professor
 
@@ -81,6 +81,7 @@ async def create_professor_route(
 async def update_professor_route(
     id_professor: int,
     data: ProfessorUpdate,
+    background: BackgroundTasks,
     db: db_dependency,
     admin: super_admin_dependency,
 ):
@@ -93,8 +94,9 @@ async def update_professor_route(
     - El `mail` se guarda en minúsculas, no puede repetirse (409) ni usar el
       dominio de alumnos (422). Al cambiarlo se **cierran todas las sesiones** del
       profesor y se invalidan sus códigos pendientes; conserva su contraseña y
-      vuelve a entrar con el mail nuevo. Si el super admin edita su propio mail,
-      también se cierra su sesión.
+      vuelve a entrar con el mail nuevo. Se envía un **aviso a la dirección vieja
+      y a la nueva** para que el usuario se entere del cambio. Si el super admin
+      edita su propio mail, también se cierra su sesión.
     - El `legajo` puede coincidir con el de un alumno, pero no puede repetirse
       entre profesores (409).
     - La `birth_date` no puede dejar al profesor con menos de 18 años (422).
@@ -103,4 +105,9 @@ async def update_professor_route(
     - Cualquier otro campo responde 422. La contraseña no se puede modificar
       desde acá.
     """
-    return await update_professor(db, admin, id_professor, data)
+    updated, old_mail = await update_professor(db, admin, id_professor, data)
+    if old_mail is not None:
+        background.add_task(
+            send_mail_change_notifications, old_mail, updated.email, updated.first_name
+        )
+    return updated

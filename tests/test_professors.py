@@ -192,6 +192,30 @@ async def test_mail_change_closes_sessions_and_keeps_password(client, login, mak
     assert old.status_code == 401
 
 
+async def test_mail_change_notifies_old_and_new_addresses(client, login, make_professor, outbox):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(
+        f"/professors/{pid}", json={"mail": "nuevo@frc.utn.edu.ar"}, headers=admin
+    )
+    assert r.status_code == 200
+    recipients = [m["to"] for m in outbox]
+    assert "prof@frc.utn.edu.ar" in recipients
+    assert "nuevo@frc.utn.edu.ar" in recipients
+
+
+async def test_same_mail_does_not_notify(client, login, make_professor, outbox):
+    await make_professor("prof@frc.utn.edu.ar")
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.patch(
+        f"/professors/{pid}", json={"mail": "PROF@frc.utn.edu.ar"}, headers=admin
+    )
+    assert r.status_code == 200
+    assert [m["to"] for m in outbox] == []
+
+
 async def test_patch_duplicate_mail_rejected(client, login, make_professor):
     await make_professor("prof@frc.utn.edu.ar")
     admin = await login(SUPER_ADMIN)

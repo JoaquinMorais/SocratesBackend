@@ -11,7 +11,7 @@ class ProjectState(State):
 class Uninsured(ProjectState):
     code = "uninsured"
     name = "Desasegurado"
-    description = "El grupo todavía no tiene una idea asegurada."
+    description = "Permite agregar, eliminar y modificar los integrantes del grupo."
     next_codes = frozenset({"in_idea", "in_progress", "pending_approval", "rejected", "cancelled"})
 
     @classmethod

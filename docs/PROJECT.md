@@ -95,7 +95,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 - Los **alumnos** los crean los profesores (uno por uno o en masa, pensado para cargar un Excel). La carga masiva es todo o nada.
 - Los **profesores** los crea un profesor super admin.
-- Los usuarios editan sus propios datos personales (nombre, apellido, fecha de nacimiento). Un profesor corrige datos de alumnos y un super admin corrige datos de profesores, incluidos legajo y mail.
+- Los usuarios editan sus propios datos personales (nombre, apellido, fecha de nacimiento). Un profesor corrige datos de alumnos y un super admin corrige datos de profesores, incluidos legajo y mail. Al cambiar el mail de un profesor se cierran sus sesiones y se envía un aviso a la dirección vieja y a la nueva.
 
 ### Permisos
 

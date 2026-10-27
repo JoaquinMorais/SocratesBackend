@@ -24,7 +24,7 @@ class Active(StudentProjectState):
 class PendingApprovalMember(StudentProjectState):
     code = "pending_approval"
     name = "Pendiente de aprobación"
-    description = "El alumno solicitó unirse y espera la aprobación de un profesor."
+    description = "El alumno solicitó unirse y espera la aprobación del jefe del grupo o de un profesor."
     next_codes = frozenset({"active", "rejected"})
 
 

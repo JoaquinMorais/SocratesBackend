@@ -61,7 +61,8 @@ async def create_professor(db, item: ProfessorCreate) -> ProfessorPublic:
 
 async def update_professor(
     db, actor: Professor, id_professor: int, data: ProfessorUpdate
-) -> ProfessorPublic:
+) -> tuple[ProfessorPublic, str | None]:
+    """Devuelve los datos públicos y el mail anterior si el correo cambió."""
     professor = await db.get(Professor, id_professor)
     if not professor:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Professor not found")
@@ -76,6 +77,7 @@ async def update_professor(
         )
 
     user = professor.user
+    old_mail = professor.mail
     mail_changed = "mail" in changes and changes["mail"] != professor.mail
     if mail_changed:
         taken = (
@@ -114,7 +116,7 @@ async def update_professor(
         await db.rollback()
         raise HTTPException(status.HTTP_409_CONFLICT, "A professor with this mail already exists")
 
-    return ProfessorPublic(
+    public = ProfessorPublic(
         id_professor=id_professor,
         first_name=user.first_name,
         last_name=user.last_name,
@@ -122,3 +124,4 @@ async def update_professor(
         email=professor.mail,
         is_super_admin=professor.is_super_admin,
     )
+    return public, old_mail if mail_changed else None

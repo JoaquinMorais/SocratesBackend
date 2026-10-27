@@ -52,6 +52,28 @@ async def send_otp_email(to: str, code: str) -> bool:
     return await send_email(to, "Tu código de verificación - Socrates", body)
 
 
+async def send_mail_change_notifications(
+    old_mail: str, new_mail: str, first_name: str
+) -> None:
+    """Avisa a la dirección vieja y a la nueva que el correo de la cuenta cambió."""
+    subject = "El correo de tu cuenta de Socrates cambió"
+    old_body = (
+        f"Hola {first_name},\n\n"
+        f"El correo de tu cuenta de Socrates cambió de {old_mail} a {new_mail}.\n"
+        "Por seguridad, se cerraron las sesiones abiertas en esta cuenta.\n\n"
+        "Si no pediste este cambio, comunícate con la facultad lo antes posible."
+    )
+    new_body = (
+        f"Hola {first_name},\n\n"
+        f"Ahora este correo ({new_mail}) es el de tu cuenta de Socrates.\n"
+        "Ingresa con él y tu contraseña habitual. Las sesiones abiertas con el "
+        "correo anterior ya no están activas.\n\n"
+        "Si no esperabas este mensaje, comunícate con la facultad."
+    )
+    await send_email(old_mail, subject, old_body)
+    await send_email(new_mail, subject, new_body)
+
+
 async def send_welcome_emails(recipients: list[tuple[str, str]]) -> None:
     """recipients: lista de (mail, nombre)."""
     if not settings.SEND_WELCOME_EMAILS:
