@@ -252,10 +252,12 @@ async def test_cannot_join_empty_group_when_member_elsewhere(client, login):
     p2 = await _create(client, admin, sy)
     ana = await login(STUDENT)
     await _join(client, ana, p1["id_project"])  # Ana queda member (jefa)
-    assert (await _join(client, ana, p2["id_project"])).status_code == 409
+    r = await _join(client, ana, p2["id_project"])
+    assert r.status_code == 409
+    assert "abandon" in r.json()["detail"].lower()
 
 
-async def test_member_can_queue_where_there_is_a_leader(client, login):
+async def test_member_elsewhere_cannot_request_join(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)
     p1 = await _create(client, admin, sy)
@@ -263,8 +265,44 @@ async def test_member_can_queue_where_there_is_a_leader(client, login):
     await _join(client, await login(STUDENT), p1["id_project"])  # Ana member
     await _join(client, await login(LUIS), p2["id_project"])  # Luis jefe de p2
     r = await _join(client, await login(STUDENT), p2["id_project"])
-    assert r.status_code == 201, r.text
-    assert r.json()["status"]["code"] == "pending_approval"
+    assert r.status_code == 409
+    assert "abandon" in r.json()["detail"].lower()
+
+
+async def test_member_elsewhere_cannot_resend_rejected_request(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    p1 = await _create(client, admin, sy)
+    p2 = await _create(client, admin, sy)
+    ana = await login(STUDENT)
+    await _join(client, ana, p2["id_project"])  # Ana leader of p2
+    luis = await login(LUIS)
+    pending = (await _join(client, luis, p2["id_project"])).json()
+    await _decide(client, ana, p2["id_project"], pending["id_student_project"], "rejected")
+    # ahora Luis pasa a ser member en otro grupo
+    await _join(client, luis, p1["id_project"])  # p1 vacío -> queda leader activo
+    r = await _join(client, luis, p2["id_project"])
+    assert r.status_code == 409
+    assert "abandon" in r.json()["detail"].lower()
+
+
+async def test_student_with_only_pending_elsewhere_can_still_request(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    p1 = await _create(client, admin, sy)
+    p2 = await _create(client, admin, sy)
+    await _join(client, await login(STUDENT), p1["id_project"])  # Ana jefa de p1
+    luis = await login(LUIS)
+    r_pending = await _join(client, luis, p1["id_project"])  # solo pending en p1
+    assert r_pending.status_code == 201
+    # p2 vacío -> Luis puede entrar y queda como jefe/active (se rechazan sus otras pending)
+    r = await _join(client, luis, p2["id_project"])
+    assert r.status_code == 201
+    assert r.json()["status"]["code"] == "active"
+    assert r.json()["is_leader"] is True
+    members = (await _members(client, await login(STUDENT), p1["id_project"])).json()["items"]
+    luis_row = next(m for m in members if m["id_student"] == LUIS_ID)
+    assert luis_row["status"]["code"] == "rejected"
 
 
 async def test_becoming_member_rejects_other_pending(client, login):
@@ -329,9 +367,10 @@ async def test_accept_when_student_already_member(client, login):
     await _add_membership(p2["id_project"], LUIS_ID, "active")  # Luis ya es member de p2
 
     luis = await login(LUIS)
-    pending = (await _join(client, luis, p1["id_project"])).json()  # p1 tiene jefa -> pending
-    r = await _decide(client, ana, p1["id_project"], pending["id_student_project"], "active")
-    assert r.status_code == 409
+    r_pending = await _join(client, luis, p1["id_project"])
+    # ahora el join también bloquea al ser member en otro grupo
+    assert r_pending.status_code == 409
+    assert "abandon" in r_pending.json()["detail"].lower()
 
 
 async def test_decide_membership_not_found(client, login):

@@ -104,14 +104,15 @@ async def join_project(
             True,
         )
 
+    if await _has_member_membership(
+        db, id_student, exclude_id=membership.id_student_project
+    ):
+        raise _conflict("You already belong to another project; abandon it before joining another")
+
     has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
     code = membership_initial_status(has_leader)
 
     if code == Active.code:
-        if await _has_member_membership(
-            db, id_student, exclude_id=membership.id_student_project
-        ):
-            raise _conflict("You already belong to another project")
         await MembershipEffector(db).reject_other_pending(membership)
 
     membership.is_leader = code == Active.code

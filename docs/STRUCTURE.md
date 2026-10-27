@@ -45,6 +45,8 @@ socrates-backend/
 │   ├── project.py
 │   ├── project_status.py
 │   ├── student_project.py
+│   ├── technology.py
+│   ├── project_technology.py
 │   ├── status.py
 │   ├── token.py
 │   └── email_verification.py
@@ -61,6 +63,7 @@ socrates-backend/
 │   ├── project.py
 │   ├── project_status.py
 │   ├── student_project.py
+│   ├── technology.py
 │   ├── status.py
 │   └── state/                    # Jerarquía de dominio de estados (sin tabla)
 │       ├── __init__.py
@@ -80,6 +83,8 @@ socrates-backend/
 │   ├── professor_section_years.py
 │   ├── projects.py
 │   ├── student_projects.py
+│   ├── technologies.py
+│   ├── project_technologies.py
 │   └── statuses.py
 │
 ├── utils/                        # Lógica reutilizable que invocan las rutas
@@ -99,6 +104,8 @@ socrates-backend/
 │   ├── project_statuses.py
 │   ├── projects.py
 │   ├── student_projects.py
+│   ├── technologies.py
+│   ├── project_technologies.py
 │   ├── statuses.py
 │   └── state/                    # Motor de transiciones y efectos por ámbito
 │       ├── __init__.py
@@ -123,6 +130,8 @@ socrates-backend/
     ├── test_project_transitions.py
     ├── test_projects.py
     ├── test_student_projects.py
+    ├── test_technologies.py
+    ├── test_project_technologies.py
     ├── test_statuses.py
     └── test_seed.py
 ```
@@ -187,6 +196,8 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad (se crea `public`; mientras está `uninsured` se trata como público) y la memoria del subestado asegurado (`id_status_insured`). |
 | `project_status.py` | `project_statuses` | Historial de transiciones de estado de un proyecto (estado anterior, nuevo y cuándo ocurrió). |
 | `student_project.py` | `student_projects` | Alumnos que integran un proyecto (con `is_leader`, un jefe por grupo como máximo, y `enrolled_at` para la antigüedad). |
+| `technology.py` | `technologies` | Tecnología del catálogo (nombre único sin distinguir mayúsculas y descripción opcional). |
+| `project_technology.py` | `project_technologies` | Vínculo proyecto–tecnología con clave compuesta `(id_project, id_technology)`: se borra con el proyecto (CASCADE) y no permite borrar una tecnología en uso (RESTRICT). |
 | `status.py` | `statuses` | Persistencia del catálogo de estados por ámbito (`project`, `student_project`), con `code`, `name`, `description` e `is_final`. |
 | `state/base.py` | — | Base `State`: metadatos, transiciones (`next_codes`), efecto `on_enter` y registro `(ambito, code) → clase`. |
 | `state/state_project.py` | — | `ProjectState` y sus estados (`Uninsured`, `InIdea`, `InProgress`, `PendingApprovalProject`, `RejectedProject`, `Approved`, `Cancelled`), con transiciones y efectos. |
@@ -196,7 +207,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 
 ## `schemas/`
 
-Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year`, `project`, `project_status`, `student_project` y `status`.
+Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `professor_section_year`, `project`, `project_status`, `student_project`, `status` y `technology`.
 
 ## `routes/`
 
@@ -212,6 +223,8 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
 | `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos, asegurarlos, cambiar su estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`), consultar su historial de estados y su overview (integrantes y responsable). |
 | `student_projects.py` | `/projects/{id}/members` | Unirse y abandonar (alumno), aceptar/rechazar y delegar jefatura (jefe), expulsar (profesor del curso lectivo o super admin) y listar integrantes (privilegiados). |
+| `technologies.py` | `/technologies` | Alta, edición, consulta y baja de tecnologías (consulta: cualquier usuario; escritura: profesores y super admin). |
+| `project_technologies.py` | `/projects/{id}/technologies` | Asociar tecnologías a un proyecto (de a una o en lote) y quitarlas (privilegiados, mientras el proyecto no sea final) y listarlas (según la privacidad del proyecto). |
 | `statuses.py` | `/statuses` | Consulta de estados por ámbito. |
 
 `routes/__init__.py` reúne todos los routers para que `index.py` los registre.
@@ -235,6 +248,8 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `project_statuses.py` | Lógica del historial de estados de un proyecto: registro de transiciones y listado cronológico. |
 | `projects.py` | Lógica de proyectos: creación, modificación de atributos, aseguramiento (`insure_project`: jefe, profesor del curso lectivo o super admin; valida `min_students`/`max_students` y rechaza las solicitudes pendientes), transiciones de estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry` y `cancel`, solo profesor del curso lectivo o super admin; delega la validación y los efectos en `utils/state/state_project.py`), eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin; los `uninsured` se tratan como públicos). |
 | `student_projects.py` | Lógica de membresías: unirse, aceptar/rechazar, abandonar, expulsar y delegar jefatura, listar integrantes (paginado y completo), obtener el responsable (`get_responsible`) y las reglas de un solo `member` por alumno; las transiciones y sus efectos (cascada de pendientes, sucesión de jefe por `enrolled_at`) viven en `utils/state/state_student_project.py`. |
+| `technologies.py` | Lógica de tecnologías: CRUD, unicidad del nombre sin distinguir mayúsculas (índice sobre `lower(name)` + captura de `IntegrityError`), listado con `q` y paginación, y bloqueo de borrado de una tecnología en uso (409). |
+| `project_technologies.py` | Lógica del vínculo proyecto–tecnología: asociar de a una o en lote (todo o nada con detalle por fila), quitar y listar, con los chequeos de privilegiados, estado final y visibilidad según privacidad (reutiliza `Access` de `utils/projects.py`). |
 | `statuses.py` | Lógica de estados: catálogo base derivado de la jerarquía (`DEFAULT_STATUSES`), búsqueda, listado, `to_public`, `membership_initial_status`, `is_member` e `is_insured`. |
 | `state/base.py` | Motor `apply_transition`: resuelve el estado actual, valida el destino y ejecuta el efecto de entrada; no hace commit. |
 | `state/state_project.py` | Efectos de proyecto (`ProjectEffector`): memoria del subestado al desasegurar y cierre de membresías al aprobar/cancelar. |
@@ -259,6 +274,8 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_project_transitions.py` | Transiciones de estado del proyecto (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`): permisos, transiciones válidas e inválidas, estados finales, memoria del subestado, efectos en las membresías e historial. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación y eliminación. |
 | `test_student_projects.py` | Integrantes del proyecto: unirse, aceptar/rechazar (jefe), abandonar, expulsar, delegar jefatura, listar y reglas de membresía. |
+| `test_technologies.py` | Tecnologías: permisos, alta con unicidad case-insensitive, consulta con `q` y paginación, edición (incluye limpiar la descripción) y borrado bloqueado en uso (409). |
+| `test_project_technologies.py` | Tecnologías del proyecto: permisos, asociar (individual y en lote todo o nada), regla de estado final, visibilidad según privacidad, quitado y cascada al borrar el proyecto. |
 | `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito, paginación y reglas por ámbito (jerarquía `State`: categorías `member` e `insured`, inicial, transiciones, registro y fallback). |
 | `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, estados, jefes de grupo, unicidad y referencias. |
 

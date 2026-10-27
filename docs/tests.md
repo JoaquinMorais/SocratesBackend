@@ -466,7 +466,9 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_cannot_request_twice`: testear que no se puede volver a pedir entrar si ya se es miembro o si hay una solicitud pendiente (409).
 - `test_rejected_can_request_again`: testear que una solicitud `rejected` se puede volver a enviar (200) y queda `pending_approval`.
 - `test_cannot_join_empty_group_when_member_elsewhere`: testear que un alumno que ya es `member` de otro grupo no puede unirse a uno vacío (sería jefe/`active`): 409.
-- `test_member_can_queue_where_there_is_a_leader`: testear que un alumno `member` de un grupo sí puede solicitar entrar a otro grupo que ya tiene jefe (queda `pending_approval`).
+- `test_member_elsewhere_cannot_request_join`: testear que un alumno `member` (`active`/`finished`) de otro grupo no puede solicitar entrar a otro (409), aunque tenga jefe; debe abandonar primero.
+- `test_member_elsewhere_cannot_resend_rejected_request`: testear que si el alumno ya es `member` de otro grupo, no puede reenviar una solicitud `rejected` (409).
+- `test_student_with_only_pending_elsewhere_can_still_request`: testear que un alumno con solo solicitudes `pending_approval` en otros grupos sí puede pedir a otro, y al convertirse en `member` sus otras `pending_approval` pasan a `rejected`.
 - `test_becoming_member_rejects_other_pending`: testear que al pasar a `member`, las otras solicitudes `pending_approval` del alumno pasan a `rejected`.
 
 **Aceptar / rechazar**
@@ -511,6 +513,82 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_staff_can_list`: testear que el profesor del curso lectivo y el super admin pueden listar integrantes.
 - `test_list_unknown_project`: testear que un proyecto inexistente responde 404.
 - `test_list_filter_and_pagination`: testear el filtro por `status`, `limit`/`offset` y que un `status` inválido o `limit=0` responden 422.
+
+## `tests/test_technologies.py`
+
+Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies`, `GET /technologies`, `GET /technologies/{id}`, `PATCH /technologies/{id}`, `DELETE /technologies/{id}`); escritura para profesores y super admin, lectura para cualquier usuario logueado.
+
+**Permisos**
+- `test_requires_authentication`: testear que todos los endpoints responden 401 sin login.
+- `test_student_cannot_write`: testear que un alumno no puede crear, editar ni eliminar tecnologías (403).
+- `test_regular_professor_can_write`: testear que un profesor común puede crear, editar y eliminar tecnologías.
+- `test_any_user_can_read`: testear que un alumno logueado puede listar y consultar una tecnología con sus datos completos.
+
+**Crear**
+- `test_create_technology`: testear el alta con normalización del nombre (recorta espacios y conserva el casing).
+- `test_create_without_description`: testear que la descripción es opcional y queda `null` si no se envía.
+- `test_create_duplicate_case_insensitive`: testear que `react`, `REACT` y `ReAct` chocan con `React` ya cargado (409).
+- `test_create_invalid_rejected`: testear body vacío, nombre en blanco, nombre de más de 100 caracteres, descripción de más de 500 y campo desconocido (422).
+
+**Consultar**
+- `test_list_ordered_by_name`: testear que el listado se ordena por nombre.
+- `test_list_q_filter`: testear el filtro `q` sobre el nombre.
+- `test_list_pagination`: testear `limit`/`offset`, `total` y que `limit=0` responde 422.
+- `test_get_not_found`: testear que una tecnología inexistente responde 404.
+
+**Modificar**
+- `test_patch_name_and_description`: testear que el PATCH cambia nombre (casing distinto permitido) y descripción.
+- `test_patch_clear_description`: testear que `description: null` limpia el campo.
+- `test_patch_name_null_rejected`: testear que `name: null` responde 422.
+- `test_patch_empty_and_unknown_rejected`: testear body vacío, campo desconocido y descripción demasiado larga (422).
+- `test_patch_duplicate_name_rejected`: testear que el nombre no puede chocar con el de otra tecnología sin distinguir mayúsculas (409).
+- `test_patch_not_found`: testear que editar una tecnología inexistente responde 404.
+
+**Eliminar**
+- `test_delete_technology`: testear el borrado (204) y que deja de existir.
+- `test_delete_not_found`: testear que eliminar una tecnología inexistente responde 404.
+- `test_delete_in_use_rejected`: testear que no se puede borrar una tecnología asociada a un proyecto (409) y que sigue existiendo.
+
+## `tests/test_project_technologies.py`
+
+Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), asociar en lote (`POST .../bulk`), listar (`GET /projects/{id}/technologies`) y quitar (`DELETE /projects/{id}/technologies/{id_technology}`); la gestión es para los privilegiados del proyecto mientras no esté en un estado final, y la consulta sigue la privacidad del proyecto.
+
+**Permisos**
+- `test_requires_authentication`: testear que los cuatro endpoints responden 401 sin login.
+- `test_student_without_privileges_cannot_manage`: testear que un alumno sin membresía no puede asociar en forma individual ni en lote, ni quitar tecnologías (403).
+- `test_unassigned_professor_cannot_manage`: testear que un profesor no asignado al curso lectivo no puede gestionar tecnologías del proyecto (403).
+- `test_member_can_manage`: testear que un integrante `active` del grupo puede asociar y quitar tecnologías.
+- `test_assigned_professor_can_manage`: testear que el profesor asignado al curso lectivo puede asociar y quitar tecnologías.
+- `test_unknown_project`: testear que un proyecto inexistente responde 404 en los cuatro endpoints.
+- `test_any_logged_user_can_list_public_project`: testear que cualquier usuario logueado puede listar las tecnologías de un proyecto `uninsured` sin integrantes.
+
+**Agregar**
+- `test_add_technology`: testear el alta individual (201) y que la tecnología queda en el listado del proyecto.
+- `test_add_duplicate_rejected`: testear que una tecnología ya asociada a ese proyecto responde 409.
+- `test_add_unknown_technology`: testear que una tecnología inexistente responde 404.
+- `test_add_invalid_body_rejected`: testear body vacío, id inválido y campo desconocido (422).
+- `test_add_allowed_while_insured_not_final`: testear que se puede asociar en un proyecto asegurado pero no final (`in_idea`).
+- `test_changes_rejected_on_final_project`: testear que en un proyecto final (`approved`) responder 409 asociar en forma individual, en lote y quitar.
+
+**Alta en lote**
+- `test_bulk_add`: testear el lote feliz (201) con las tecnologías devueltas ordenadas por nombre.
+- `test_bulk_all_or_nothing`: testear que una fila con id inexistente responde 422 con el detalle por fila y no se vincula ninguna tecnología (todo o nada).
+- `test_bulk_duplicated_in_request`: testear que un id repetido dentro del mismo lote responde 422 con el error por fila.
+- `test_bulk_already_linked`: testear que una tecnología ya asociada al proyecto responde 422 con el error por fila y que el resto del lote no se aplica.
+- `test_bulk_invalid_body_rejected`: testear lista vacía, más de 100 elementos y campo desconocido (422).
+
+**Consultar**
+- `test_list_q_filter`: testear el filtro `q` sobre el nombre.
+- `test_list_pagination`: testear `limit`/`offset`, `total` y que `limit=0` responde 422.
+- `test_list_private_visible_only_to_privileged`: testear que en un proyecto `private` asegurado un ajeno recibe 403 y un miembro ve el listado.
+- `test_list_protected_visible_to_any_user`: testear que un proyecto `protected` asegurado es visible para cualquier usuario logueado.
+
+**Quitar**
+- `test_remove_technology`: testear el quitado (204), que la tecnología queda fuera del listado del proyecto y sigue existiendo en el catálogo.
+- `test_remove_not_linked`: testear que quitar una tecnología no asociada responde 404.
+
+**Borrar el proyecto**
+- `test_delete_project_cascades_links`: testear que al eliminar un proyecto (vacío y `uninsured`) sus vínculos desaparecen con él, la tecnología sobrevive y un proyecto nuevo arranca sin vínculos.
 
 ## `tests/test_seed.py`
 

@@ -38,7 +38,9 @@ _AUTH_ERRORS = {401: {"description": "Token ausente, inválido o vencido"}}
         409: {
             "description": (
                 "El proyecto no está `uninsured` (Desasegurado), ya hay una solicitud "
-                "propia, o el alumno ya pertenece (`member`) a otro proyecto"
+                "propia, el alumno ya pertenece (`member`, `active`/`finished`) a "
+                "otro proyecto (hay que abandonarlo primero), o el alumno ya pertenece "
+                "(`member`) a otro proyecto"
             )
         },
     },
@@ -59,11 +61,14 @@ async def join_project_route(
       `active`; si ya tiene, queda `pending_approval` a la espera de que el jefe
       lo acepte o rechace.
     - Un alumno solo puede ser **`member`** (`active`/`finished`) de **un** grupo
-      en todo el sistema. Si ya pertenece a otro y este grupo está vacío (sería
+      en todo el sistema. **Mientras sea `member` de un grupo no puede enviar
+      solicitudes para unirse a otros** (responde **409**; debe abandonarlo
+      primero). Si ya pertenece a otro y este grupo está vacío (sería
       jefe/`active`), responde **409**. Si se une como `member`, sus otras
       solicitudes `pending_approval` pasan a `rejected`.
-    - Una solicitud `rejected` se puede **volver a enviar** (responde `200`); en
-      cualquier otro estado previo responde **409**.
+    - Una solicitud `rejected` se puede **volver a enviar** solo si no es
+      `member` de otro grupo (responde `200`); en cualquier otro estado previo
+      o si ya es `member` de otro grupo responde **409**.
     """
     membership, created = await join_project(db, student.id_student, id_project)
     response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
