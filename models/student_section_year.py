@@ -18,6 +18,10 @@ class StudentSectionYear(SQLModel, table=True):
         UniqueConstraint(
             "id_student", "id_section_year", name="uq_student_section_year"
         ),
+        # Un alumno no puede tener dos cursadas del mismo año (dos comisiones en
+        # el mismo año). `year` es una copia de `section_year.year` que existe
+        # solo para poder expresar esta restricción en la BD.
+        UniqueConstraint("id_student", "year", name="uq_student_section_year_year"),
     )
 
     id_student_section_year: int | None = Field(default=None, primary_key=True)
@@ -25,6 +29,7 @@ class StudentSectionYear(SQLModel, table=True):
     id_section_year: int = Field(
         foreign_key="section_years.id_section_year", index=True
     )
+    year: int
 
     student: Student = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     section_year: SectionYear = Relationship(

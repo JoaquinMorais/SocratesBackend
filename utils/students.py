@@ -62,18 +62,18 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
     section_year_ids = {
         item.id_section_year for item in items if item.id_section_year is not None
     }
+    section_years: dict[int, int] = {}  # id_section_year -> year
     if section_year_ids:
-        found = set(
-            (
-                await db.exec(
-                    select(SectionYear.id_section_year).where(
-                        SectionYear.id_section_year.in_(section_year_ids)
-                    )
+        rows = (
+            await db.exec(
+                select(SectionYear.id_section_year, SectionYear.year).where(
+                    SectionYear.id_section_year.in_(section_year_ids)
                 )
-            ).all()
-        )
+            )
+        ).all()
+        section_years = {id_sy: year for id_sy, year in rows}
         for row, item in enumerate(items, start=1):
-            if item.id_section_year is not None and item.id_section_year not in found:
+            if item.id_section_year is not None and item.id_section_year not in section_years:
                 errors.append(
                     {"row": row, "legajo": item.legajo, "detail": "Section year not found"}
                 )
@@ -96,7 +96,9 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
         if item.id_section_year is not None:
             db.add(
                 StudentSectionYear(
-                    id_student=user.id_user, id_section_year=item.id_section_year
+                    id_student=user.id_user,
+                    id_section_year=item.id_section_year,
+                    year=section_years[item.id_section_year],
                 )
             )
         created.append(

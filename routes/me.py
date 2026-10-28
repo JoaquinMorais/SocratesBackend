@@ -1,10 +1,21 @@
-from fastapi import APIRouter, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
 from schemas.me_project import MyProjectPublic
+from schemas.me_section_year import MySectionYearsPublic
+from schemas.project import ProjectList
 from schemas.user import UserPublic, UserUpdate
 from utils.auth import user_dependency
 from utils.permissions import student_dependency
+from utils.projects import (
+    build_access,
+    current_section_years,
+    list_my_section_year_projects,
+    to_public as project_public,
+)
+from utils.section_years import to_public as section_year_public
 from utils.student_projects import get_my_project
 from utils.users import to_public, update_user
 
@@ -88,3 +99,79 @@ async def get_my_project_route(db: db_dependency, student: student_dependency):
     `{"project": null, "requests": []}`.
     """
     return await get_my_project(db, student.id_student)
+
+
+@me_router.get(
+    "/section-year",
+    response_model=MySectionYearsPublic,
+    summary="Consultar mi curso lectivo actual",
+    responses={401: {"description": "Token ausente, inválido o vencido"}},
+)
+async def get_my_section_year_route(db: db_dependency, user: user_dependency):
+    """
+    Devuelve el/los **cursos lectivos actuales** del usuario logueado. **Cualquier
+    usuario logueado.**
+
+    Se toma el **año más reciente** del usuario:
+
+    - **Profesor**: sus cursos lectivos asignados (`/professor-section-years`).
+      Puede haber más de uno si dicta varias comisiones de ese año.
+    - **Alumno**: el curso de sus cursadas (`/student-section-years`); un alumno
+      no puede cursar dos comisiones del mismo año, así que es uno solo. Si
+      todavía no tiene cursadas, se usa el curso lectivo de su grupo actual
+      (membresía `active` o `finished`).
+
+    Sin cursos (por ejemplo, un profesor sin asignaciones o un super admin que no
+    dicta) devuelve `{"section_years": []}`. Cada curso incluye año, comisión y
+    el rango de estudiantes por grupo.
+    """
+    access = await build_access(db, user)
+    years = await current_section_years(db, user, access)
+    return MySectionYearsPublic(
+        section_years=[section_year_public(sy) for sy in years]
+    )
+
+
+@me_router.get(
+    "/section-year/projects",
+    response_model=ProjectList,
+    summary="Listar los proyectos de mi curso lectivo actual",
+    responses={401: {"description": "Token ausente, inválido o vencido"}},
+)
+async def get_my_section_year_projects_route(
+    db: db_dependency,
+    user: user_dependency,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """
+    Lista **todos los proyectos** de los cursos lectivos actuales del usuario
+    (los del año más reciente, ver `GET /me/section-year`). **Cualquier usuario
+    logueado.**
+
+    - Se aplican las mismas reglas de **privacidad** que `GET /projects`: los
+      `uninsured` se tratan como públicos, los `public` se ven completos, los
+      `protected` muestran solo la información básica a quien no es privilegiado
+      (`restricted` en `true`) y los `private` desaparecen para el resto (el
+      profesor del curso lectivo y el super admin ven todo).
+    - Orden: año más reciente, comisión y número de grupo. Está paginado: `total`
+      es la cantidad de proyectos visibles que cumplen el filtro.
+    - Sin curso lectivo actual devuelve la lista vacía (200).
+    """
+    access = await build_access(db, user)
+    years = await current_section_years(db, user, access)
+    items, total = await list_my_section_year_projects(
+        db,
+        access,
+        [sy.id_section_year for sy in years],
+        limit=limit,
+        offset=offset,
+    )
+    return ProjectList(
+        items=[
+            project_public(p, restricted=not access.can_see_detail(p)) for p in items
+        ],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )

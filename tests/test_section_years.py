@@ -354,3 +354,47 @@ async def test_delete_with_student_enrollments_rejected(client, login):
         await client.delete(f"/student-section-years/{r.json()['id_student_section_year']}", headers=headers)
     ).status_code == 204
     assert (await client.delete(url, headers=headers)).status_code == 204
+
+
+async def _enroll(client, headers, id_student: int, id_section_year: int) -> dict:
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": id_student, "id_section_year": id_section_year},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+async def test_patch_year_conflict_with_student_cursadas(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2026 = await _create(client, headers, await _section(client, headers, "3K1"), 2026)
+    sy_2025 = await _create(client, headers, await _section(client, headers, "3K2"), 2025)
+    await _enroll(client, headers, 1, sy_2026["id_section_year"])
+    await _enroll(client, headers, 1, sy_2025["id_section_year"])
+    r = await client.patch(
+        f"/section-years/{sy_2026['id_section_year']}", json={"year": 2025}, headers=headers
+    )
+    assert r.status_code == 409
+    assert "students" in r.json()["detail"]
+
+
+async def test_patch_year_moves_student_cursadas(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_a = await _create(client, headers, await _section(client, headers, "3K1"), 2026)
+    sy_b = await _create(client, headers, await _section(client, headers, "3K3"), 2025)
+    sy_c = await _create(client, headers, await _section(client, headers, "3K2"), 2026)
+    await _enroll(client, headers, 2, sy_a["id_section_year"])
+    r = await client.patch(
+        f"/section-years/{sy_a['id_section_year']}", json={"year": 2025}, headers=headers
+    )
+    assert r.status_code == 200, r.text
+    # la copia del año se movió: ya no puede cursar otro curso de 2025...
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": 2, "id_section_year": sy_b["id_section_year"]},
+        headers=headers,
+    )
+    assert r.status_code == 409
+    # ...y el 2026 quedó libre
+    await _enroll(client, headers, 2, sy_c["id_section_year"])

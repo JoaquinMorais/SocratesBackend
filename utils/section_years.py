@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
-from models import Section, SectionYear
+from models import Section, SectionYear, StudentSectionYear
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearPublic,
@@ -36,6 +37,25 @@ def _duplicate() -> HTTPException:
     )
 
 
+def _duplicate_student_year() -> HTTPException:
+    return HTTPException(
+        status.HTTP_409_CONFLICT,
+        "Some students already have a section year for that year",
+    )
+
+
+def _constraint_name(exc: IntegrityError) -> str:
+    """Nombre de la restricción violada (asyncpg la expone de formas distintas)."""
+    orig = exc.orig
+    for candidate in (getattr(orig, "diag", None), orig, getattr(orig, "__cause__", None)):
+        name = getattr(candidate, "constraint_name", None)
+        if name:
+            return name
+    return ""
+
+
+
+
 async def _get_section(db, id_section: int) -> Section:
     section = await db.get(Section, id_section)
     if not section:
@@ -48,6 +68,27 @@ async def get_section_year(db, id_section_year: int) -> SectionYear:
     if not sy:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Section year not found")
     return sy
+
+
+async def _students_with_other_year(
+    db, id_section_year: int, new_year: int
+) -> bool:
+    """Si algún alumno inscripto en este curso ya tiene otra cursada del año nuevo."""
+    enrolled = select(StudentSectionYear.id_student).where(
+        StudentSectionYear.id_section_year == id_section_year
+    )
+    found = (
+        await db.exec(
+            select(StudentSectionYear.id_student_section_year)
+            .where(
+                StudentSectionYear.year == new_year,
+                StudentSectionYear.id_section_year != id_section_year,
+                StudentSectionYear.id_student.in_(enrolled),
+            )
+            .limit(1)
+        )
+    ).first()
+    return found is not None
 
 
 async def _combination_taken(
@@ -102,15 +143,28 @@ async def update_section_year(
         if await _combination_taken(db, year, id_section, exclude_id=id_section_year):
             raise _duplicate()
 
+    year_changed = year != sy.year
+    if year_changed and await _students_with_other_year(db, id_section_year, year):
+        raise _duplicate_student_year()
+
     sy.year = year
     sy.section = section
     sy.min_students = min_students
     sy.max_students = max_students
     db.add(sy)
+    if year_changed:
+        # mantener sincronizada la copia del año que usa la restricción única
+        await db.exec(
+            update(StudentSectionYear)
+            .where(StudentSectionYear.id_section_year == id_section_year)
+            .values(year=year)
+        )
     try:
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
+        if "student_section_year_year" in _constraint_name(exc):
+            raise _duplicate_student_year()
         raise _duplicate()
     return to_public(sy, section)
 

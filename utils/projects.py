@@ -12,6 +12,7 @@ from models import (
     SectionYear,
     Status,
     StudentProject,
+    StudentSectionYear,
     User,
 )
 from schemas.project import (
@@ -432,8 +433,12 @@ async def list_projects(
     q: str | None,
     limit: int,
     offset: int,
+    section_year_ids: list[int] | None = None,
 ) -> tuple[list[Project], int]:
     conditions = []
+    if section_year_ids is not None:
+        # Filtro interno (no expuesto como query param en GET /projects).
+        conditions.append(Project.id_section_year.in_(section_year_ids))
     if not access.is_super_admin:
         # Un proyecto private solo lo ve quien tiene privilegios (miembro, profesor
         # del curso lectivo o super admin); para el resto no existe. Los proyectos
@@ -491,3 +496,84 @@ async def list_projects(
         )
     ).all()
     return list(items), total
+
+async def current_section_years(db, user: User, access: Access) -> list[SectionYear]:
+    """Los cursos lectivos "actuales" del usuario: los del año máximo.
+
+    - Profesor: sus cursos asignados; puede haber varias comisiones del mismo año.
+    - Alumno: el curso de sus cursadas (`student_section_years`) y, si no tiene
+      ninguna, el de su grupo actual (membresía `active`/`finished`).
+    - Sin cursos (incluido un super admin que no dicta) devuelve `[]`.
+
+    Orden: comisión (nombre) y luego id.
+    """
+    ids: set[int] = set()
+    if user.professor:
+        ids = set(access.section_year_ids)
+    elif user.student:
+        cursadas = (
+            await db.exec(
+                select(StudentSectionYear.id_section_year).where(
+                    StudentSectionYear.id_student == user.id_user
+                )
+            )
+        ).all()
+        ids = set(cursadas)
+        if not ids and access.project_ids:
+            fallback = (
+                await db.exec(
+                    select(Project.id_section_year).where(
+                        Project.id_project.in_(access.project_ids)
+                    )
+                )
+            ).all()
+            ids = set(fallback)
+
+    if not ids:
+        return []
+
+    max_year = (
+        await db.exec(
+            select(func.max(SectionYear.year)).where(
+                SectionYear.id_section_year.in_(ids)
+            )
+        )
+    ).one()
+    return list(
+        (
+            await db.exec(
+                select(SectionYear)
+                .join(Section, Section.id_section == SectionYear.id_section)
+                .where(
+                    SectionYear.id_section_year.in_(ids),
+                    SectionYear.year == max_year,
+                )
+                .order_by(col(Section.name), col(SectionYear.id_section_year))
+            )
+        ).all()
+    )
+
+
+async def list_my_section_year_projects(
+    db,
+    access: Access,
+    section_year_ids: list[int],
+    *,
+    limit: int,
+    offset: int,
+) -> tuple[list[Project], int]:
+    """Proyectos de los cursos indicados, con la visibilidad de siempre."""
+    if not section_year_ids:
+        return [], 0
+    return await list_projects(
+        db,
+        access,
+        id_section_year=None,
+        year=None,
+        id_section=None,
+        privacy=None,
+        q=None,
+        limit=limit,
+        offset=offset,
+        section_year_ids=section_year_ids,
+    )

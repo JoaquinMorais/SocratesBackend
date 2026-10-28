@@ -263,6 +263,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_year`: testear que se puede cambiar el año y la comisión no cambia.
 - `test_patch_section`: testear que se puede cambiar la comisión y el año no cambia.
 - `test_patch_student_range`: testear que se puede cambiar el rango de estudiantes y que cambiar un solo extremo se valida contra el valor actual del otro.
+- `test_patch_year_conflict_with_student_cursadas`: testear que cambiar el año de un curso lectivo responde 409 si algún alumno inscripto quedaría con dos cursadas de ese año.
+- `test_patch_year_moves_student_cursadas`: testear que al cambiar el año se actualiza el año de las cursadas (el año viejo queda libre y el nuevo ocupa el lugar).
 - `test_patch_max_less_than_min_rejected`: testear que dejar `max_students` por debajo de `min_students` responde 422 (enviando ambos o solo uno).
 - `test_patch_min_above_max_rejected`: testear que subir `min_students` por encima del `max_students` actual responde 422.
 - `test_patch_to_existing_combination_rejected`: testear que no se puede dejar la combinación de otro curso lectivo (409).
@@ -294,6 +296,7 @@ Cursadas: qué alumno cursó qué curso lectivo (`POST /student-section-years`, 
 - `test_create_unknown_references`: testear que un alumno o un curso lectivo inexistente responde 404.
 - `test_create_invalid_rejected`: testear ids faltantes, ids no positivos y campos desconocidos (422).
 - `test_many_to_many`: testear un alumno con dos cursadas y un curso lectivo con dos alumnos.
+- `test_one_section_year_per_year`: testear que un alumno no puede tener dos cursadas del mismo año (409) aunque sean comisiones distintas, y que otro año sí se permite.
 
 **Consultar**
 - `test_list_ordering`: testear el orden (año más reciente, comisión y apellido del alumno).
@@ -306,6 +309,7 @@ Cursadas: qué alumno cursó qué curso lectivo (`POST /student-section-years`, 
 - `test_patch_each_side`: testear que se puede cambiar el alumno y el curso lectivo.
 - `test_patch_same_values_is_ok`: testear que reenviar el mismo par no da error.
 - `test_patch_duplicate_pair_rejected`: testear que dejar un par ya existente responde 409.
+- `test_patch_to_existing_year_rejected`: testear que mover una cursada a un alumno que ya cursa ese año responde 409, y que moverla a otro año funciona.
 - `test_patch_invalid_and_not_found`: testear body vacío, campos desconocidos (422), referencias inexistentes y cursada inexistente (404).
 
 **Eliminar**
@@ -633,6 +637,28 @@ Mi proyecto (`GET /me/project`): el equipo donde el alumno es miembro y sus soli
 - `test_requests_ordered_pending_first_then_by_newest`: testear que `requests` ordena pendientes primero y, entre rechazadas, de la más nueva a la más vieja.
 - `test_abandoned_and_expelled_are_not_requests`: testear que `abandoned` y `expelled` no cuentan como equipo ni como solicitudes.
 
+## `tests/test_me_section_year.py`
+
+Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/section-year/projects`): el año más reciente del profesor (por asignaciones) o del alumno (por cursadas, con fallback a su grupo), con la privacidad de siempre.
+
+**Permisos**
+- `test_requires_authentication`: testear que ambos endpoints responden 401 sin login.
+
+**Profesores**
+- `test_professor_gets_latest_section_year`: testear que con cursos 2025 y 2026 devuelve solo el de 2026 y que los proyectos son solo de ese curso.
+- `test_professor_with_two_commissions_in_latest_year`: testear que si dicta dos comisiones del mismo año devuelve ambas y los proyectos de las dos.
+
+**Alumnos**
+- `test_student_gets_latest_cursada_year`: testear que con cursadas 2025 y 2026 devuelve solo 2026 y sus proyectos.
+- `test_student_falls_back_to_current_group`: testear que un alumno sin cursadas usa el curso lectivo de su grupo actual.
+
+**Sin curso actual**
+- `test_no_current_section_year`: testear que un profesor sin asignaciones, un alumno sin cursadas ni grupo y un super admin que no dicta reciben `section_years` vacío y proyectos vacíos (200).
+
+**Reglas**
+- `test_projects_follow_privacy`: testear que en los proyectos del curso actual el privado ajeno no aparece, el protegido viene `restricted` con el detalle en `null`, el público completo, y que el profesor de ese curso lectivo ve todo.
+- `test_ordering_and_pagination`: testear el orden por número de grupo, `limit`/`offset`, `total` y que `limit=0` responde 422.
+
 ## `tests/test_images.py`
 
 Imágenes del sistema (`POST /images`, `GET /images/{id}`, `DELETE /images/{id}`): subida multipart para profesores y super admin, consulta para cualquier usuario logueado, conversión a WebP, límites de tamaño y borrado del archivo en disco.
@@ -750,7 +776,7 @@ Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), a
 
 Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
 
-- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías y 33 cursadas de alumnos.
+- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías y 32 cursadas de alumnos.
 - `test_seed_group_size_ranges`: testear que las cursadas de 2025 tienen mínimo 3 y máximo 10, y las de 2026 mínimo 5 y máximo 10.
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
@@ -765,7 +791,7 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
-- `test_seed_student_section_years_are_consistent`: testear que las cursadas no se repiten, apuntan a alumnos y cursos lectivos existentes, y que todo alumno con grupo está inscripto en el curso lectivo de su proyecto.
+- `test_seed_student_section_years_are_consistent`: testear que las cursadas no se repiten, que ningún alumno tiene dos del mismo año, que apuntan a alumnos y cursos lectivos existentes, y que todo alumno con grupo está inscripto en el curso lectivo de su proyecto.
 - `test_seed_students_may_have_several_section_years`: testear que hay al menos un alumno con más de una cursada (varios años lectivos).
 
 ## `tests/test_statuses.py`

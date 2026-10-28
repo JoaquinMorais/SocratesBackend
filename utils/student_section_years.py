@@ -39,6 +39,30 @@ def _duplicate() -> HTTPException:
     )
 
 
+def _duplicate_year() -> HTTPException:
+    return HTTPException(
+        status.HTTP_409_CONFLICT,
+        "Student already has a section year for that year",
+    )
+
+
+def _constraint_name(exc: IntegrityError) -> str:
+    """Nombre de la restricción violada (asyncpg la expone de formas distintas)."""
+    orig = exc.orig
+    for candidate in (getattr(orig, "diag", None), orig, getattr(orig, "__cause__", None)):
+        name = getattr(candidate, "constraint_name", None)
+        if name:
+            return name
+    return ""
+
+
+def _integrity_conflict(exc: IntegrityError) -> HTTPException:
+    """Distingue la restricción del par de la del año único."""
+    if "student_section_year_year" in _constraint_name(exc):
+        return _duplicate_year()
+    return _duplicate()
+
+
 async def _get_student(db, id_student: int) -> Student:
     student = await db.get(Student, id_student)
     if not student:
@@ -51,6 +75,18 @@ async def get_enrollment(db, id_enrollment: int) -> StudentSectionYear:
     if not ssy:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Enrollment not found")
     return ssy
+
+
+async def _year_taken(
+    db, id_student: int, year: int, exclude_id: int | None = None
+) -> bool:
+    stmt = select(StudentSectionYear.id_student_section_year).where(
+        StudentSectionYear.id_student == id_student,
+        StudentSectionYear.year == year,
+    )
+    if exclude_id is not None:
+        stmt = stmt.where(StudentSectionYear.id_student_section_year != exclude_id)
+    return (await db.exec(stmt)).first() is not None
 
 
 async def _pair_taken(
@@ -72,14 +108,16 @@ async def create_enrollment(
     sy = await get_section_year(db, data.id_section_year)
     if await _pair_taken(db, data.id_student, data.id_section_year):
         raise _duplicate()
+    if await _year_taken(db, data.id_student, sy.year):
+        raise _duplicate_year()
 
-    ssy = StudentSectionYear(student=student, section_year=sy)
+    ssy = StudentSectionYear(student=student, section_year=sy, year=sy.year)
     db.add(ssy)
     try:
         await db.commit()
-    except IntegrityError:  # dos altas simultáneas con el mismo par
+    except IntegrityError as exc:  # altas simultáneas con el mismo par o año
         await db.rollback()
-        raise _duplicate()
+        raise _integrity_conflict(exc)
     return to_public(ssy, student, sy)
 
 
@@ -100,15 +138,18 @@ async def update_enrollment(
         return to_public(ssy, student, sy)
     if await _pair_taken(db, id_student, id_section_year, exclude_id=id_enrollment):
         raise _duplicate()
+    if await _year_taken(db, id_student, sy.year, exclude_id=id_enrollment):
+        raise _duplicate_year()
 
     ssy.student = student
     ssy.section_year = sy
+    ssy.year = sy.year
     db.add(ssy)
     try:
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
-        raise _duplicate()
+        raise _integrity_conflict(exc)
     return to_public(ssy, student, sy)
 
 

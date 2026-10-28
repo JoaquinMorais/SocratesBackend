@@ -44,7 +44,7 @@ async def test_seed_loads_expected_counts():
     assert await _count(ProfessorSectionYear) == 21
     assert await _count(Project) == 14
     assert await _count(StudentProject) == 22
-    assert await _count(StudentSectionYear) == 33
+    assert await _count(StudentSectionYear) == 32
 
 
 async def test_seed_group_size_ranges():
@@ -215,6 +215,8 @@ async def test_seed_student_section_years_are_consistent():
         rows = (await session.exec(select(StudentSectionYear))).all()
         pairs = [(r.id_student, r.id_section_year) for r in rows]
         assert len(pairs) == len(set(pairs)), "hay cursadas repetidas"
+        per_year = [(r.id_student, r.year) for r in rows]
+        assert len(per_year) == len(set(per_year)), "hay un alumno con dos cursadas del mismo año"
 
         student_ids = set((await session.exec(select(Student.id_student))).all())
         section_year_ids = set(

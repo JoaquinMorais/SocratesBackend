@@ -247,3 +247,32 @@ async def test_delete_enrollment(client, login):
 
 async def test_delete_not_found(client, login):
     assert (await client.delete(f"{URL}/999", headers=await login(SUPER_ADMIN))).status_code == 404
+
+
+async def test_one_section_year_per_year(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2026_a = await section_year(client, headers, "3K1", 2026)
+    sy_2026_b = await section_year(client, headers, "3K2", 2026)
+    sy_2025 = await section_year(client, headers, "3K3", 2025)
+    await _enroll(client, headers, ANA, sy_2026_a)
+    r = await client.post(URL, json=_pair(ANA, sy_2026_b), headers=headers)
+    assert r.status_code == 409
+    assert "year" in r.json()["detail"]
+    # otro año sí se permite
+    await _enroll(client, headers, ANA, sy_2025)
+
+
+async def test_patch_to_existing_year_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2026_a = await section_year(client, headers, "3K1", 2026)
+    sy_2026_b = await section_year(client, headers, "3K2", 2026)
+    sy_2025 = await section_year(client, headers, "3K3", 2025)
+    await _enroll(client, headers, ANA, sy_2026_a)
+    luis = await _enroll(client, headers, LUIS, sy_2026_b)
+    url = f"{URL}/{luis['id_student_section_year']}"
+    # mover la cursada de Luis a una alumna que ya cursa ese año -> 409
+    r = await client.patch(url, json={"id_student": ANA}, headers=headers)
+    assert r.status_code == 409
+    # moverla a otro año -> ok
+    r = await client.patch(url, json={"id_section_year": sy_2025}, headers=headers)
+    assert r.status_code == 200, r.text

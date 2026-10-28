@@ -145,6 +145,7 @@ async def _load_student_section_years(
             StudentSectionYear(
                 id_student=student.id_student,
                 id_section_year=sy.id_section_year,
+                year=sy.year,
             )
         )
     await session.flush()
