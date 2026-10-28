@@ -1,12 +1,17 @@
 from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
+from schemas.image import ImagePublic
+
 
 class TechnologyCreate(SQLModel):
     model_config = ConfigDict(extra="forbid")  # campos desconocidos -> 422
 
     name: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
+    # Imagen ya subida (`POST /images`); también se puede mandar el archivo con
+    # el alta en multipart (aquí no: null significaría "no enviado").
+    id_image: int | None = Field(default=None, gt=0)
 
     @field_validator("name")
     @classmethod
@@ -22,6 +27,9 @@ class TechnologyUpdate(SQLModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=500)
+    # Reemplaza la imagen actual (que se borra); para quitarla sin otra, usar
+    # `DELETE /technologies/{id}/image` (un null en PATCH no desasocia).
+    id_image: int | None = Field(default=None, gt=0)
 
     @field_validator("name")
     @classmethod
@@ -46,6 +54,7 @@ class TechnologyPublic(SQLModel):
     id_technology: int
     name: str
     description: str | None = None
+    image: ImagePublic | None = None
 
 
 class TechnologyList(SQLModel):

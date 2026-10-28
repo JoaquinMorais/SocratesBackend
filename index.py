@@ -1,14 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import SQLModel
 from fastapi.middleware.cors import CORSMiddleware
 
 
 
 import models  # noqa: F401  (registra las tablas)
-from routes.__init__ import * 
+from routes.__init__ import *
 from config.database import SessionLocal, engine
+from config.settings import settings
 from utils.seed import load_seed
 
 
@@ -45,7 +48,8 @@ app = FastAPI(
         {"name": "professor-section-years", "description": "Profesores asignados a cursos lectivos (consulta: cualquier usuario; escritura: super admin)."},
         {"name": "projects", "description": "Proyecto (grupo) de un curso lectivo, con su privacidad. El proyecto nace `uninsured` (Desasegurado) y pasa por `in_idea`, `in_progress`, `pending_approval`, `rejected` (los cuatro son 'insured' o asegurados) hasta `approved` o `cancelled` (finales). Mientras está `uninsured` se trata siempre como público, sin importar su privacidad. Los privilegiados (profesor del curso lectivo, super admin y miembros `active`/`finished`) pueden modificar sus atributos mientras no esté en un estado final. Cada membresía alumno-proyecto también tiene su estado (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` o `rejected`). El historial de transiciones se consulta con `GET /projects/{id}/status-history`. `GET /projects/{id}/overview` devuelve el proyecto con sus integrantes, sus responsables (los profesores de su curso lectivo, sin mail) y su jefe (`leader`, o `null` si no tiene), con la misma visibilidad según privacidad: en `protected` el no privilegiado ve la información básica y también los integrantes, los responsables y el jefe. `POST /projects/{id}/insure` registra el aseguramiento (lo pueden hacer el jefe del grupo, un profesor de ese curso lectivo o un super admin) y a partir de ahí ya no se unen integrantes nuevos. Las transiciones de estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry` y `cancel`) las puede hacer un profesor del curso lectivo o un super admin."},
         {"name": "members", "description": "Integrantes de un proyecto. Un alumno se une a un grupo `uninsured` (`POST /projects/{id}/members`); si el grupo no tiene jefe entra como jefe y `active`, si no queda `pending_approval`. Solo el jefe acepta o rechaza solicitudes (`PATCH /projects/{id}/members/{id_student_project}`). Mientras el proyecto está `uninsured`, cualquier integrante `active` puede abandonar (`POST .../abandon`) y un profesor del curso lectivo o super admin puede expulsar (`POST .../expel`); en cualquier estado no final, el jefe puede delegar la jefatura a otro integrante `active` (`POST .../leader`). Si el jefe sale o es expulsado, la jefatura pasa al integrante `active` más antiguo. Un alumno solo puede ser `member` (`active`/`finished`) de un grupo en todo el sistema."},
-        {"name": "technologies", "description": "Tecnologías con nombre y descripción opcional (consulta: cualquier usuario; alta, edición y baja: profesores y super admin). El nombre es obligatorio (máximo 100 caracteres) y no puede repetirse sin distinguir mayúsculas. Una tecnología que está en uso por algún proyecto no se puede eliminar."},
+        {"name": "technologies", "description": "Tecnologías con nombre y descripción opcional (consulta: cualquier usuario; alta, edición y baja: profesores y super admin). El nombre es obligatorio (máximo 100 caracteres) y no puede repetirse sin distinguir mayúsculas. Una tecnología que está en uso por algún proyecto no se puede eliminar. Cada tecnología puede tener una imagen: se acepta jpeg, png o webp (máximo 5 MB) y siempre se guarda convertida a WebP y servida bajo `/media`; se sube con el alta/edición en multipart, con `PUT /technologies/{id}/image` o vinculando una imagen ya subida (`id_image`). Quitarla o reemplazarla borra el archivo."},
+        {"name": "images", "description": "Imágenes subidas al sistema (profesores y super admin): multipart con el archivo (`image/jpeg`, `image/png` o `image/webp`, máximo 5 MB) que se guarda siempre convertido a WebP y se sirve en `/media/{key}`. Consulta libre para cualquier usuario logueado; borrar una imagen asignada a una tecnología responde 409. Cada tecnología tiene a lo sumo una imagen (1:1)."},
         {"name": "project-technologies", "description": "Vínculo proyecto-tecnología (`POST /projects/{id}/technologies`, en lote con `.../bulk` y `DELETE /projects/{id}/technologies/{id_technology}`). Agregar o quitar corresponde a los privilegiados del proyecto (miembros `active`/`finished`, profesor del curso lectivo o super admin) mientras el proyecto no esté en un estado final; la consulta sigue la privacidad del proyecto (en `private` solo los privilegiados)."},
         {"name": "statuses", "description": "Estados por ámbito (`project`, `student_project`): `code`, `name`, `description`, `is_final` e `is_insured` (si el estado de proyecto cuenta como asegurado). La consulta sirve para etiquetas y filtros; todavía no hay alta ni edición."},
     ],
@@ -69,8 +73,13 @@ app.include_router(professor_section_years_router)
 app.include_router(projects_router)
 app.include_router(student_projects_router)
 app.include_router(technologies_router)
+app.include_router(images_router)
 app.include_router(project_technologies_router)
 app.include_router(statuses_router)
+
+# Archivos de imagen servidos en `/media/{key}` (se crea el directorio al arrancar).
+Path(settings.MEDIA_DIR).mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=settings.MEDIA_DIR), name="media")
 
 @app.get("/health")
 async def health():

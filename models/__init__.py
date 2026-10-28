@@ -9,6 +9,7 @@ from models.project_status import ProjectStatus
 from models.student_project import StudentProject
 from models.status import Status
 from models.technology import Technology
+from models.image import Image
 from models.project_technology import ProjectTechnology
 from models.token import RefreshToken
 from models.email_verification import EmailVerification
@@ -17,6 +18,6 @@ from models.state import ProjectState, State, StudentProjectState
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
     "ProfessorSectionYear", "Project", "ProjectStatus", "StudentProject", "Status",
-    "Technology", "ProjectTechnology",
+    "Technology", "ProjectTechnology", "Image",
     "RefreshToken", "EmailVerification", "State", "ProjectState", "StudentProjectState",
 ]

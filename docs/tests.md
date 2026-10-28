@@ -15,6 +15,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - La app y los ayudantes de los tests comparten la misma conexión (el `conftest` publica una fábrica de sesiones bindeada a la transacción de test). Por eso se ve todo lo que cada test escribe, pero nada queda entre tests.
 - En tests, Argon2 usa parámetros baratos (misma lógica de auth; el hasher de producción no cambia). Esto acelera el seed y los logins.
 - Los mails no se envían: quedan en una lista (`outbox`) de donde los tests leen los códigos OTP.
+- Las imágenes se guardan en un directorio temporal por sesión (`MEDIA_DIR`); al terminar se borra junto con la BD de test.
 - `httpx` llama a la app directamente y conserva las cookies como un navegador.
 
 ## Archivos de apoyo
@@ -540,9 +541,28 @@ Mi proyecto (`GET /me/project`): el equipo donde el alumno es miembro y sus soli
 - `test_requests_ordered_pending_first_then_by_newest`: testear que `requests` ordena pendientes primero y, entre rechazadas, de la más nueva a la más vieja.
 - `test_abandoned_and_expelled_are_not_requests`: testear que `abandoned` y `expelled` no cuentan como equipo ni como solicitudes.
 
+## `tests/test_images.py`
+
+Imágenes del sistema (`POST /images`, `GET /images/{id}`, `DELETE /images/{id}`): subida multipart para profesores y super admin, consulta para cualquier usuario logueado, conversión a WebP, límites de tamaño y borrado del archivo en disco.
+
+**Permisos**
+- `test_requires_authentication`: testear que subir, consultar y eliminar responden 401 sin login.
+- `test_student_cannot_write`: testear que un alumno no puede subir ni eliminar imágenes (403).
+- `test_professor_can_upload`: testear que un profesor común puede subir imágenes.
+
+**Subir**
+- `test_upload_converts_to_webp_and_saves_file`: testear que jpeg, png y webp se aceptan, que la respuesta informa `content_type` `image/webp` con la `url` de `/media` y que el archivo guardado en disco es WebP.
+- `test_upload_metadata_and_get`: testear que la consulta por id devuelve los mismos datos (cualquier usuario logueado) y que un id inexistente responde 404.
+- `test_upload_rejects_invalid_content`: testear que un gif, un archivo que no es imagen y un archivo vacío responden 422.
+- `test_upload_rejects_too_large`: testear que un archivo mayor a 5 MB responde 413.
+- `test_upload_original_name_is_sane`: testear que el nombre original se sanea (sin rutas ni `../`, espacios colapsados).
+
+**Eliminar**
+- `test_delete_image`: testear que elimina la fila y el archivo, y que un id inexistente responde 404.
+
 ## `tests/test_technologies.py`
 
-Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies`, `GET /technologies`, `GET /technologies/{id}`, `PATCH /technologies/{id}`, `DELETE /technologies/{id}`); escritura para profesores y super admin, lectura para cualquier usuario logueado.
+Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies`, `GET /technologies`, `GET /technologies/{id}`, `PATCH /technologies/{id}`, `DELETE /technologies/{id}`) y su imagen (`PUT /technologies/{id}/image`, `DELETE /technologies/{id}/image`, `id_image` en JSON y `file` en multipart); escritura para profesores y super admin, lectura para cualquier usuario logueado.
 
 **Permisos**
 - `test_requires_authentication`: testear que todos los endpoints responden 401 sin login.
@@ -574,6 +594,24 @@ Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies
 - `test_delete_technology`: testear el borrado (204) y que deja de existir.
 - `test_delete_not_found`: testear que eliminar una tecnología inexistente responde 404.
 - `test_delete_in_use_rejected`: testear que no se puede borrar una tecnología asociada a un proyecto (409) y que sigue existiendo.
+
+**Imagen de la tecnología**
+- `test_image_endpoints_require_auth`: testear que los endpoints de imagen de la tecnología responden 401 sin login.
+- `test_image_endpoints_forbidden_for_student`: testear que un alumno no puede subir ni quitar la imagen de una tecnología (403).
+- `test_create_with_uploaded_image_via_json`: testear el alta con `id_image` de una imagen ya subida y que la respuesta trae el objeto imagen completo.
+- `test_create_multipart_with_file`: testear el alta en multipart con `file`, normalizando el nombre y convirtiendo la imagen a WebP (guardada en disco).
+- `test_create_multipart_without_file`: testear el alta en multipart sin archivo (imagen `null`).
+- `test_create_multipart_missing_name`: testear que un multipart sin `name` responde 422.
+- `test_create_multipart_bad_file_creates_nothing`: testear que un archivo inválido responde 422 y no deja creada la tecnología.
+- `test_create_json_unknown_image_404_and_taken_409`: testear que un `id_image` inexistente responde 404 y que una imagen ya asignada a otra tecnología responde 409.
+- `test_patch_multipart_file_replaces_and_deletes_previous`: testear que un PATCH con `file` reemplaza la imagen, borra la anterior (fila y disco) y responde con la nueva.
+- `test_patch_json_without_image_fields_keeps_image`: testear que un PATCH sin campos de imagen conserva la imagen.
+- `test_patch_null_id_image_does_not_detach`: testear que `id_image: null` no desasocia (null = no enviado).
+- `test_put_route_replaces_previous_image`: testear que `PUT .../image` sube la imagen y, al repetirlo, reemplaza y borra la anterior.
+- `test_delete_technology_image_route`: testear que `DELETE .../image` quita y borra la imagen (204) y que sin imagen responde 404.
+- `test_delete_technology_deletes_its_image`: testear que al eliminar la tecnología también se borra su imagen.
+- `test_delete_image_in_use_by_technology_rejected`: testear que `DELETE /images/{id}` responde 409 mientras la imagen esté asignada a una tecnología.
+- `test_unsupported_content_type_rejected`: testear que un body que no es JSON ni multipart responde 422.
 
 ## `tests/test_project_technologies.py`
 

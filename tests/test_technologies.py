@@ -204,3 +204,196 @@ async def test_delete_in_use_rejected(client, login):
     r = await client.delete(f"{URL}/{id_technology}", headers=headers)
     assert r.status_code == 409, r.text
     assert (await client.get(f"{URL}/{id_technology}", headers=headers)).status_code == 200
+
+
+# ---------- imagen (funcionalidad de imagen en tecnologías) ----------
+import io
+from pathlib import Path
+from urllib.parse import urlsplit
+
+from PIL import Image as PILImage
+
+from config.settings import settings
+from tests.test_images import BAD, JPEG, PNG
+
+
+def _fmultipart(name: str, data: bytes, mime: str):
+    return {"file": (name, data, mime)}
+
+
+def _file_path(url: str) -> Path:
+    # La URL es `MEDIA_BASE_URL` + "/" + key; el key no incluye el montaje `/media`.
+    key = urlsplit(url).path.lstrip("/").removeprefix("media/")
+    return Path(settings.MEDIA_DIR) / key
+
+
+def _raw_multipart(fields: dict[str, str], boundary: str = "socrates-test") -> bytes:
+    lines = []
+    for key, value in fields.items():
+        lines += [f"--{boundary}", f'Content-Disposition: form-data; name="{key}"', "", value]
+    lines += [f"--{boundary}--", ""]
+    return "\r\n".join(lines).encode()
+
+
+# permisos de los endpoints de imagen de tecnología
+async def test_image_endpoints_require_auth(client):
+    r = await client.put(f"{URL}/1/image", files=_fmultipart("a.png", PNG, "image/png"))
+    assert r.status_code == 401
+    assert (await client.delete(f"{URL}/1/image")).status_code == 401
+
+
+async def test_image_endpoints_forbidden_for_student(client, login):
+    headers = await login(STUDENT)
+    r = await client.put(f"{URL}/1/image", files=_fmultipart("a.png", PNG, "image/png"), headers=headers)
+    assert r.status_code == 403
+    r = await client.delete(f"{URL}/1/image", headers=headers)
+    assert r.status_code == 403
+
+
+# crear con imagen (JSON id_image y multipart file)
+async def test_create_with_uploaded_image_via_json(client, login):
+    headers = await login(SUPER_ADMIN)
+    image = (await client.post("/images", files=_fmultipart("logo.png", PNG, "image/png"), headers=headers)).json()
+    r = await client.post(URL, json={"name": "React", "id_image": image["id_image"]}, headers=headers)
+    assert r.status_code == 201, r.text
+    assert r.json()["image"] == image  # el objeto imagen completo
+
+
+async def test_create_multipart_with_file(client, login):
+    r = await client.post(
+        URL, data={"name": "Vue", "description": " Framework"}, files=_fmultipart("vue.png", JPEG, "image/jpeg"),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["name"] == "Vue" and body["description"] == " Framework"
+    img = body["image"]
+    assert img["content_type"] == "image/webp" and img["original_name"] == "vue.png"
+    assert _file_path(img["url"]).exists()
+
+
+async def test_create_multipart_without_file(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        URL,
+        content=_raw_multipart({"name": "Svelte"}),
+        headers={"content-type": "multipart/form-data; boundary=socrates-test", **headers},
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["image"] is None
+
+
+async def test_create_multipart_missing_name(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        URL,
+        content=_raw_multipart({"description": "sin nombre"}),
+        headers={"content-type": "multipart/form-data; boundary=socrates-test", **headers},
+    )
+    assert r.status_code == 422, r.text
+
+
+async def test_create_multipart_bad_file_creates_nothing(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(URL, data={"name": "BadB"}, files=_fmultipart("a.png", BAD, "image/png"), headers=headers)
+    assert r.status_code == 422, r.text
+    listing = (await client.get(URL, params={"q": "BadB"}, headers=headers)).json()
+    assert listing["total"] == 0  # no queda ni la tecnología ni el archivo
+
+
+async def test_create_json_unknown_image_404_and_taken_409(client, login):
+    headers = await login(SUPER_ADMIN)
+    assert (await client.post(URL, json={"name": "X", "id_image": 999}, headers=headers)).status_code == 404
+    image = (await client.post("/images", files=_fmultipart("l.png", PNG, "image/png"), headers=headers)).json()
+    other = (await client.post("/technologies", json={"name": "Other"}, headers=headers)).json()
+    # La imagen queda asignada a "Other"; reusarla en otra tecnología es 409.
+    r = await client.patch(f"{URL}/{other['id_technology']}", json={"id_image": image["id_image"]}, headers=headers)
+    assert r.status_code == 200, r.text
+    r = await client.post(URL, json={"name": "X2", "id_image": image["id_image"]}, headers=headers)
+    assert r.status_code == 409, r.text
+    # y la tecnología que la tiene sigue con su imagen
+    assert (await client.get(f"{URL}/{other['id_technology']}", headers=headers)).json()["image"] == image
+
+
+# modificar con imagen
+async def test_patch_multipart_file_replaces_and_deletes_previous(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = (await client.post(URL, data={"name": "Re"}, files=_fmultipart("a.png", PNG, "image/png"), headers=headers)).json()
+    old_url = tech["image"]["url"]
+    r = await client.patch(
+        f"{URL}/{tech['id_technology']}",
+        data={}, files=_fmultipart("b.png", JPEG, "image/jpeg"), headers=headers,
+    )
+    assert r.status_code == 200, r.text
+    new_img = r.json()["image"]
+    assert new_img["url"] != old_url
+    assert not _file_path(old_url).exists()  # la anterior se borró del disco
+    assert (await client.get(f"/images/{tech['image']['id_image']}", headers=headers)).status_code == 404
+
+
+async def test_patch_json_without_image_fields_keeps_image(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = (await client.post(URL, data={"name": "Ke"}, files=_fmultipart("keep.png", PNG, "image/png"), headers=headers)).json()
+    r = await client.patch(f"{URL}/{tech['id_technology']}", json={"name": "Kept"}, headers=headers)
+    assert r.status_code == 200 and r.json()["image"] == tech["image"]
+
+
+async def test_patch_null_id_image_does_not_detach(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = (await client.post(URL, data={"name": "Nu"}, files=_fmultipart("n.png", PNG, "image/png"), headers=headers)).json()
+    r = await client.patch(f"{URL}/{tech['id_technology']}", json={"id_image": None}, headers=headers)
+    assert r.status_code == 200 and r.json()["image"] == tech["image"]  # null = no enviado
+
+
+async def test_put_route_replaces_previous_image(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = await _create(client, headers, "Putt")
+    r = await client.put(f"{URL}/{tech['id_technology']}/image", files=_fmultipart("p.png", PNG, "image/png"), headers=headers)
+    assert r.status_code == 200, r.text
+    first = r.json()["image"]
+    r = await client.put(f"{URL}/{tech['id_technology']}/image", files=_fmultipart("q.jpg", JPEG, "image/jpeg"), headers=headers)
+    second = r.json()["image"]
+    assert second["url"] != first["url"]
+    assert not _file_path(first["url"]).exists()
+
+
+async def test_delete_technology_image_route(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(URL, data={"name": "Qu"}, files=_fmultipart("q.png", JPEG, "image/jpeg"), headers=headers)
+    tech = r.json()
+    img_id, img_url = tech["image"]["id_image"], tech["image"]["url"]
+    assert (await client.delete(f"{URL}/{tech['id_technology']}/image", headers=headers)).status_code == 204
+    assert not _file_path(img_url).exists()
+    assert (await client.get(f"/images/{img_id}", headers=headers)).status_code == 404
+    assert (await client.get(f"{URL}/{tech['id_technology']}", headers=headers)).json()["image"] is None
+    # sin imagen: 404
+    assert (await client.delete(f"{URL}/{tech['id_technology']}/image", headers=headers)).status_code == 404
+
+
+async def test_delete_technology_deletes_its_image(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = (await client.post(URL, data={"name": "De"}, files=_fmultipart("d.png", PNG, "image/png"), headers=headers)).json()
+    img_id, img_url = tech["image"]["id_image"], tech["image"]["url"]
+    assert (await client.delete(f"{URL}/{tech['id_technology']}", headers=headers)).status_code == 204
+    assert not _file_path(img_url).exists()
+    assert (await client.get(f"/images/{img_id}", headers=headers)).status_code == 404
+
+
+async def test_delete_image_in_use_by_technology_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(URL, data={"name": "Us"}, files=_fmultipart("u.png", PNG, "image/png"), headers=headers)
+    tech = r.json()
+    image_id = tech["image"]["id_image"]
+    r = await client.delete(f"/images/{image_id}", headers=headers)
+    assert r.status_code == 409, r.text  # primero hay que quitarla de la tecnología
+
+
+async def test_unsupported_content_type_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        URL,
+        content=b"name=React",
+        headers={"content-type": "application/x-www-form-urlencoded", **headers},
+    )
+    assert r.status_code == 422, r.text  # body JSON inválido
+

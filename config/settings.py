@@ -26,6 +26,13 @@ class Settings(BaseSettings):
 
     SEND_WELCOME_EMAILS: bool = True
 
+    # Imágenes: por ahora solo en disco local (MEDIA_DIR); la URL pública que
+    # devuelve la API se arma con MEDIA_BASE_URL + key.
+    MEDIA_DIR: str = "media"
+    MEDIA_BASE_URL: str = "http://localhost:8000/media"
+    IMAGE_MAX_BYTES: int = 5_000_000  # 5 MB por archivo
+    IMAGE_WEBP_QUALITY: int = 85  # calidad de la conversión a WebP
+
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

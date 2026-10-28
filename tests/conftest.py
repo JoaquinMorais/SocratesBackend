@@ -1,7 +1,10 @@
 import os
+import shutil
+import tempfile
 from datetime import date
 
-# Estas variables tienen que fijarse ANTES de importar la app: el engine se crea al importar.
+# Estas variables tienen que fijarse ANTES de importar la app: el engine y el
+# montaje de /media se crean al importar.
 from sqlalchemy.engine import make_url
 
 _main = make_url(os.environ["DATABASE_URL"])
@@ -11,6 +14,11 @@ os.environ["EMAIL_BACKEND"] = "console"
 os.environ["EMAIL_DEV_REDIRECT"] = ""
 os.environ["OTP_COOLDOWN_SECONDS"] = "0"
 os.environ["SEND_WELCOME_EMAILS"] = "true"
+
+# Los archivos de imagen van a un directorio temporal de la sesión.
+MEDIA_DIR_PATH = tempfile.mkdtemp(prefix="socrates-media-")
+os.environ["MEDIA_DIR"] = MEDIA_DIR_PATH
+os.environ["MEDIA_BASE_URL"] = "http://test/media"
 
 import asyncpg  # noqa: E402
 import httpx  # noqa: E402
@@ -113,6 +121,7 @@ async def database():
     await transaction.rollback()
     await connection.close()
     await engine.dispose()
+    shutil.rmtree(MEDIA_DIR_PATH, ignore_errors=True)
     await _admin(f'DROP DATABASE IF EXISTS "{TEST_DB}" WITH (FORCE)')
 
 
