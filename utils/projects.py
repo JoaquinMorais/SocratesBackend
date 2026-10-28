@@ -411,6 +411,7 @@ async def list_projects(
     year: int | None,
     id_section: int | None,
     privacy: str | None,
+    q: str | None,
     limit: int,
     offset: int,
 ) -> tuple[list[Project], int]:
@@ -431,6 +432,8 @@ async def list_projects(
         conditions.append(SectionYear.year == year)
     if id_section is not None:
         conditions.append(SectionYear.id_section == id_section)
+    if q:
+        conditions.append(col(Project.name).ilike(f"%{q.strip()}%"))
     if privacy is not None:
         # La privacidad que se filtra es la efectiva: un `uninsured` cuenta como público.
         if privacy == "public":

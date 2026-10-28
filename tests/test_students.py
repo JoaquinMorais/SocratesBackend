@@ -2,7 +2,7 @@ from datetime import date
 
 from config.database import SessionLocal
 from models import Project, StudentProject
-from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, set_password
+from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, refresh_cookie, set_password
 from utils.statuses import get_status
 
 URL = "/students"
@@ -348,6 +348,11 @@ async def test_list_filters(client, login):
 
 async def test_list_search(client, login):
     admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    centauro = await _create_project(client, admin, sy, name="Proyecto Centauro")
+    await _add_student(centauro["id_project"], ANA_ID)
+    descartado = await _create_project(client, admin, sy, name="Proyecto Descartado")
+    await _add_student(descartado["id_project"], LUIS_ID, status="rejected")
 
     async def total(params: dict) -> int:
         return (await client.get(URL, params=params, headers=admin)).json()["total"]
@@ -356,6 +361,13 @@ async def test_list_search(client, login):
     assert await total({"q": "Gómez"}) == 1
     assert await total({"q": "100002"}) == 1
     assert await total({"q": "Nadie"}) == 0
+    # También se busca por el nombre del proyecto del alumno.
+    assert await total({"q": "centauro"}) == 1
+    assert await total({"q": "CENTAURO"}) == 1
+    assert await total({"q": "centauro", "year": 2025}) == 1
+    assert await total({"q": "centauro", "year": 2024}) == 0
+    # Solo cuentan las membresías en los estados pedidos (por defecto active/finished).
+    assert await total({"q": "descartado"}) == 0
 
 
 async def test_professor_cannot_filter_foreign_section_year(client, login, make_professor):
@@ -473,3 +485,82 @@ async def test_patch_student_invalid_values_rejected(client, login):
     headers = await login(SUPER_ADMIN)
     assert (await client.patch("/students/1", json={"enrollment_year": 1800}, headers=headers)).status_code == 422
     assert (await client.patch("/students/1", json={"legajo": 0}, headers=headers)).status_code == 422
+# ---------- DELETE /students/{id} (eliminar) ----------
+async def test_delete_requires_authentication(client):
+    assert (await client.delete("/students/1")).status_code == 401
+
+
+async def test_student_cannot_delete_students(client, login):
+    assert (await client.delete("/students/1", headers=await login(STUDENT))).status_code == 403
+
+
+async def test_regular_professor_cannot_delete_students(client, login, make_professor):
+    mail = await make_professor("prof-del@frc.utn.edu.ar")
+    assert (await client.delete("/students/1", headers=await login(mail))).status_code == 403
+
+
+async def test_super_admin_deletes_student(client, login):
+    # El seed le dio contraseña a Ana: tras borrarla ya puede iniciar sesión.
+    r = await client.delete(f"/students/{ANA_ID}", headers=await login(SUPER_ADMIN))
+    assert r.status_code == 204, r.text
+    listing = await client.get("/students", headers=await login(SUPER_ADMIN))
+    assert all(i["id_student"] != ANA_ID for i in listing.json()["items"])
+    r = await client.post(
+        "/auth/login", json={"email": STUDENT, "password": PASSWORD}
+    )
+    assert r.status_code == 401  # el usuario ya no existe
+
+
+async def test_delete_frees_legajo(client, login):
+    headers = await login(SUPER_ADMIN)
+    created = (await client.post("/students", json=student(100010), headers=headers)).json()
+    assert (await client.delete(f"/students/{created['id_student']}", headers=headers)).status_code == 204
+    r = await client.post("/students", json=student(100010), headers=headers)
+    assert r.status_code == 201, r.text  # el legajo quedó libre
+
+
+async def test_delete_not_found(client, login):
+    assert (await client.delete("/students/999", headers=await login(SUPER_ADMIN))).status_code == 404
+
+
+async def test_delete_blocked_by_current_membership(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await _section_year(client, headers)
+    for status in ("active", "finished", "pending_approval"):
+        project = await _create_project(client, headers, sy)
+        await _add_student(project["id_project"], LUIS_ID, status=status)
+        r = await client.delete(f"/students/{LUIS_ID}", headers=headers)
+        assert r.status_code == 409, status
+        # el alumno sigue existiendo (su legajo sigue en el listado)
+        listing = await client.get("/students", params={"q": "100002"}, headers=headers)
+        assert listing.json()["total"] == 1
+
+
+async def test_delete_with_only_past_memberships(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await _section_year(client, headers)
+    projects = [await _create_project(client, headers, sy, name=f"P{i}") for i in range(3)]
+    past = zip(projects, ("abandoned", "expelled", "rejected"))
+    for project, status in past:
+        await _add_student(project["id_project"], LUIS_ID, status=status)
+    r = await client.delete(f"/students/{LUIS_ID}", headers=headers)
+    assert r.status_code == 204, r.text
+    # los proyectos siguen existiendo; los restos se borraron con el alumno
+    for project in projects:
+        assert (await client.get(f"/projects/{project['id_project']}", headers=headers)).status_code == 200
+    listing = await client.get("/students", headers=headers)
+    assert all(i["id_student"] != LUIS_ID for i in listing.json()["items"])
+
+
+async def test_delete_removes_sessions_and_otp(client, login, outbox):
+    r = await client.post(
+        "/auth/login", json={"email": STUDENT, "password": PASSWORD}
+    )
+    assert r.status_code == 200, r.text
+    cookie = refresh_cookie(r)
+    assert (await client.post("/auth/password/request", json={"email": STUDENT})).status_code == 202
+    r = await client.delete(f"/students/{ANA_ID}", headers=await login(SUPER_ADMIN))
+    assert r.status_code == 204, r.text
+    r = await client.post("/auth/refresh", headers={"Cookie": f"refresh_token={cookie}"})
+    assert r.status_code == 401  # la sesión y el usuario quedaron invalidados
+    assert len(outbox) >= 1

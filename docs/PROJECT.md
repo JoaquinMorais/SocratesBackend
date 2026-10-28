@@ -103,7 +103,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Recurso | Consultar | Crear / modificar / eliminar |
 |---|---|---|
 | Usuarios (listado) | Super admin | n/a |
-| Alumnos | Profesores (de sus cursos lectivos) y super admin | Cualquier profesor |
+| Alumnos | Profesores (de sus cursos lectivos) y super admin | Crear: cualquier profesor. Modificar: cualquier profesor. Eliminar: solo super admin (solo altas erróneas) |
 | Profesores | n/a | Super admin |
 | Comisiones | Cualquier usuario logueado | Super admin |
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
@@ -129,9 +129,10 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   - **`public`**: cualquier usuario ve todo el detalle.
   - **`protected`**: los privilegiados ven todo; el resto ve la información básica (el proyecto aparece con `restricted` en `true` y nombre, descripción, objetivo y problemática en `null`). Los datos sensibles (documentación, repositorio de GitHub), cuando existan, se ocultan a quien no sea privilegiado.
   - **`private`**: solo los privilegiados. Para el resto el proyecto no aparece en el listado ni se cuenta en `total`, y consultarlo responde **403**.
+- El **listado** (`GET /projects`) filtra por curso lectivo, año, comisión, privacidad efectiva y `q` (texto dentro del nombre del proyecto, sin distinguir mayúsculas). Los proyectos sin nombre no coinciden con `q`.
 - El **overview** (`GET /projects/{id}/overview`) devuelve el proyecto con sus **integrantes**, sus **responsables** —los **profesores asignados a su curso lectivo** (quienes hacen el seguimiento del grupo), sin mail— y su **jefe** (`leader`, el jefe del grupo, o `null` si no tiene; el jefe también queda marcado con `is_leader` en cada integrante), con la misma visibilidad de arriba. Por defecto lista los integrantes `active` y `finished` (categoría `member`); el parámetro repetible `status` (solo privilegiados) permite pedir otros estados; el jefe y los responsables se resuelven aparte del filtro. En un proyecto protegido, quien no es privilegiado igual recibe los integrantes, los responsables y el jefe, además de la información básica.
 - **Mi proyecto** (`GET /me/project`, solo alumnos): el alumno logueado ve su **equipo**, el grupo donde es miembro (`active`/`finished`), con el overview completo del punto anterior, y sus **solicitudes de ingreso** (`pending_approval` y `rejected`, pendientes primero y de la más nueva a la más vieja) con el resumen de cada grupo. Sin equipo ni solicitudes recibe `{"project": null, "requests": []}`. Las solicitudes se ven aunque tenga equipo (por ejemplo, un rechazo anterior); `abandoned`, `expelled`, `active` y `finished` no cuentan como solicitudes.
-- `GET /students` devuelve, por cada alumno, sus grupos con el `status` de la membresía. Por defecto solo lista `active` y `finished`; el parámetro repetible `status` permite pedir cualquier combinación de estados (uno desconocido responde **422**). Los grupos se ordenan por estado (`active`, `pending_approval`, `finished`, `abandoned`, `expelled`, `rejected`) y, dentro de cada uno, del curso más reciente al más viejo. Al filtrar por curso/año/comisión solo cuentan las membresías en los estados pedidos; sin esos filtros, los alumnos sin grupo siguen apareciendo.
+- `GET /students` devuelve, por cada alumno, sus grupos con el `status` de la membresía. Por defecto solo lista `active` y `finished`; el parámetro repetible `status` permite pedir cualquier combinación de estados (uno desconocido responde **422**). Los grupos se ordenan por estado (`active`, `pending_approval`, `finished`, `abandoned`, `expelled`, `rejected`) y, dentro de cada uno, del curso más reciente al más viejo. Al filtrar por curso/año/comisión solo cuentan las membresías en los estados pedidos; sin esos filtros, los alumnos sin grupo siguen apareciendo. El parámetro `q` busca por nombre, apellido, legajo (exacto) o nombre de sus proyectos (en los estados y el alcance filtrados).
 
 ## Estado actual
 
@@ -139,11 +140,12 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos y miembros).
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores.
-- Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por estado de la membresía, curso lectivo, año o comisión.
+- Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; libera el legajo y cierra sus sesiones y códigos pendientes.
+- Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por estado de la membresía, curso lectivo, año, comisión y búsqueda por nombre/apellido/legajo o nombre de proyecto.
 - Edición de datos propios y de otros usuarios; listado de usuarios.
 - CRUD de comisiones y de cursos lectivos.
 - Asignación de profesores a cursos lectivos (CRUD).
-- Proyectos: crear (individual y masivo), listar, consultar, modificar atributos (privilegiados, mientras no sea final) y eliminar (solo si están `uninsured` y vacíos), con visibilidad según privacidad (los `uninsured` se tratan como públicos; se crean `public`).
+- Proyectos: crear (individual y masivo), listar (con búsqueda `q` por nombre), consultar, modificar atributos (privilegiados, mientras no sea final) y eliminar (solo si están `uninsured` y vacíos), con visibilidad según privacidad (los `uninsured` se tratan como públicos; se crean `public`).
 - Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`, solo alumnos y solo en `uninsured`, el primero es jefe/`active` y el resto `pending_approval`), aceptar o rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`, solo el jefe), abandonar (`POST .../abandon`, el propio alumno y solo en `uninsured`), expulsar (`POST .../expel`, profesor del curso lectivo o super admin y solo en `uninsured`), delegar la jefatura (`POST .../leader`, solo el jefe, en estados no finales) y listar integrantes (`GET /projects/{id}/members`, privilegiados). Sucesión de jefe al `active` más antiguo (`enrolled_at`) al irse el jefe. Regla de un solo `member` (`active`/`finished`) por alumno en todo el sistema, con cascada de `pending_approval` a `rejected`.
 - Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
 - Estados de proyecto: máquina de estados (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`), categoría `insured` y método `is_insured` en la respuesta de `GET /statuses`.

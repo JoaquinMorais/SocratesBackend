@@ -107,6 +107,17 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_student_empty_body_rejected`: testear que un body vacío se rechaza.
 - `test_patch_student_invalid_values_rejected`: testear que se rechaza un año de ingreso fuera de rango y un legajo no positivo.
 
+**Eliminar un alumno (`DELETE /students/{id}`)**
+- `test_delete_requires_authentication`: testear que eliminar un alumno sin login responde 401.
+- `test_student_cannot_delete_students`: testear que un alumno no puede eliminar alumnos (403).
+- `test_regular_professor_cannot_delete_students`: testear que un profesor que no es super admin no puede eliminar alumnos (403).
+- `test_super_admin_deletes_student`: testear que un super admin elimina un alumno (204), que desaparece del listado y que ya no puede iniciar sesión.
+- `test_delete_frees_legajo`: testear que el legajo queda libre y se puede volver a cargar un alumno con él.
+- `test_delete_not_found`: testear que eliminar un alumno inexistente responde 404.
+- `test_delete_blocked_by_current_membership`: testear que no se puede eliminar un alumno con alguna membresía `active`, `finished` o `pending_approval` (409), y que el alumno sigue existiendo.
+- `test_delete_with_only_past_memberships`: testear que un alumno con solo restos viejos (`abandoned`, `expelled`, `rejected`) se puede eliminar, que esas membresías se borran con él y que los proyectos siguen existiendo.
+- `test_delete_removes_sessions_and_otp`: testear que el alumno con una sesión iniciada y un código OTP pendiente se puede eliminar y su refresh token pasa a ser inválido.
+
 **Consultar alumnos (`GET /students`)**
 - `test_list_requires_authentication`: testear que listar alumnos sin login responde 401.
 - `test_student_cannot_list_students`: testear que un alumno no puede listar alumnos (403).
@@ -120,7 +131,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_list_rejects_unknown_status`: testear que un `status` que no es un estado de membresía válido responde 422.
 - `test_scope_filter_respects_membership_status`: testear que al filtrar por curso lectivo solo cuentan las membresías en los estados pedidos.
 - `test_list_filters`: testear los filtros `id_section_year`, `year` e `id_section`, solos y combinados.
-- `test_list_search`: testear la búsqueda por nombre, apellido y legajo (exacto).
+- `test_list_search`: testear la búsqueda por nombre, apellido, legajo (exacto) y nombre de proyecto (sin distinguir mayúsculas), y que al buscar por proyecto solo cuentan las membresías en los estados pedidos y el alcance.
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
 - `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
@@ -297,6 +308,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Consultar**
 - `test_list_sorted_and_filtered`: testear el orden (año, comisión, grupo), los filtros por curso lectivo, año, comisión y privacidad (efectiva: un `uninsured` cuenta como `public`).
+- `test_list_search_by_name`: testear la búsqueda por nombre de proyecto (parcial y sin distinguir mayúsculas), sin coincidencias, combinada con año, que un proyecto sin nombre no matchea y que `q` vacío responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 - `test_get_not_found`: testear que un proyecto inexistente responde 404.
 

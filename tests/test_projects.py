@@ -293,6 +293,29 @@ async def test_list_sorted_and_filtered(client, login):
     assert (await client.get(f"{URL}?privacy=otro", headers=admin)).status_code == 422
 
 
+async def test_list_search_by_name(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    turnos = await _create(client, admin, sy)
+    await _set(turnos["id_project"], name="Sistema de Turnos")
+    stock = await _create(client, admin, sy)
+    await _set(stock["id_project"], name="Gestor de Stock")
+    await _create(client, admin, sy)  # sin nombre
+
+    async def total(query: str) -> int:
+        r = await client.get(f"{URL}?{query}", headers=admin)
+        assert r.status_code == 200, r.text
+        return r.json()["total"]
+
+    assert await total("q=turnos") == 1
+    assert await total("q=SISTEMA") == 1
+    assert await total("q=de") == 2
+    assert await total("q=nada") == 0
+    assert await total("q=turnos&year=2025") == 1
+    assert await total("q=turnos&year=2024") == 0
+    assert (await client.get(f"{URL}?q=", headers=admin)).status_code == 422
+
+
 async def test_list_pagination(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)

@@ -124,6 +124,14 @@ async def get_projects(
     year: Annotated[int | None, Query(description="Filtrar por año")] = None,
     id_section: Annotated[int | None, Query(description="Filtrar por comisión")] = None,
     privacy: Annotated[Privacy | None, Query(description="Filtrar por privacidad")] = None,
+    q: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=200,
+            description="Busca dentro del nombre del proyecto",
+        ),
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
@@ -142,7 +150,8 @@ async def get_projects(
       listado ni se cuenta en `total`.
 
     El filtro `privacy` usa la privacidad efectiva (un `uninsured` cuenta como
-    `public`).
+    `public`). El filtro `q` busca texto dentro del nombre del proyecto (sin
+    distinguir mayúsculas).
 
     Orden: año más reciente, comisión y número de grupo. Está paginado: `total`
     es la cantidad que cumple los filtros y es visible para el usuario.
@@ -155,6 +164,7 @@ async def get_projects(
         year=year,
         id_section=id_section,
         privacy=privacy,
+        q=q,
         limit=limit,
         offset=offset,
     )

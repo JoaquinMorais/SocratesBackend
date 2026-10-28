@@ -1,8 +1,18 @@
 from fastapi import HTTPException, status
 from sqlalchemy import case, false
-from sqlmodel import col, func, or_, select
+from sqlmodel import col, delete, func, or_, select
 
-from models import Project, Section, SectionYear, Status, Student, StudentProject, User
+from models import (
+    EmailVerification,
+    Project,
+    RefreshToken,
+    Section,
+    SectionYear,
+    Status,
+    Student,
+    StudentProject,
+    User,
+)
 from schemas.status import StatusPublic
 from schemas.student import (
     StudentCreate,
@@ -12,6 +22,10 @@ from schemas.student import (
     StudentUpdate,
 )
 from models.state import STUDENT_PROJECT_ORDER
+
+# Membresías que impiden eliminar a un alumno (participación vigente o en espera).
+# Los restos viejos (`abandoned`, `expelled`, `rejected`) se limpian con el alta.
+STUDENT_DELETE_BLOCKED = frozenset({"active", "finished", "pending_approval"})
 
 async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]:
     """Todo o nada: si alguna fila falla, no se crea ninguna."""
@@ -115,6 +129,49 @@ async def update_student(db, id_student: int, data: StudentUpdate) -> StudentPub
         email=Student.mail_from_legajo(user.legajo),
         enrollment_year=student.enrollment_year,
     )
+
+
+async def delete_student(db, id_student: int) -> None:
+    """Elimina un alumno cargado por error.
+
+    Solo si no tiene ninguna participación vigente ni en espera; los restos
+    viejos (abandonos, expulsiones y rechazos) se borran con él. También borra
+    sus sesiones (refresh tokens) y códigos OTP pendientes.
+    """
+    student = await db.get(Student, id_student)
+    if not student:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student not found")
+
+    blocking = (
+        await db.exec(
+            select(StudentProject.id_student)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student == id_student,
+                Status.code.in_(STUDENT_DELETE_BLOCKED),
+            )
+            .limit(1)
+        )
+    ).first()
+    if blocking is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Student has an active, pending or finished membership and cannot be deleted",
+        )
+
+    await db.exec(delete(RefreshToken).where(RefreshToken.id_user == id_student))
+    await db.exec(delete(EmailVerification).where(EmailVerification.id_user == id_student))
+    await db.exec(delete(StudentProject).where(StudentProject.id_student == id_student))
+    user = student.user
+    await db.delete(student)
+    await db.delete(user)
+    try:
+        await db.commit()
+    except IntegrityError:  # por si llegaron datos asociados a la vez
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Student is in use and cannot be deleted"
+        )
 
 
 def to_list_item(student: Student, groups: list[StudentGroupPublic]) -> StudentListItem:
@@ -263,7 +320,23 @@ async def list_students(
     conditions = []
     if q:
         like = f"%{q.strip()}%"
-        search = [col(User.first_name).ilike(like), col(User.last_name).ilike(like)]
+        named_projects = (
+            select(StudentProject.id_student)
+            .join(Project, Project.id_project == StudentProject.id_project)
+            .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                *scope,
+                col(Project.name).ilike(like),
+                Status.ambito == "student_project",
+                Status.code.in_(statuses),
+            )
+        )
+        search = [
+            col(User.first_name).ilike(like),
+            col(User.last_name).ilike(like),
+            Student.id_student.in_(named_projects),
+        ]
         if q.strip().isdigit():
             search.append(User.legajo == int(q.strip()))
         conditions.append(or_(*search))

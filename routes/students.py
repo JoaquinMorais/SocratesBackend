@@ -13,10 +13,10 @@ from schemas.student import (
 )
 from utils.auth import user_dependency
 from utils.email import send_welcome_emails
-from utils.permissions import professor_dependency
+from utils.permissions import professor_dependency, super_admin_dependency
 from models.state import MEMBER_CODES
 from utils.projects import build_access
-from utils.students import create_students, list_students, update_student
+from utils.students import create_students, delete_student, list_students, update_student
 
 students_router = APIRouter(prefix="/students", tags=["students"])
 
@@ -65,7 +65,7 @@ async def get_students(
         Query(
             min_length=1,
             max_length=100,
-            description="Busca en nombre, apellido o legajo (exacto)",
+            description="Busca en nombre, apellido, legajo (exacto) o nombre de proyecto",
         ),
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -83,8 +83,9 @@ async def get_students(
       curso lectivo (año, comisión). Nunca expone datos privados del alumno (como
       la fecha de nacimiento) ni el detalle del proyecto.
     - Filtros: `status` (repetible; por defecto `active` y `finished`),
-      `id_section_year`, `year`, `id_section` y `q` (nombre, apellido o legajo
-      exacto). Un `status` desconocido responde **422**. Si un profesor pide un
+      `id_section_year`, `year`, `id_section` y `q` (nombre, apellido, legajo
+      exacto o nombre de alguno de sus proyectos en los estados pedidos). Un
+      `status` desconocido responde **422**. Si un profesor pide un
       `id_section_year` que no dicta, responde **403**.
     - Un alumno sin ninguna membresía sigue apareciendo mientras no se filtre por
       curso/año/comisión; al filtrar por ellos, solo aparecen los alumnos con al
@@ -224,3 +225,38 @@ async def update_student_route(
       desde acá.
     """
     return await update_student(db, id_student, data)
+
+
+@students_router.delete(
+    "/{id_student}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar un alumno (alta errónea)",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es super admin"},
+        404: {"description": "No existe el alumno"},
+        409: {
+            "description": (
+                "El alumno tiene una membresía vigente (`active`), terminada "
+                "(`finished`) o en espera (`pending_approval`) y no se puede eliminar"
+            )
+        },
+    },
+)
+async def delete_student_route(id_student: int, db: db_dependency, _: super_admin_dependency):
+    """
+    Elimina a un alumno. **Solo super admin.**
+
+    Pensado solo para **altas erróneas**: no es la forma de dar de baja a un
+    alumno que participó de un grupo (para eso están `abandon`, `expel` y los
+    estados `finished`).
+
+    - El alumno no puede tener ninguna membresía `active`, `finished` ni
+      `pending_approval` en ningún proyecto (**409**); sí se permite si solo
+      tiene restos viejos (`abandoned`, `expelled`, `rejected`), que se eliminan
+      junto con él sin afectar a los proyectos.
+    - Al eliminarlo se borran sus datos personales, el registro de alumno, sus
+      sesiones (refresh tokens) y sus códigos de contraseña pendientes; su
+      legajo queda libre para volver a cargarlo.
+    """
+    await delete_student(db, id_student)
