@@ -501,8 +501,9 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     """Los cursos lectivos "actuales" del usuario: los del año máximo.
 
     - Profesor: sus cursos asignados; puede haber varias comisiones del mismo año.
-    - Alumno: el curso de sus cursadas (`student_section_years`) y, si no tiene
-      ninguna, el de su grupo actual (membresía `active`/`finished`).
+    - Alumno: si es miembro (`active`/`finished`) de un proyecto, el curso
+      lectivo de ese proyecto (tiene prioridad sobre la cursada); si no, todas
+      las comisiones del año más reciente de sus cursadas.
     - Sin cursos (incluido un super admin que no dicta) devuelve `[]`.
 
     Orden: comisión (nombre) y luego id.
@@ -511,23 +512,45 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     if user.professor:
         ids = set(access.section_year_ids)
     elif user.student:
-        cursadas = (
-            await db.exec(
-                select(StudentSectionYear.id_section_year).where(
-                    StudentSectionYear.id_student == user.id_user
-                )
-            )
-        ).all()
-        ids = set(cursadas)
-        if not ids and access.project_ids:
-            fallback = (
+        # Un miembro (`active`/`finished`) de un proyecto se gestiona en el curso
+        # lectivo de ese proyecto, que tiene prioridad sobre su cursada.
+        if access.project_ids:
+            member_years = (
                 await db.exec(
                     select(Project.id_section_year).where(
                         Project.id_project.in_(access.project_ids)
                     )
                 )
             ).all()
-            ids = set(fallback)
+            ids = set(member_years)
+        else:
+            cursadas = (
+                await db.exec(
+                    select(StudentSectionYear.id_section_year).where(
+                        StudentSectionYear.id_student == user.id_user
+                    )
+                )
+            ).all()
+            if cursadas:
+                max_cursada_year = (
+                    await db.exec(
+                        select(func.max(SectionYear.year)).where(
+                            SectionYear.id_section_year.in_(set(cursadas))
+                        )
+                    )
+                ).one()
+                # Sin grupo, el alumno ve todas las comisiones de su año más
+                # reciente (no solo la suya), para explorar otros grupos.
+                all_same_year = (
+                    await db.exec(
+                        select(SectionYear.id_section_year).where(
+                            SectionYear.year == max_cursada_year
+                        )
+                    )
+                ).all()
+                ids = set(all_same_year)
+            else:
+                ids = set()
 
     if not ids:
         return []

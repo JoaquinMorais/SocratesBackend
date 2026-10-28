@@ -121,10 +121,9 @@ async def get_my_section_year_route(db: db_dependency, user: user_dependency):
 
     - **Profesor**: sus cursos lectivos asignados (`/professor-section-years`).
       Puede haber más de uno si dicta varias comisiones de ese año.
-    - **Alumno**: el curso de sus cursadas (`/student-section-years`); un alumno
-      no puede cursar dos comisiones del mismo año, así que es uno solo. Si
-      todavía no tiene cursadas, se usa el curso lectivo de su grupo actual
-      (membresía `active` o `finished`).
+    - **Alumno**: si es miembro (`active` o `finished`) de un proyecto, el curso
+      lectivo de ese proyecto (tiene prioridad sobre la cursada); si no, todas
+      las comisiones del año más reciente de sus cursadas.
 
     Sin cursos (por ejemplo, un profesor sin asignaciones o un super admin que no
     dicta) devuelve `{"section_years": []}`. Cada curso incluye año, comisión y
