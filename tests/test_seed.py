@@ -3,6 +3,9 @@ from sqlmodel import SQLModel, func, select
 
 from config.database import SessionLocal
 from models import (
+    Activity,
+    Calendar,
+    CalendarClass,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -45,6 +48,9 @@ async def test_seed_loads_expected_counts():
     assert await _count(Project) == 14
     assert await _count(StudentProject) == 22
     assert await _count(StudentSectionYear) == 32
+    assert await _count(Calendar) == 7
+    assert await _count(CalendarClass) == 548
+    assert await _count(Activity) == 14
 
 
 async def test_seed_group_size_ranges():
@@ -245,3 +251,68 @@ async def test_seed_students_may_have_several_section_years():
         for row in rows:
             counts[row.id_student] = counts.get(row.id_student, 0) + 1
         assert any(count >= 2 for count in counts.values())
+
+
+async def test_seed_calendars_are_consistent():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        section_years = (await session.exec(select(SectionYear))).all()
+        calendars = (await session.exec(select(Calendar))).all()
+        # un calendario por curso lectivo (1 a 1)
+        assert len(calendars) == len(section_years)
+        assert {c.id_section_year for c in calendars} == {
+            sy.id_section_year for sy in section_years
+        }
+
+        classes = (await session.exec(select(CalendarClass))).all()
+        year_by_section_year = {sy.id_section_year: sy.year for sy in section_years}
+        calendar_by_id = {c.id_calendar: c for c in calendars}
+        assert all(
+            row.date.year
+            == year_by_section_year[calendar_by_id[row.id_calendar].id_section_year]
+            for row in classes
+        ), "hay clases fuera del año del curso lectivo"
+        assert all(
+            row.end_time > row.start_time for row in classes
+        ), "fin no posterior al inicio"
+        assert all(
+            row.modality in {"in_person", "virtual"} for row in classes
+        ), "modalidad inválida"
+
+        # sin solapamientos dentro del mismo calendario y día
+        by_day: dict[tuple[int, object], list[CalendarClass]] = {}
+        for row in classes:
+            by_day.setdefault((row.id_calendar, row.date), []).append(row)
+        for slots in by_day.values():
+            slots.sort(key=lambda r: r.start_time)
+            for previous, current in zip(slots, slots[1:]):
+                assert previous.end_time <= current.start_time, "hay clases superpuestas"
+
+        # cada calendario/cursos lectivo del seed tiene clases
+        assert all(
+            any(row.id_calendar == c.id_calendar for row in classes)
+            for c in calendars
+        )
+
+
+async def test_seed_activities_are_consistent():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        activities = (await session.exec(select(Activity))).all()
+        calendars = (await session.exec(select(Calendar))).all()
+        section_years = (await session.exec(select(SectionYear))).all()
+        year_by_section_year = {sy.id_section_year: sy.year for sy in section_years}
+        calendar_by_id = {c.id_calendar: c for c in calendars}
+        assert all(
+            activity.due_date.year
+            == year_by_section_year[calendar_by_id[activity.id_calendar].id_section_year]
+            for activity in activities
+        ), "hay actividades fuera del año del curso lectivo"
+        assert all(activity.title.strip() for activity in activities)
+        assert all(
+            activity.id_calendar in calendar_by_id for activity in activities
+        )
+        # cada curso lectivo del seed tiene actividades
+        assert {activity.id_calendar for activity in activities} == set(
+            calendar_by_id
+        )

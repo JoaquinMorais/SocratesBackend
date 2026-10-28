@@ -86,6 +86,23 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   - `POST /projects/{id}/cancel`: cualquier estado no final → `cancelled` (final); las membresías `active` pasan a `abandoned` y las `pending_approval` a `rejected`.
 
 
+### Calendario
+
+- **Calendario (`Calendar`)**: relación **1 a 1** con el curso lectivo (`calendars.id_section_year` es único). Nace con el curso lectivo y guarda su `timezone` (informativo: las horas son hora local). Al eliminar el curso lectivo se borran el calendario y sus clases.
+- **Clase (`CalendarClass`)**: una fila por **fecha concreta**, no una regla semanal. Campos: fecha, hora de inicio y fin, **modalidad** (`in_person` o `virtual`), título, aula (`location`) y link de la videollamada (`meeting_url`) opcionales. El día de la semana se deriva de la fecha.
+  - Sin solapamientos dentro del calendario (**409**) y fechas dentro del año del curso lectivo.
+  - **Alta puntual** (`POST /section-years/{id}/calendar-classes`) y **alta en lote** rellenando un patrón: `weekdays` + `from_date`/`to_date` + horario (por ejemplo, todos los martes y miércoles de marzo a noviembre). Es todo o nada: si alguna fecha ya tiene una clase que se superpone, **409**.
+  - **Modificación y borrado** de a una (`/calendar-classes/{id}`) o en lote (por `ids` o por filtro de días/fechas). Un **feriado o una suspensión** se maneja editando o borrando las clases de ese día; no hay tabla de feriados ni de excepciones.
+  - Gestión: **profesor asignado al curso lectivo** y **super admin**. Consulta: super admin, profesores del curso y **alumnos del curso** (con cursada o con un grupo en ese curso lectivo).
+  - `GET /section-years/{id}/calendar?from&to` devuelve el calendario con sus clases y actividades ordenadas; el rango es opcional (máximo 366 días).
+- **Actividad (`Activity`)**: una **entrega** del curso lectivo completo (no se distingue por grupo), con `title` obligatorio, `description` opcional, `due_date` y `due_time` opcional. La fecha debe caer en el año del curso lectivo.
+  - CRUD (`/section-years/{id}/activities` y `/activities/{id}`): la gestionan el profesor asignado y el super admin; la ven todos los alumnos del curso lectivo.
+  - `GET /me/calendar?from&to` devuelve **mi calendario** (`section_years`, `classes`, `activities`) de los cursos lectivos del **año más reciente** del usuario (profesor: sus asignaciones; alumno: su cursada o el curso de su grupo), ordenado por fecha y hora.
+  - El **entregable** (relación proyecto ↔ actividad, con visibilidad por grupo) queda para más adelante.
+- **Asistencia (`Attendance`)**: una fila por alumno y clase a la que asistió (tabla intermedia entre la cursada y la clase). Solo se guardan los **presentes**: la ausencia es la falta de fila. El método indica `code` (el alumno ingresó el código) o `manual` (lo marcó el profesor).
+  - **Toma (`AttendanceSession`)**: una por clase. El profesor la habilita o reabre y se genera un **código de 6 dígitos** que vence a los `ATTENDANCE_CODE_MINUTES` minutos (10 por defecto); se guarda hasheado y solo se muestra al abrirlo. Reabrir rota el código; cerrar corta los check-ins (las marcas manuales siguen disponibles).
+  - El alumno marca con el código solo si tiene **cursada** en ese curso lectivo; si la toma está cerrada o vencida **409**, código inválido **422**, y repetir es **idempotente**. La lista de la clase (todos los alumnos del curso con `present`) es solo para el profesor/super admin; el alumno consulta su historial en `GET /me/attendance`.
+
 ## Flujos principales
 
 ### Autenticación
@@ -120,6 +137,12 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Imagen de una tecnología | Cualquier usuario logueado (viene con la tecnología) | Cualquier profesor (incluye super admin) |
 | Tecnologías del proyecto | Cualquier usuario logueado (según la privacidad del proyecto; en `private` solo privilegiados) | Privilegiados del proyecto, solo mientras no esté en un estado final |
 | Estados | Cualquier usuario logueado | n/a (por ahora se cargan con el backend) |
+| Calendario del curso lectivo | Alumnos del curso lectivo, profesores asignados y super admin | Profesor del curso lectivo y super admin |
+| Actividades del curso lectivo | Alumnos del curso lectivo, profesores asignados y super admin | Profesor del curso lectivo y super admin |
+| Asistencia de una clase | Profesor del curso lectivo y super admin | Profesor del curso lectivo y super admin |
+| Marcar mi asistencia (check-in) | El alumno con cursada en el curso lectivo | n/a |
+| Mi asistencia (`/me/attendance`) | El propio alumno | n/a (solo lectura) |
+| Mi calendario (`/me/calendar`) | El propio usuario (profesor o alumno) | n/a (solo lectura) |
 | Mi proyecto (`/me/project`) | El propio alumno (solo alumnos) | n/a (solo lectura) |
 
 ### Proyectos y privacidad
@@ -166,9 +189,14 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Tecnologías: catálogo con alta, edición, consulta y baja (`/technologies`, profesores y super admin; lectura para cualquier usuario logueado), unicidad del nombre sin distinguir mayúsculas y bloqueo de borrado de una tecnología en uso (409). Cada tecnología puede tener una imagen: se sube con el alta o la edición en multipart (`file`), con `PUT /technologies/{id}/image` o vinculando una imagen ya subida (`id_image` en JSON); reemplazarla o quitarla (`DELETE /technologies/{id}/image`) borra el archivo anterior.
 - Imágenes: subida (`POST /images`, multipart, profesores y super admin) con conversión a WebP, validación de formato y límite de 5 MB (413); consulta de datos para cualquier usuario logueado; archivo servido públicamente en `/media`. Una imagen asignada a una tecnología no se puede borrar (409).
 - Tecnologías del proyecto: los privilegiados asocian (`POST /projects/{id}/technologies`), en lote todo o nada con detalle por fila (`POST .../bulk`) y quitan (`DELETE .../{id_technology}`) mientras el proyecto no esté en un estado final; la consulta (`GET /projects/{id}/technologies`) sigue la privacidad del proyecto y los vínculos se borran con el proyecto.
+- Calendario del curso lectivo (`GET /section-years/{id}/calendar`): un calendario 1 a 1 con clases concretas (fecha, horario, modalidad y aula/link). Alta puntual o en lote por patrón de días, modificación y borrado de a una o en lote; un feriado es borrar las clases de ese día. Gestión del profesor del curso y super admin, lectura acotada al curso y sin solapamientos.
+- Actividades/entregas del curso lectivo (`/section-years/{id}/activities` y `/activities/{id}`): actividades para todo el curso con fecha y hora de entrega opcional; gestión del profesor del curso y super admin, lectura para los alumnos del curso. `GET /me/calendar` devuelve las clases y actividades de los cursos actuales del usuario (año más reciente).
+- Asistencia por clase (`/calendar-classes/{id}/attendance`): el profesor habilita una toma con código de 6 dígitos que vence (o rota), el alumno con cursada marca con el código, el profesor puede marcar/quitar a mano y ver la lista con los presentes. Solo se guardan presentes; `GET /me/attendance` devuelve el historial del alumno.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**
+- Calendario, siguientes etapas: **entregable** (relación proyecto ↔ actividad, con visibilidad por grupo) y entregas de documentación con archivos.
+- Asistencia, siguientes etapas: estados (tarde/justificado), justificaciones, QR/importación, reportes y límite de intentos para el código.
 - Finalizar la participación de un integrante (`active → finished`): todavía no tiene endpoint.
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).
 - Almacenamiento de imágenes en la nube (S3, Cloudinary...): hoy es local, detrás de una capa de almacenamiento (`utils/storage.py`) para cambiarlo sin tocar la API ni la BD.

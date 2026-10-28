@@ -1,13 +1,18 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
+from schemas.attendance import MyAttendanceListPublic
+from schemas.me_calendar import MyCalendarPublic
 from schemas.me_project import MyProjectPublic
 from schemas.me_section_year import MySectionYearsPublic
 from schemas.project import ProjectList
 from schemas.user import UserPublic, UserUpdate
+from utils.attendance import list_my_attendance
 from utils.auth import user_dependency
+from utils.calendars import get_my_calendar
 from utils.permissions import student_dependency
 from utils.projects import (
     build_access,
@@ -174,4 +179,90 @@ async def get_my_section_year_projects_route(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@me_router.get(
+    "/calendar",
+    response_model=MyCalendarPublic,
+    summary="Consultar mi calendario",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        422: {
+            "description": (
+                "Se envió solo uno de `from`/`to`, `from` es posterior a `to` o el "
+                "rango supera los 366 días"
+            )
+        },
+    },
+)
+async def get_my_calendar_route(
+    db: db_dependency,
+    user: user_dependency,
+    from_date: Annotated[
+        date | None, Query(alias="from", description="Primer día (YYYY-MM-DD)")
+    ] = None,
+    to_date: Annotated[
+        date | None, Query(alias="to", description="Último día (YYYY-MM-DD)")
+    ] = None,
+):
+    """
+    Devuelve **mi calendario**: las clases y actividades de mis cursos lectivos
+    actuales. **Cualquier usuario logueado.**
+
+    - Los cursos actuales son los del **año más reciente** del usuario, igual que
+      `GET /me/section-year`: un profesor puede tener varias comisiones de ese año;
+      un alumno tiene una (o la de su grupo si no tiene cursadas).
+    - Sin cursos actuales devuelve `section_years`, `classes` y `activities` vacíos.
+    - `from`/`to` son opcionales (ambos o ninguno, máximo 366 días) y filtran por
+      fecha de clase o de entrega.
+    - Las clases y las actividades vienen en arreglos separados, ordenadas por
+      fecha y hora. Cada ítem trae `id_section_year`; `section_years` aporta año y
+      comisión.
+    """
+    return await get_my_calendar(
+        db,
+        user,
+        await build_access(db, user),
+        from_date=from_date,
+        to_date=to_date,
+    )
+
+
+@me_router.get(
+    "/attendance",
+    response_model=MyAttendanceListPublic,
+    summary="Consultar mi asistencia",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es alumno"},
+        422: {
+            "description": (
+                "Se envió solo uno de `from`/`to`, `from` es posterior a `to` o el "
+                "rango supera los 366 días"
+            )
+        },
+    },
+)
+async def get_my_attendance_route(
+    db: db_dependency,
+    student: student_dependency,
+    from_date: Annotated[
+        date | None, Query(alias="from", description="Primer día (YYYY-MM-DD)")
+    ] = None,
+    to_date: Annotated[
+        date | None, Query(alias="to", description="Último día (YYYY-MM-DD)")
+    ] = None,
+):
+    """
+    Devuelve el **historial de asistencias** del alumno logueado. **Solo alumnos.**
+
+    - Incluye solo las clases a las que asistió, con los datos del curso lectivo
+      (año y comisión) y de la clase.
+    - `from`/`to` son opcionales (ambos o ninguno, máximo 366 días) y filtran por
+      fecha de la clase.
+    - Orden: clase más reciente primero.
+    """
+    return await list_my_attendance(
+        db, student, from_date=from_date, to_date=to_date
     )

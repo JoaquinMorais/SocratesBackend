@@ -1,11 +1,14 @@
 import json
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models import (
+    Activity,
+    Calendar,
+    CalendarClass,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -101,7 +104,37 @@ async def _load_section_years(
         session.add(sy)
         section_years[(name, item["year"])] = sy
     await session.flush()
+    for sy in section_years.values():
+        session.add(Calendar(id_section_year=sy.id_section_year))
+    await session.flush()
     return section_years
+
+
+async def _load_activities(
+    session: AsyncSession,
+    data: dict,
+    section_years: dict[tuple[str, int], SectionYear],
+    calendars: dict[int, Calendar],
+) -> None:
+    for item in data.get("activities", []):
+        key = (item["section"], item["year"])
+        sy = section_years.get(key)
+        if sy is None:
+            raise _missing("el curso lectivo", key)
+        calendar = calendars[sy.id_section_year]
+        due_time = (
+            time.fromisoformat(item["due_time"]) if item.get("due_time") else None
+        )
+        session.add(
+            Activity(
+                id_calendar=calendar.id_calendar,
+                title=item["title"],
+                description=item.get("description"),
+                due_date=date.fromisoformat(item["due_date"]),
+                due_time=due_time,
+            )
+        )
+    await session.flush()
 
 
 async def _load_professor_section_years(
@@ -124,6 +157,39 @@ async def _load_professor_section_years(
                 id_section_year=sy.id_section_year,
             )
         )
+    await session.flush()
+
+
+async def _load_calendar_classes(
+    session: AsyncSession,
+    data: dict,
+    section_years: dict[tuple[str, int], SectionYear],
+    calendars: dict[int, Calendar],
+) -> None:
+    for item in data.get("calendar_class_series", []):
+        key = (item["section"], item["year"])
+        sy = section_years.get(key)
+        if sy is None:
+            raise _missing("el curso lectivo", key)
+        calendar = calendars[sy.id_section_year]
+        from_date = date.fromisoformat(item["from"])
+        to_date = date.fromisoformat(item["to"])
+        day = from_date
+        while day <= to_date:
+            if day.isoweekday() == item["weekday"]:
+                session.add(
+                    CalendarClass(
+                        id_calendar=calendar.id_calendar,
+                        date=day,
+                        start_time=time.fromisoformat(item["start_time"]),
+                        end_time=time.fromisoformat(item["end_time"]),
+                        modality=item.get("modality", "in_person"),
+                        title=item.get("title"),
+                        location=item.get("location"),
+                        meeting_url=item.get("meeting_url"),
+                    )
+                )
+            day += timedelta(days=1)
     await session.flush()
 
 
@@ -261,6 +327,20 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     section_years = await _load_section_years(session, data, sections)
     await _load_professor_section_years(session, data, professors, section_years)
     await _load_student_section_years(session, data, students, section_years)
+    calendars = {
+        calendar.id_section_year: calendar
+        for calendar in (
+            await session.exec(
+                select(Calendar).where(
+                    Calendar.id_section_year.in_(
+                        [sy.id_section_year for sy in section_years.values()]
+                    )
+                )
+            )
+        ).all()
+    }
+    await _load_calendar_classes(session, data, section_years, calendars)
+    await _load_activities(session, data, section_years, calendars)
     projects = await _load_projects(session, data, section_years, statuses)
     await _load_student_projects(session, data, students, projects, statuses)
 

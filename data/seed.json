@@ -308,6 +308,22 @@
     { "section": "3K2", "year": 2026, "min_students": 5, "max_students": 10 },
     { "section": "3K3", "year": 2026, "min_students": 5, "max_students": 10 }
   ],
+  "calendar_class_series": [
+    { "section": "3K1", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 2, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 12" },
+    { "section": "3K1", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 3, "start_time": "18:00", "end_time": "21:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k1-2025" },
+    { "section": "3K2", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 1, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 8" },
+    { "section": "3K2", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 4, "start_time": "18:00", "end_time": "21:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k2-2025" },
+    { "section": "3K3", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 2, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Teórica", "location": "Aula 3" },
+    { "section": "3K3", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 5, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Práctica", "location": "Laboratorio 1" },
+    { "section": "3K4", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 3, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 5" },
+    { "section": "3K4", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 6, "start_time": "09:00", "end_time": "12:15", "modality": "in_person", "title": "Práctica", "location": "Aula 5" },
+    { "section": "3K1", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 1, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 12" },
+    { "section": "3K1", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 3, "start_time": "18:30", "end_time": "22:00", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k1-2026" },
+    { "section": "3K2", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 2, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 8" },
+    { "section": "3K2", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 4, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Práctica", "location": "Aula 8" },
+    { "section": "3K3", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 2, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Teórica", "location": "Aula 3" },
+    { "section": "3K3", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 4, "start_time": "14:00", "end_time": "17:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k3-2026" }
+  ],
   "professor_section_years": [
     { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
     { "professor": "carlos.ruiz@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
@@ -370,6 +386,22 @@
     { "student": 100019, "section": "3K2", "year": 2026 },
     { "student": 100003, "section": "3K3", "year": 2026 },
     { "student": 100020, "section": "3K3", "year": 2026 }
+  ],
+  "activities": [
+    { "section": "3K1", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
+    { "section": "3K1", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
+    { "section": "3K2", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
+    { "section": "3K2", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
+    { "section": "3K3", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
+    { "section": "3K3", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
+    { "section": "3K4", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
+    { "section": "3K4", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
+    { "section": "3K1", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
+    { "section": "3K1", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" },
+    { "section": "3K2", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
+    { "section": "3K2", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" },
+    { "section": "3K3", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
+    { "section": "3K3", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" }
   ],
   "projects": [
     {

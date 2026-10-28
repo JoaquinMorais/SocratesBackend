@@ -7,6 +7,10 @@ from routes.sections import sections_router
 from routes.section_years import section_years_router
 from routes.professor_section_years import professor_section_years_router
 from routes.student_section_years import student_section_years_router
+from routes.calendars import calendars_router
+from routes.calendar_classes import calendar_classes_router
+from routes.activities import activities_router, section_activities_router
+from routes.attendance import attendance_router
 from routes.projects import projects_router
 from routes.student_projects import student_projects_router
 from routes.technologies import technologies_router
@@ -24,6 +28,11 @@ __all__ = [
     "section_years_router",
     "professor_section_years_router",
     "student_section_years_router",
+    "calendars_router",
+    "calendar_classes_router",
+    "activities_router",
+    "section_activities_router",
+    "attendance_router",
     "projects_router",
     "student_projects_router",
     "technologies_router",

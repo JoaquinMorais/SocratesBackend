@@ -3,7 +3,16 @@ from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
-from models import Section, SectionYear, StudentSectionYear
+from models import (
+    Calendar,
+    Project,
+    Section,
+    SectionYear,
+    Status,
+    StudentProject,
+    StudentSectionYear,
+)
+from models.state import MEMBER_CODES
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearPublic,
@@ -116,6 +125,8 @@ async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
     )
     db.add(sy)
     try:
+        await db.flush()  # obtiene id_section_year
+        db.add(Calendar(id_section_year=sy.id_section_year))
         await db.commit()
     except IntegrityError:  # dos altas simultáneas con la misma combinación
         await db.rollback()
@@ -208,3 +219,83 @@ async def list_section_years(
         )
     ).all()
     return list(items), total
+
+async def can_view_section_year(db, user, access, id_section_year: int) -> bool:
+    """Si el usuario puede ver el calendario de ese curso lectivo.
+
+    Pueden verlo el super admin, un profesor asignado a ese curso lectivo y los
+    alumnos del curso: los que tienen una cursada (`student_section_years`) o son
+    miembros (`active`/`finished`) de alguno de sus proyectos.
+    """
+    if access.can_manage(id_section_year):
+        return True
+    if not user.student:
+        return False
+
+    cursada = (
+        await db.exec(
+            select(StudentSectionYear.id_student_section_year)
+            .where(
+                StudentSectionYear.id_student == user.id_user,
+                StudentSectionYear.id_section_year == id_section_year,
+            )
+            .limit(1)
+        )
+    ).first()
+    if cursada is not None:
+        return True
+
+    membership = (
+        await db.exec(
+            select(StudentProject.id_student_project)
+            .join(Project, Project.id_project == StudentProject.id_project)
+            .join(Status, Status.id_status == StudentProject.id_status)
+            .where(
+                StudentProject.id_student == user.id_user,
+                Project.id_section_year == id_section_year,
+                Status.code.in_(MEMBER_CODES),
+            )
+            .limit(1)
+        )
+    ).first()
+    return membership is not None
+
+
+async def require_view_section_year(db, user, access, id_section_year: int) -> None:
+    if not await can_view_section_year(db, user, access, id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You cannot view this section year"
+        )
+
+
+async def ensure_calendar(db, id_section_year: int) -> Calendar:
+    """Devuelve el calendario del curso lectivo; lo crea si todavía no existe.
+
+    Es idempotente y tolera carreras: si dos requests lo crean a la vez, la
+    segunda relee el existente.
+    """
+    calendar = (
+        await db.exec(
+            select(Calendar).where(Calendar.id_section_year == id_section_year)
+        )
+    ).first()
+    if calendar is not None:
+        return calendar
+
+    await get_section_year(db, id_section_year)  # 404 si el curso no existe
+    calendar = Calendar(id_section_year=id_section_year)
+    db.add(calendar)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        calendar = (
+            await db.exec(
+                select(Calendar).where(
+                    Calendar.id_section_year == id_section_year
+                )
+            )
+        ).first()
+        if calendar is None:
+            raise
+    return calendar

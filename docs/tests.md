@@ -316,6 +316,134 @@ Cursadas: qué alumno cursó qué curso lectivo (`POST /student-section-years`, 
 - `test_delete_enrollment`: testear que se borra solo el vínculo (204) y que el alumno y el curso lectivo siguen existiendo.
 - `test_delete_not_found`: testear que eliminar una cursada inexistente responde 404.
 
+## `tests/test_calendars.py`
+
+Calendario del curso lectivo (1 a 1) y sus clases concretas: consulta (`GET /section-years/{id}/calendar`), alta puntual y en lote (`POST .../calendar-classes` y `.../bulk`), modificación y borrado (`PATCH/DELETE /calendar-classes/{id}` y operaciones en lote). Un feriado o suspensión es editar/borrar la clase.
+
+**Permisos**
+- `test_requires_authentication`: testear que todos los endpoints responden 401 sin login.
+- `test_student_of_other_course_forbidden`: testear que un alumno ajeno al curso lectivo no puede ver ni gestionar el calendario (403).
+- `test_enrolled_student_can_read_but_not_write`: testear que un alumno con cursada puede ver el calendario y una clase, pero no crear (403).
+- `test_member_of_project_can_read`: testear que un alumno sin cursada pero con un grupo en el curso lectivo puede leer.
+- `test_assigned_professor_manages_and_other_cannot`: testear que el profesor asignado gestiona las clases y otro profesor no puede ver ni gestionar (403).
+- `test_super_admin_manages_any_course`: testear que el super admin gestiona cualquier curso lectivo.
+
+**Calendario**
+- `test_calendar_is_one_per_section_year`: testear que hay un único calendario por curso lectivo y que la respuesta trae calendario, clases y actividades.
+- `test_calendar_created_if_missing`: testear que si el curso lectivo viejo no tenía calendario, se crea al consultarlo.
+- `test_calendar_range_validation`: testear que se envíen ambos `from`/`to` o ninguno, `from <= to` y rango máximo de 366 días (422).
+- `test_calendar_filters_by_range`: testear que el rango filtra las clases devueltas.
+- `test_calendar_includes_activities`: testear que el calendario del curso trae sus actividades y que el rango también las filtra.
+
+**Clase puntual**
+- `test_create_calendar_class`: testear el alta de una clase con fecha, horario, modalidad y datos opcionales, y que el día de la semana se deriva de la fecha.
+- `test_create_validation`: testear fin no posterior al inicio, link inválido, campos faltantes/desconocidos y fecha fuera del año del curso lectivo (422); curso inexistente (404).
+- `test_duplicate_and_overlap`: testear que no se repite la misma fecha/hora (409) ni se superponen clases (409), y que tocarse o caer en otro día es válido.
+- `test_get_not_found`: testear que una clase inexistente responde 404.
+- `test_patch_calendar_class`: testear que se puede mover la fecha, cambiar horario/modalidad/link, limpiar textos con `null`, y que body vacío, campos desconocidos o fecha fuera del año responden 422.
+- `test_patch_overlap_rejected`: testear que mover una clase sobre otra responde 409.
+- `test_delete_and_cascade`: testear el borrado (204, deja de existir, 404 al repetir) y que al eliminar el curso lectivo se borra el calendario con sus clases.
+
+**Alta en lote**
+- `test_bulk_create`: testear que crea una clase por cada fecha que caiga en los días pedidos (por ejemplo, martes y miércoles de marzo), devueltas ordenadas.
+- `test_bulk_conflict_is_all_or_nothing`: testear que si una fecha ya tiene una clase que se superpone responde 409 con el detalle y no crea ninguna.
+- `test_bulk_validation`: testear días fuera de 1-7, `from_date > to_date`, fechas fuera del año del curso, ninguna fecha coincidente (422) y días repetidos (se deduplican).
+
+**Modificación en lote**
+- `test_bulk_update_by_ids`: testear que modifica las clases elegidas por id.
+- `test_bulk_update_by_filter`: testear que modifica solo las clases que cumplen el filtro de días y rango.
+- `test_bulk_update_overlap_is_rejected`: testear que si el resultado se superpone con otra clase responde 409 y no modifica nada.
+- `test_bulk_update_validation`: testear `ids` y `filter` juntos, sin selector, `changes` vacío, intento de cambiar `date` o ninguna clase coincidente (422).
+
+**Borrado en lote**
+- `test_bulk_delete_by_filter`: testear que se pueden borrar las clases de un día (por ejemplo, un feriado) con un filtro.
+- `test_bulk_delete_by_ids`: testear que se pueden borrar clases puntuales por id.
+- `test_bulk_delete_validation`: testear sin selector, con ambos selectores o sin coincidencias (422).
+
+## `tests/test_activities.py`
+
+Actividades/entregas del curso lectivo (`GET/POST /section-years/{id}/activities`, `GET/PATCH/DELETE /activities/{id}`): son de todo el curso, con fecha y hora de entrega opcional.
+
+**Permisos**
+- `test_requires_authentication`: testear que todos los endpoints responden 401 sin login.
+- `test_student_of_other_course_forbidden`: testear que un alumno ajeno al curso no puede ver ni gestionar actividades (403).
+- `test_enrolled_student_can_read_but_not_write`: testear que un alumno con cursada puede listar y consultar, pero no crear (403).
+- `test_member_of_project_can_read`: testear que un alumno sin cursada pero con un grupo en el curso lectivo puede leer.
+- `test_assigned_professor_manages_and_other_cannot`: testear que el profesor asignado crea, edita y elimina, y que otro profesor no puede ver ni gestionar (403).
+- `test_super_admin_manages_any_course`: testear que el super admin gestiona cualquier curso lectivo.
+
+**Crear**
+- `test_create_activity`: testear el alta con título, descripción, fecha y hora, y que la respuesta incluye el curso lectivo.
+- `test_create_without_optional_fields`: testear que descripción y hora son opcionales.
+- `test_create_validation`: testear título vacío o demasiado largo, fecha fuera del año del curso, hora inválida, campos faltantes/desconocidos (422) y curso inexistente (404).
+- `test_title_is_trimmed`: testear que el título se recorta.
+
+**Consultar**
+- `test_list_ordering_filters_and_pagination`: testear el orden por fecha/hora (sin hora al final), los filtros `from`/`to`, `limit`/`offset`, `total` y los rangos inválidos (422).
+- `test_get_not_found`: testear que una actividad inexistente responde 404.
+
+**Modificar**
+- `test_patch_activity`: testear cada campo, limpiar descripción y hora con `null`, body vacío, título `null`/en blanco, campos desconocidos, fecha fuera del año (422) y 404.
+
+**Eliminar**
+- `test_delete_and_cascade`: testear el borrado (204, 404 al repetir) y que al eliminar el curso lectivo se borran sus actividades.
+
+## `tests/test_me_calendar.py`
+
+Mi calendario (`GET /me/calendar`): clases y actividades de los cursos actuales del usuario, en arreglos separados.
+
+**Permisos**
+- `test_requires_authentication`: testear que sin login responde 401.
+
+**Profesores**
+- `test_professor_gets_current_year_across_commissions`: testear que con asignaciones en 2025 y 2026 devuelve solo los cursos de 2026 (todas las comisiones) con sus clases y actividades.
+
+**Alumnos**
+- `test_student_gets_current_cursada_year`: testear que con cursadas en 2025 y 2026 devuelve solo 2026, con sus clases y actividades.
+- `test_student_falls_back_to_current_group`: testear que un alumno sin cursadas usa el curso lectivo de su grupo actual.
+
+**Sin curso actual**
+- `test_no_current_section_year`: testear que un profesor sin asignaciones, un alumno sin cursadas ni grupo y un super admin que no dicta reciben los tres arreglos vacíos.
+
+**Reglas**
+- `test_range_validation_and_filtering`: testear que el rango es opcional (ambos o ninguno, máximo 366 días) y filtra clases y actividades.
+- `test_ordering`: testear que clases y actividades vienen ordenadas por fecha y hora.
+
+## `tests/test_attendance.py`
+
+Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar la toma, check-in del alumno con código, marcado manual del profesor, lista de la clase e historial propio (`GET /me/attendance`).
+
+**Permisos**
+- `test_requires_authentication`: testear que abrir, cerrar, check-in, listar, marcar/quitar a mano y el historial responden 401 sin login.
+- `test_student_cannot_manage_attendance`: testear que un alumno no puede abrir, cerrar, listar ni marcar a mano (403).
+- `test_assigned_professor_manages_and_other_cannot`: testear que el profesor asignado abre, lista, marca y cierra, y que otro profesor no puede (403).
+- `test_super_admin_manages_any_course`: testear que el super admin marca en cualquier curso.
+- `test_professor_cannot_check_in`: testear que un profesor no puede marcar su asistencia como alumno (403).
+
+**Abrir y cerrar**
+- `test_open_and_close_errors`: testear que abrir/cerrar una clase inexistente responde 404 y cerrar sin toma responde 404.
+- `test_rotation_invalidates_previous_code`: testear que reabrir rota el código y que el anterior deja de servir.
+- `test_wrong_code_closed_and_expired`: testear código incorrecto (422), toma cerrada (409) y toma vencida (409).
+
+**Check-in**
+- `test_enrolled_student_checks_in`: testear que un alumno con cursada marca con el código y que aparece en la lista y en su historial.
+- `test_student_without_cursada_forbidden`: testear que un alumno sin cursada no puede marcar (403).
+- `test_check_in_is_idempotent`: testear que repetir el código devuelve la misma marca y no duplica filas.
+- `test_code_from_other_class_does_not_work`: testear que el código de otra clase no sirve (422).
+
+**Manual y listado**
+- `test_manual_mark_and_unmark`: testear el marcado y quitado a mano, la idempotencia y que la lista refleje `present`/`method`.
+- `test_manual_foreign_enrollment_rejected`: testear que una cursada de otro curso lectivo responde 422 y una inexistente 404.
+- `test_list_includes_all_enrolled_in_order`: testear que la lista incluye a todos los alumnos del curso (los no marcados en `false`), ordenados por apellido, y que no expone el código.
+
+**Historial**
+- `test_my_attendance_filters_and_order`: testear que el alumno ve solo lo suyo, con el más reciente primero, filtros de rango y validaciones (422).
+- `test_my_attendance_is_student_only`: testear que un profesor recibe 403.
+
+**Cascadas**
+- `test_delete_class_removes_session_and_attendance`: testear que al borrar la clase se van la sesión y las asistencias.
+- `test_delete_enrollment_removes_attendance`: testear que al borrar la cursada se va su asistencia.
+
 ## `tests/test_professor_section_years.py`
 
 **Permisos**
@@ -776,7 +904,7 @@ Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), a
 
 Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
 
-- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías y 32 cursadas de alumnos.
+- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías, 32 cursadas de alumnos, 7 calendarios, 548 clases y 14 actividades.
 - `test_seed_group_size_ranges`: testear que las cursadas de 2025 tienen mínimo 3 y máximo 10, y las de 2026 mínimo 5 y máximo 10.
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
@@ -793,6 +921,8 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
 - `test_seed_student_section_years_are_consistent`: testear que las cursadas no se repiten, que ningún alumno tiene dos del mismo año, que apuntan a alumnos y cursos lectivos existentes, y que todo alumno con grupo está inscripto en el curso lectivo de su proyecto.
 - `test_seed_students_may_have_several_section_years`: testear que hay al menos un alumno con más de una cursada (varios años lectivos).
+- `test_seed_calendars_are_consistent`: testear que hay un calendario por curso lectivo (1 a 1), que las clases caen dentro del año del curso, con fin posterior al inicio y modalidad válida, que no se superponen en el mismo día y que cada calendario tiene clases.
+- `test_seed_activities_are_consistent`: testear que las actividades caen dentro del año de su curso lectivo, tienen título y apuntan a calendarios del seed, y que cada curso lectivo tiene actividades.
 
 ## `tests/test_statuses.py`
 

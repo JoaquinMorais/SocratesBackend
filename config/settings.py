@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     IMAGE_MAX_BYTES: int = 5_000_000  # 5 MB por archivo
     IMAGE_WEBP_QUALITY: int = 85  # calidad de la conversión a WebP
 
+    # Asistencia: minutos que vale el código de una clase.
+    ATTENDANCE_CODE_MINUTES: int = 10
+
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -4,6 +4,11 @@ from models.student_section_year import StudentSectionYear
 from models.professor import Professor
 from models.section import Section
 from models.section_year import SectionYear
+from models.calendar import Calendar
+from models.calendar_class import CalendarClass
+from models.activity import Activity
+from models.attendance_session import AttendanceSession
+from models.attendance import Attendance
 from models.professor_section_year import ProfessorSectionYear
 from models.project import Project
 from models.project_status import ProjectStatus
@@ -18,7 +23,8 @@ from models.state import ProjectState, State, StudentProjectState
 
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
-    "StudentSectionYear", "ProfessorSectionYear", "Project", "ProjectStatus",
+    "StudentSectionYear", "ProfessorSectionYear", "Calendar", "CalendarClass", "Activity",
+    "AttendanceSession", "Attendance", "Project", "ProjectStatus",
     "StudentProject", "Status",
     "Technology", "ProjectTechnology", "Image",
     "RefreshToken", "EmailVerification", "State", "ProjectState", "StudentProjectState",
