@@ -14,7 +14,13 @@ from models import (
     StudentProject,
     User,
 )
-from schemas.project import ProjectBulkCreate, ProjectCreate, ProjectPublic, ProjectUpdate
+from schemas.project import (
+    MAX_GROUP_NUMBER,
+    ProjectBulkCreate,
+    ProjectCreate,
+    ProjectPublic,
+    ProjectUpdate,
+)
 from models.state import MEMBER_CODES, PROJECT_INITIAL
 from models.state.state_project import (
     Approved,
@@ -194,15 +200,27 @@ async def _reject_pending_of_project(db, id_project: int) -> None:
         db.add(membership)
 
 
-async def _next_group_number(db, id_section_year: int) -> int:
-    current = (
+async def _free_group_numbers(db, id_section_year: int, count: int) -> list[int]:
+    rows = (
         await db.exec(
-            select(func.max(Project.group_number)).where(
+            select(Project.group_number).where(
                 Project.id_section_year == id_section_year
             )
         )
-    ).one()
-    return (current or 0) + 1
+    ).all()
+    used = {r for r in rows}
+    result: list[int] = []
+    number = 1
+    while len(result) < count and number <= MAX_GROUP_NUMBER:
+        if number not in used:
+            result.append(number)
+        number += 1
+    if len(result) < count:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "No free group numbers left in this section year",
+        )
+    return result
 
 
 async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPublic:
@@ -222,7 +240,7 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
             raise _conflict("This group number already exists in that section year")
         number = data.group_number
     else:
-        number = await _next_group_number(db, sy.id_section_year)
+        number = (await _free_group_numbers(db, sy.id_section_year, 1))[0]
 
     initial_status = await get_status(db, "project", PROJECT_INITIAL)
     project = Project(group_number=number, section_year=sy, status=initial_status)
@@ -243,11 +261,11 @@ async def create_projects_bulk(
     sy = await get_section_year(db, data.id_section_year)
     _require_manager(access, sy.id_section_year)
 
-    start = await _next_group_number(db, sy.id_section_year)
+    numbers = await _free_group_numbers(db, sy.id_section_year, data.quantity)
     initial_status = await get_status(db, "project", PROJECT_INITIAL)
     projects = [
-        Project(group_number=start + i, section_year=sy, status=initial_status)
-        for i in range(data.quantity)
+        Project(group_number=number, section_year=sy, status=initial_status)
+        for number in numbers
     ]
     db.add_all(projects)
     await db.flush()  # obtiene los id_project

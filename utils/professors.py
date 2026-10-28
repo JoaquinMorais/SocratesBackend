@@ -2,7 +2,13 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete, select
 
-from models import EmailVerification, Professor, RefreshToken, User
+from models import (
+    EmailVerification,
+    Professor,
+    ProfessorSectionYear,
+    RefreshToken,
+    User,
+)
 from schemas.professor import ProfessorCreate, ProfessorPublic, ProfessorUpdate
 
 
@@ -125,3 +131,48 @@ async def update_professor(
         is_super_admin=professor.is_super_admin,
     )
     return public, old_mail if mail_changed else None
+
+
+async def delete_professor(db, id_professor: int) -> None:
+    """Elimina un profesor cargado por error.
+
+    No se puede borrar un super admin: primero hay que quitárselo con
+    `PATCH /professors/{id}`. Tampoco uno asignado a algún curso lectivo:
+    primero hay que quitar la asignación. Borra sus sesiones (refresh tokens)
+    y códigos OTP pendientes, y libera su mail y su legajo.
+    """
+    professor = await db.get(Professor, id_professor)
+    if not professor:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Professor not found")
+
+    if professor.is_super_admin:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "A super admin cannot be deleted; remove the super admin role first",
+        )
+
+    assigned = (
+        await db.exec(
+            select(ProfessorSectionYear.id_professor_section_year)
+            .where(ProfessorSectionYear.id_professor == id_professor)
+            .limit(1)
+        )
+    ).first()
+    if assigned is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Professor is assigned to a section year and cannot be deleted",
+        )
+
+    await db.exec(delete(RefreshToken).where(RefreshToken.id_user == id_professor))
+    await db.exec(delete(EmailVerification).where(EmailVerification.id_user == id_professor))
+    user = professor.user
+    await db.delete(professor)
+    await db.delete(user)
+    try:
+        await db.commit()
+    except IntegrityError:  # por si llegaron datos asociados a la vez
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Professor is in use and cannot be deleted"
+        )

@@ -25,3 +25,36 @@ async def set_password(client, outbox, mail: str, new_password: str) -> None:
         json={"email": mail, "code": get_otp(outbox, mail), "new_password": new_password},
     )
     assert r.status_code == 204, r.text
+
+async def section_year(
+    client, headers: dict, name: str = "3K1", year: int = 2025
+) -> int:
+    """Crea una comisión y su curso lectivo; devuelve el id del curso."""
+    r = await client.post("/sections", json={"name": name}, headers=headers)
+    assert r.status_code == 201, r.text
+    r = await client.post(
+        "/section-years",
+        json={
+            "year": year,
+            "id_section": r.json()["id_section"],
+            "min_students": 1,
+            "max_students": 10,
+        },
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id_section_year"]
+
+
+async def assign_professor(
+    client, admin_headers: dict, mail: str, id_section_year: int
+) -> None:
+    """Asigna a un profesor (buscado por mail) al curso lectivo."""
+    r = await client.get("/users", params={"q": mail}, headers=admin_headers)
+    id_professor = r.json()["items"][0]["id_user"]
+    r = await client.post(
+        "/professor-section-years",
+        json={"id_professor": id_professor, "id_section_year": id_section_year},
+        headers=admin_headers,
+    )
+    assert r.status_code == 201, r.text

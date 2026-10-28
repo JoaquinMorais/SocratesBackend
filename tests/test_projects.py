@@ -160,12 +160,18 @@ async def test_create_project_defaults(client, login):
     assert [p[k] for k in ("name", "description", "objective", "problem")] == [None] * 4
 
 
-async def test_create_assigns_next_group_number(client, login):
+async def test_create_assigns_first_free_group_number(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)
     assert (await _create(client, admin, sy))["group_number"] == 1
-    assert (await _create(client, admin, sy, group_number=5))["group_number"] == 5
-    assert (await _create(client, admin, sy))["group_number"] == 6
+    assert (await _create(client, admin, sy, group_number=6))["group_number"] == 6
+    # El automático toma el primer hueco, no el mayor + 1.
+    assert (await _create(client, admin, sy))["group_number"] == 2
+    assert (await _create(client, admin, sy, group_number=4))["group_number"] == 4
+    assert (await _create(client, admin, sy))["group_number"] == 3
+    assert (await _create(client, admin, sy))["group_number"] == 5
+    # Sin huecos, continúa después del mayor.
+    assert (await _create(client, admin, sy))["group_number"] == 7
 
 
 async def test_create_duplicate_group_number_rejected(client, login):
@@ -216,13 +222,23 @@ async def test_bulk_create(client, login):
     assert [p["group_number"] for p in r.json()] == [4, 5]
 
 
-async def test_bulk_continues_after_last_group_number(client, login):
+async def test_bulk_reuses_freed_group_number(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)
     groups = (await client.post(BULK, json={"id_section_year": sy, "quantity": 3}, headers=admin)).json()
     await client.delete(f"{URL}/{groups[1]['id_project']}", headers=admin)  # queda el hueco del 2
     r = await client.post(BULK, json={"id_section_year": sy, "quantity": 1}, headers=admin)
-    assert [p["group_number"] for p in r.json()] == [4]
+    assert [p["group_number"] for p in r.json()] == [2]
+
+
+async def test_bulk_uses_first_free_numbers(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    groups = (await client.post(BULK, json={"id_section_year": sy, "quantity": 3}, headers=admin)).json()
+    assert [p["group_number"] for p in groups] == [1, 2, 3]
+    await _create(client, admin, sy, group_number=6)
+    r = await client.post(BULK, json={"id_section_year": sy, "quantity": 3}, headers=admin)
+    assert [p["group_number"] for p in r.json()] == [4, 5, 7]
 
 
 async def test_bulk_unknown_section_year(client, login):
@@ -665,9 +681,14 @@ async def test_cannot_delete_final_project(client, login):
 async def test_deleted_group_number_can_be_reused(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _section_year(client, admin)
-    project = await _create(client, admin, sy)
-    await client.delete(f"{URL}/{project['id_project']}", headers=admin)
+    first = await _create(client, admin, sy)  # 1
+    second = await _create(client, admin, sy)  # 2
+    await client.delete(f"{URL}/{first['id_project']}", headers=admin)
+    # Manual: puede volver a usar el número liberado.
     assert (await _create(client, admin, sy, group_number=1))["group_number"] == 1
+    # Automático: al liberarse el 2, el próximo alta sin número lo reutiliza.
+    await client.delete(f"{URL}/{second['id_project']}", headers=admin)
+    assert (await _create(client, admin, sy))["group_number"] == 2
 
 
 async def test_cannot_delete_section_year_with_projects(client, login):

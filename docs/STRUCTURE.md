@@ -224,9 +224,9 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 |---|---|---|
 | `auth.py` | `/auth` | Login, refresh, logout y flujo de contraseña por código. |
 | `me.py` | `/me` | Datos del usuario logueado, modificación de sus datos personales y consulta de su proyecto (`/me/project`, solo alumnos). |
-| `users.py` | `/users` | Listado de usuarios registrados (super admin). |
+| `users.py` | `/users` | Listado de usuarios registrados y eliminación de usuarios cargados por error (super admin). |
 | `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación, su eliminación (solo super admin, con la regla de membresías) y listado de alumnos con sus grupos (incluye `is_leader` y el estado de la membresía, filtrable con `status`). |
-| `professors.py` | `/professors` | Alta de profesores y su modificación (super admin). |
+| `professors.py` | `/professors` | Alta, modificación y eliminación de profesores (super admin). |
 | `sections.py` | `/sections` | CRUD de comisiones. |
 | `section_years.py` | `/section-years` | CRUD de cursos lectivos. |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
@@ -249,9 +249,9 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `email.py` | Envío de mails (por consola o por SMTP): código de verificación y bienvenida. |
 | `verification.py` | Creación y consumo de códigos OTP (vencimiento, intentos y espera entre pedidos). |
 | `seed.py` | Carga inicial desde un archivo JSON (`data/seed.json` por defecto; los tests usan `data/seed_test.json`): usuarios, comisiones, cursos lectivos, asignaciones, grupos y miembros, resolviendo las referencias por claves naturales. |
-| `users.py` | Armado de respuestas de usuario, edición de datos propios y listado con filtros. |
+| `users.py` | Armado de respuestas de usuario, edición de datos propios, listado con filtros y baja de usuarios (aplica la regla del rol, delegando en alumnos o profesores). |
 | `students.py` | Alta masiva de alumnos, modificación de un alumno, su eliminación (solo super admin; bloqueada con membresías vigentes, limpia restos viejos, sesiones y OTP) y listado con los grupos de cada alumno (filtrado por estado de la membresía). |
-| `professors.py` | Alta y modificación de profesores. |
+| `professors.py` | Alta, modificación y eliminación de profesores. |
 | `sections.py` | Lógica del CRUD de comisiones. |
 | `section_years.py` | Lógica del CRUD de cursos lectivos. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores, con el listado de los profesores de un curso lectivo (`list_section_year_professors`, usado por el overview de proyectos). |
@@ -274,9 +274,9 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `conftest.py` | BD temporal de test (sembrada una vez por sesión), aislamiento por savepoint entre tests, mails interceptados y fixtures compartidas (`client`, `login`, `make_professor`). |
 | `helpers.py` | Constantes del seed y utilidades para leer códigos y cookies. |
 | `test_auth.py` | Login, refresh, logout, perfil y contraseña por código. |
-| `test_users.py` | Edición de datos propios y listado de usuarios. |
+| `test_users.py` | Edición de datos propios, listado de usuarios y eliminación de usuarios (por rol, sesiones y OTP). |
 | `test_students.py` | Alta individual y masiva, modificación, listado y eliminación de alumnos (permisos, regla de membresías, legajo libre, sesiones y OTP). |
-| `test_professors.py` | Alta y modificación de profesores. |
+| `test_professors.py` | Alta, modificación y eliminación de profesores. |
 | `test_sections.py` | CRUD de comisiones. |
 | `test_section_years.py` | CRUD de cursos lectivos. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |

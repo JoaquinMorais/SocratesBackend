@@ -8,13 +8,14 @@ from schemas.status import StatusPublic
 from schemas.student_project import StudentProjectMemberPublic
 
 Privacy = Literal["public", "private", "protected"]
+MAX_GROUP_NUMBER = 9999
 
 
 class ProjectCreate(SQLModel):
     model_config = ConfigDict(extra="forbid")  # campos desconocidos -> 422
 
     id_section_year: int = Field(gt=0)
-    group_number: int | None = Field(default=None, gt=0, le=9999)
+    group_number: int | None = Field(default=None, gt=0, le=MAX_GROUP_NUMBER)
 
 
 class ProjectBulkCreate(SQLModel):

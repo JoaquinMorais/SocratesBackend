@@ -1,6 +1,13 @@
 from datetime import date
 
-from tests.helpers import STUDENT, SUPER_ADMIN
+from tests.helpers import (
+    PASSWORD,
+    STUDENT,
+    SUPER_ADMIN,
+    assign_professor,
+    refresh_cookie,
+    section_year,
+)
 
 
 def _birth_date_for_age(age: int) -> str:
@@ -130,3 +137,124 @@ async def test_list_pagination(client, login):
     page2 = (await client.get("/users?limit=2&offset=2", headers=headers)).json()
     assert len(page2["items"]) == 1
     assert (await client.get("/users?limit=0", headers=headers)).status_code == 422
+
+# ---------- DELETE /users/{id} (eliminar alta errónea) ----------
+LUIS = "100002@sistemas.frc.utn.edu.ar"
+
+
+def _professor_payload(mail: str) -> dict:
+    return {
+        "first_name": "Elena",
+        "last_name": "Sosa",
+        "legajo": 200002,
+        "birth_date": "1985-02-01",
+        "mail": mail,
+    }
+
+
+async def _id_by_mail(client, headers, mail: str) -> int:
+    r = await client.get("/users", params={"q": mail}, headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()["items"][0]["id_user"]
+
+
+async def test_delete_requires_authentication(client):
+    assert (await client.delete("/users/1")).status_code == 401
+
+
+async def test_student_cannot_delete_users(client, login):
+    assert (await client.delete("/users/1", headers=await login(STUDENT))).status_code == 403
+
+
+async def test_regular_professor_cannot_delete_users(client, login, make_professor):
+    mail = await make_professor("prof-del-users@frc.utn.edu.ar")
+    assert (await client.delete("/users/1", headers=await login(mail))).status_code == 403
+
+
+async def test_super_admin_deletes_student_user(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.delete("/users/1", headers=headers)  # Ana, sin membresías
+    assert r.status_code == 204, r.text
+    r = await client.post("/auth/login", json={"email": STUDENT, "password": PASSWORD})
+    assert r.status_code == 401  # el usuario ya no existe
+
+
+async def test_delete_student_with_current_membership_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    project = (
+        await client.post("/projects", json={"id_section_year": sy}, headers=headers)
+    ).json()
+    r = await client.post(
+        f"/projects/{project['id_project']}/members", headers=await login(LUIS)
+    )
+    assert r.status_code == 201, r.text  # queda `active` como jefe
+    assert (await client.delete("/users/2", headers=headers)).status_code == 409
+
+
+async def test_super_admin_deletes_professor_user(client, login, make_professor):
+    mail = await make_professor("prof-borrar@frc.utn.edu.ar")
+    headers = await login(SUPER_ADMIN)
+    id_professor = await _id_by_mail(client, headers, mail)
+    assert (await client.delete(f"/users/{id_professor}", headers=headers)).status_code == 204
+    r = await client.post("/auth/login", json={"email": mail, "password": PASSWORD})
+    assert r.status_code == 401  # el profesor ya no existe
+
+
+async def test_delete_professor_with_assignment_rejected(client, login, make_professor):
+    mail = await make_professor("prof-asignado@frc.utn.edu.ar")
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    await assign_professor(client, headers, mail, sy)
+    id_professor = await _id_by_mail(client, headers, mail)
+    assert (await client.delete(f"/users/{id_professor}", headers=headers)).status_code == 409
+    # la asignación sigue existiendo
+    r = await client.get("/professor-section-years", headers=headers)
+    assert r.status_code == 200
+    assert any(item["id_professor"] == id_professor for item in r.json()["items"])
+
+
+async def test_delete_super_admin_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    # Marta es super admin: no se puede borrar a sí misma
+    assert (await client.delete("/users/3", headers=headers)).status_code == 409
+    # ni a otro super admin: primero hay que quitarle el rol
+    created = (
+        await client.post(
+            "/professors",
+            json={**_professor_payload("otro-admin@frc.utn.edu.ar"), "is_super_admin": True},
+            headers=headers,
+        )
+    ).json()
+    assert (await client.delete(f"/users/{created['id_professor']}", headers=headers)).status_code == 409
+
+
+async def test_delete_user_not_found(client, login):
+    assert (await client.delete("/users/999", headers=await login(SUPER_ADMIN))).status_code == 404
+
+
+async def test_delete_frees_mail_and_legajo(client, login):
+    headers = await login(SUPER_ADMIN)
+    created = (
+        await client.post(
+            "/professors", json=_professor_payload("recargar@frc.utn.edu.ar"), headers=headers
+        )
+    ).json()
+    assert (await client.delete(f"/users/{created['id_professor']}", headers=headers)).status_code == 204
+    r = await client.post(
+        "/professors", json=_professor_payload("recargar@frc.utn.edu.ar"), headers=headers
+    )
+    assert r.status_code == 201, r.text  # mail y legajo quedaron libres
+
+
+async def test_delete_professor_removes_sessions_and_otp(client, login, make_professor):
+    mail = await make_professor("prof-sesion@frc.utn.edu.ar")
+    headers = await login(SUPER_ADMIN)
+    r = await client.post("/auth/login", json={"email": mail, "password": PASSWORD})
+    assert r.status_code == 200, r.text
+    cookie = refresh_cookie(r)
+    assert (await client.post("/auth/password/request", json={"email": mail})).status_code == 202
+    id_professor = await _id_by_mail(client, headers, mail)
+    assert (await client.delete(f"/users/{id_professor}", headers=headers)).status_code == 204
+    r = await client.post("/auth/refresh", headers={"Cookie": f"refresh_token={cookie}"})
+    assert r.status_code == 401  # la sesión quedó invalidada con el usuario

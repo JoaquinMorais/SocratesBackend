@@ -271,3 +271,85 @@ async def test_patch_professor_forbidden_fields(client, login):
 async def test_patch_professor_empty_body_rejected(client, login):
     r = await client.patch("/professors/3", json={}, headers=await login(SUPER_ADMIN))
     assert r.status_code == 422
+
+
+# ---------- DELETE /professors/{id} ----------
+async def test_delete_requires_authentication(client):
+    assert (await client.delete("/professors/3")).status_code == 401
+
+
+async def test_student_cannot_delete_professors(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    r = await client.delete(f"/professors/{pid}", headers=await login(STUDENT))
+    assert r.status_code == 403
+
+
+async def test_regular_professor_cannot_delete_professors(client, login, make_professor):
+    mail = await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    headers = await login(mail)
+    r = await client.delete("/professors/3", headers=headers)
+    assert r.status_code == 403
+
+
+async def test_super_admin_deletes_professor(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    assert (await client.delete(f"/professors/{pid}", headers=admin)).status_code == 204
+    assert (await client.get("/users", params={"q": "prof@frc"}, headers=admin)).json()["total"] == 0
+
+
+async def test_delete_professor_closes_sessions(client, login, make_professor):
+    mail = await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    await login(mail)  # deja la cookie de refresh del profesor en el client
+    assert (await client.delete(f"/professors/{pid}", headers=admin)).status_code == 204
+    assert (await client.post("/auth/refresh")).status_code == 401
+
+
+async def test_delete_frees_mail_and_legajo(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    await client.delete(f"/professors/{pid}", headers=admin)
+    r = await client.post(
+        "/professors", json=professor("prof@frc.utn.edu.ar", legajo=300010), headers=admin
+    )
+    assert r.status_code == 201, r.text
+
+
+async def test_delete_professor_not_found(client, login):
+    assert (await client.delete("/professors/999", headers=await login(SUPER_ADMIN))).status_code == 404
+
+
+async def test_cannot_delete_super_admin(client, login, make_professor):
+    await make_professor("admin2@frc.utn.edu.ar", is_super_admin=True, legajo=300011)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "admin2@frc")
+    assert (await client.delete(f"/professors/{pid}", headers=admin)).status_code == 409
+
+
+async def test_cannot_delete_assigned_professor(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar", legajo=300010)
+    admin = await login(SUPER_ADMIN)
+    pid = await _id_of(client, admin, "prof@frc")
+    section = await client.post("/sections", json={"name": "3K1"}, headers=admin)
+    sy = await client.post(
+        "/section-years",
+        json={
+            "year": 2025,
+            "id_section": section.json()["id_section"],
+            "min_students": 1,
+            "max_students": 10,
+        },
+        headers=admin,
+    )
+    await client.post(
+        "/professor-section-years",
+        json={"id_professor": pid, "id_section_year": sy.json()["id_section_year"]},
+        headers=admin,
+    )
+    assert (await client.delete(f"/professors/{pid}", headers=admin)).status_code == 409

@@ -35,7 +35,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 ### Proyectos (grupos)
 
-- **Proyecto (`Project`)**: un grupo de un curso lectivo, identificado por un número de grupo único dentro de ese curso lectivo.
+- **Proyecto (`Project`)**: un grupo de un curso lectivo, identificado por un número de grupo único dentro de ese curso lectivo. Si no se indica el número al crearlo, se toma el **primer número libre** del curso lectivo; los huecos (por borrados o números elegidos a mano) se reutilizan en las altas automáticas y masivas.
   - Campos opcionales, `null` al crearse y completados después: nombre, descripción, objetivo y problemática.
   - **Privacidad**: `public`, `protected` o `private`. Se crea `public`. Mientras el proyecto está en estado `uninsured` (Desasegurado) se **trata siempre como público**, sin importar la privacidad almacenada (la `privacy` que devuelve la API es la **efectiva**: `public`, en ese caso); al pasar a un estado aseguraado vuelve a valer la privacidad guardada.
 - **Alumno en proyecto (`StudentProject`)**: relación muchos a muchos entre alumnos y proyectos. Un miembro puede ser el **jefe de grupo** (`is_leader`); hay a lo sumo uno por proyecto. Cada membresía guarda su **fecha de inscripción** (`enrolled_at`), que define la antigüedad y el orden de sucesión de jefe. Un alumno solo puede ser **`member`** (`active` o `finished`) de **un** proyecto en todo el sistema; sus demás membresías deben ser `pending_approval` (a la espera) o no pertenecer (`abandoned`, `expelled`, `rejected`). Al pasar a `member`, sus otras solicitudes `pending_approval` pasan a `rejected`.
@@ -102,9 +102,9 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 
 | Recurso | Consultar | Crear / modificar / eliminar |
 |---|---|---|
-| Usuarios (listado) | Super admin | n/a |
+| Usuarios (listado y baja) | Super admin | Eliminar: super admin (solo altas erróneas; aplica la regla de alumnos o profesores) |
 | Alumnos | Profesores (de sus cursos lectivos) y super admin | Crear: cualquier profesor. Modificar: cualquier profesor. Eliminar: solo super admin (solo altas erróneas) |
-| Profesores | n/a | Super admin |
+| Profesores | n/a | Crear, modificar y eliminar: super admin |
 | Comisiones | Cualquier usuario logueado | Super admin |
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
 | Asignaciones de profesores | Cualquier usuario logueado | Super admin |
@@ -141,6 +141,8 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores.
 - Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; libera el legajo y cierra sus sesiones y códigos pendientes.
+- Eliminación de un profesor (`DELETE /professors/{id}`, solo super admin): pensada para altas erróneas; bloqueada si es super admin o está asignado a un curso lectivo (**409**); libera su mail y su legajo, y cierra sus sesiones y códigos pendientes.
+- Eliminación de un usuario (`DELETE /users/{id}`, solo super admin): pensada para altas erróneas y aplica la regla del rol, sea alumno o profesor. También existen `DELETE /students/{id}` y `DELETE /professors/{id}` con el mismo comportamiento.
 - Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por estado de la membresía, curso lectivo, año, comisión y búsqueda por nombre/apellido/legajo o nombre de proyecto.
 - Edición de datos propios y de otros usuarios; listado de usuarios.
 - CRUD de comisiones y de cursos lectivos.

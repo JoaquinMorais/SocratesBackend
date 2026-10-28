@@ -1,8 +1,11 @@
-from sqlmodel import col, func, or_, select
+from fastapi import HTTPException, status
+from sqlmodel import col, delete, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from models import Professor, User
+from models import EmailVerification, Professor, RefreshToken, User
 from schemas.user import UserListItem, UserPublic, UserUpdate
+from utils.professors import delete_professor
+from utils.students import delete_student
 
 
 def get_role(user: User) -> str | None:
@@ -81,3 +84,27 @@ async def list_users(
         )
     ).all()
     return list(users), total
+
+
+async def delete_user(db: AsyncSession, id_user: int) -> None:
+    """Elimina un usuario cargado por error, según su rol.
+
+    Los alumnos y profesores tienen reglas propias (membresías vigentes y
+    asignaciones). Un usuario sin perfil (caso imposible en la práctica) se
+    borra junto con sus sesiones.
+    """
+    user = await db.get(User, id_user)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+
+    if user.student:
+        await delete_student(db, id_user)
+    elif user.professor:
+        await delete_professor(db, id_user)
+    else:
+        await db.exec(delete(RefreshToken).where(RefreshToken.id_user == id_user))
+        await db.exec(
+            delete(EmailVerification).where(EmailVerification.id_user == id_user)
+        )
+        await db.delete(user)
+        await db.commit()

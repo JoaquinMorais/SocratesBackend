@@ -2,7 +2,15 @@ from datetime import date
 
 from config.database import SessionLocal
 from models import Project, StudentProject
-from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, refresh_cookie, set_password
+from tests.helpers import (
+    PASSWORD,
+    STUDENT,
+    SUPER_ADMIN,
+    assign_professor,
+    refresh_cookie,
+    section_year,
+    set_password,
+)
 from utils.statuses import get_status
 
 URL = "/students"
@@ -31,29 +39,6 @@ def _birth_date_for_age(age: int) -> str:
 
 
 # ---------- helpers de grupos ----------
-async def _section_year(client, headers, name: str = "3K1", year: int = 2025) -> int:
-    r = await client.post("/sections", json={"name": name}, headers=headers)
-    assert r.status_code == 201, r.text
-    r = await client.post(
-        "/section-years",
-        json={"year": year, "id_section": r.json()["id_section"], "min_students": 1, "max_students": 10},
-        headers=headers,
-    )
-    assert r.status_code == 201, r.text
-    return r.json()["id_section_year"]
-
-
-async def _assign_professor(client, admin, mail: str, id_section_year: int) -> None:
-    r = await client.get("/users", params={"q": mail}, headers=admin)
-    id_professor = r.json()["items"][0]["id_user"]
-    r = await client.post(
-        "/professor-section-years",
-        json={"id_professor": id_professor, "id_section_year": id_section_year},
-        headers=admin,
-    )
-    assert r.status_code == 201, r.text
-
-
 async def _create_project(client, headers, id_section_year: int, name: str | None = None) -> dict:
     r = await client.post("/projects", json={"id_section_year": id_section_year}, headers=headers)
     assert r.status_code == 201, r.text
@@ -218,9 +203,9 @@ async def test_unassigned_professor_sees_no_students(client, login, make_profess
 async def test_professor_sees_only_own_section_year(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
     mail = await make_professor("prof@frc.utn.edu.ar")
-    sy1 = await _section_year(client, admin, "3K1")
-    sy2 = await _section_year(client, admin, "3K2")
-    await _assign_professor(client, admin, mail, sy1)
+    sy1 = await section_year(client, admin, "3K1")
+    sy2 = await section_year(client, admin, "3K2")
+    await assign_professor(client, admin, mail, sy1)
     p1 = await _create_project(client, admin, sy1, name="Grupo de Ana")
     p2 = await _create_project(client, admin, sy2)
     await _add_student(p1["id_project"], ANA_ID)
@@ -239,8 +224,8 @@ async def test_professor_sees_only_own_section_year(client, login, make_professo
 
 async def test_groups_list_all_memberships(client, login):
     admin = await login(SUPER_ADMIN)
-    sy_2025 = await _section_year(client, admin, "3K1", 2025)
-    sy_2024 = await _section_year(client, admin, "3K2", 2024)
+    sy_2025 = await section_year(client, admin, "3K1", 2025)
+    sy_2024 = await section_year(client, admin, "3K2", 2024)
     p25 = await _create_project(client, admin, sy_2025, name="Actual")
     p24 = await _create_project(client, admin, sy_2024, name="Anterior")
     await _add_student(p25["id_project"], ANA_ID)
@@ -255,7 +240,7 @@ async def test_groups_list_all_memberships(client, login):
 
 async def test_groups_mark_the_leader(client, login):
     admin = await login(SUPER_ADMIN)
-    sy = await _section_year(client, admin)
+    sy = await section_year(client, admin)
     project = await _create_project(client, admin, sy)
     await _add_student(project["id_project"], ANA_ID, is_leader=True)
     await _add_student(project["id_project"], LUIS_ID)
@@ -267,7 +252,7 @@ async def test_groups_mark_the_leader(client, login):
 
 async def test_groups_hide_non_current_statuses_by_default(client, login):
     admin = await login(SUPER_ADMIN)
-    sy = await _section_year(client, admin)
+    sy = await section_year(client, admin)
     active = await _create_project(client, admin, sy, name="Vigente")
     abandoned = await _create_project(client, admin, sy, name="Abandonado")
     await _add_student(active["id_project"], ANA_ID)
@@ -292,8 +277,8 @@ async def test_groups_hide_non_current_statuses_by_default(client, login):
 
 async def test_groups_ordered_by_status_priority(client, login):
     admin = await login(SUPER_ADMIN)
-    sy_old = await _section_year(client, admin, "3K1", 2024)
-    sy_new = await _section_year(client, admin, "3K2", 2025)
+    sy_old = await section_year(client, admin, "3K1", 2024)
+    sy_new = await section_year(client, admin, "3K2", 2025)
     active = await _create_project(client, admin, sy_old, name="Vigente viejo")
     abandoned = await _create_project(client, admin, sy_new, name="Abandonado nuevo")
     await _add_student(active["id_project"], ANA_ID)
@@ -312,8 +297,8 @@ async def test_list_rejects_unknown_status(client, login):
 
 async def test_scope_filter_respects_membership_status(client, login):
     admin = await login(SUPER_ADMIN)
-    sy1 = await _section_year(client, admin, "3K1")
-    sy2 = await _section_year(client, admin, "3K2")
+    sy1 = await section_year(client, admin, "3K1")
+    sy2 = await section_year(client, admin, "3K2")
     p1 = await _create_project(client, admin, sy1)
     p2 = await _create_project(client, admin, sy2)
     await _add_student(p1["id_project"], ANA_ID)  # active en sy1
@@ -329,8 +314,8 @@ async def test_scope_filter_respects_membership_status(client, login):
 
 async def test_list_filters(client, login):
     admin = await login(SUPER_ADMIN)
-    sy1 = await _section_year(client, admin, "3K1", 2025)
-    sy2 = await _section_year(client, admin, "3K2", 2026)
+    sy1 = await section_year(client, admin, "3K1", 2025)
+    sy2 = await section_year(client, admin, "3K2", 2026)
     p1 = await _create_project(client, admin, sy1)
     p2 = await _create_project(client, admin, sy2)
     await _add_student(p1["id_project"], ANA_ID)
@@ -348,7 +333,7 @@ async def test_list_filters(client, login):
 
 async def test_list_search(client, login):
     admin = await login(SUPER_ADMIN)
-    sy = await _section_year(client, admin)
+    sy = await section_year(client, admin)
     centauro = await _create_project(client, admin, sy, name="Proyecto Centauro")
     await _add_student(centauro["id_project"], ANA_ID)
     descartado = await _create_project(client, admin, sy, name="Proyecto Descartado")
@@ -372,10 +357,10 @@ async def test_list_search(client, login):
 
 async def test_professor_cannot_filter_foreign_section_year(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
-    sy1 = await _section_year(client, admin, "3K1")
-    sy2 = await _section_year(client, admin, "3K2")
+    sy1 = await section_year(client, admin, "3K1")
+    sy2 = await section_year(client, admin, "3K2")
     mail = await make_professor("prof@frc.utn.edu.ar")
-    await _assign_professor(client, admin, mail, sy1)
+    await assign_professor(client, admin, mail, sy1)
     headers = await login(mail)
     assert (await client.get(f"{URL}?id_section_year={sy1}", headers=headers)).status_code == 200
     assert (await client.get(f"{URL}?id_section_year={sy2}", headers=headers)).status_code == 403
@@ -383,7 +368,7 @@ async def test_professor_cannot_filter_foreign_section_year(client, login, make_
 
 async def test_list_does_not_expose_private_data(client, login):
     admin = await login(SUPER_ADMIN)
-    sy = await _section_year(client, admin)
+    sy = await section_year(client, admin)
     project = await _create_project(client, admin, sy, name="Grupo 1")
     await _add_student(project["id_project"], ANA_ID)
 
@@ -525,7 +510,7 @@ async def test_delete_not_found(client, login):
 
 async def test_delete_blocked_by_current_membership(client, login):
     headers = await login(SUPER_ADMIN)
-    sy = await _section_year(client, headers)
+    sy = await section_year(client, headers)
     for status in ("active", "finished", "pending_approval"):
         project = await _create_project(client, headers, sy)
         await _add_student(project["id_project"], LUIS_ID, status=status)
@@ -538,7 +523,7 @@ async def test_delete_blocked_by_current_membership(client, login):
 
 async def test_delete_with_only_past_memberships(client, login):
     headers = await login(SUPER_ADMIN)
-    sy = await _section_year(client, headers)
+    sy = await section_year(client, headers)
     projects = [await _create_project(client, headers, sy, name=f"P{i}") for i in range(3)]
     past = zip(projects, ("abandoned", "expelled", "rejected"))
     for project, status in past:

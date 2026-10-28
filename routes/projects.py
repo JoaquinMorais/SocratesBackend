@@ -60,7 +60,12 @@ _WRITE_ERRORS = {
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe el curso lectivo"},
-        409: {"description": "Ya existe ese número de grupo en el curso lectivo"},
+        409: {
+            "description": (
+                "Ya existe ese número de grupo en el curso lectivo, o no quedan "
+                "números de grupo libres"
+            )
+        },
         422: {"description": "Datos inválidos, campos faltantes o desconocidos"},
     },
 )
@@ -74,8 +79,9 @@ async def create_project_route(
     Crea un grupo vacío en un curso lectivo. **Profesores asignados a ese curso
     lectivo** y **super admin** (en cualquiera).
 
-    - `group_number` es opcional: si no se envía, toma el siguiente libre (el
-      mayor existente + 1). No puede repetirse dentro del curso lectivo.
+    - `group_number` es opcional: si no se envía, toma el **primer** número
+      libre del curso lectivo (los huecos dejados por grupos borrados o creados a
+      mano se reutilizan). No puede repetirse dentro del curso lectivo.
     - Se crea con privacidad `public`, en estado `uninsured` (Desasegurado) y
       sin nombre, descripción, objetivo ni problemática (todos `null`); se
       completan después. Mientras esté `uninsured` el proyecto se trata siempre
@@ -92,7 +98,12 @@ async def create_project_route(
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe el curso lectivo"},
-        409: {"description": "Los números de grupo cambiaron mientras se creaban; reintentar"},
+        409: {
+            "description": (
+                "Los números de grupo cambiaron mientras se creaban (reintentar) "
+                "o no quedan suficientes números libres"
+            )
+        },
         422: {"description": "`quantity` fuera de 1-50, campos faltantes o desconocidos"},
     },
 )
@@ -103,10 +114,11 @@ async def create_projects_bulk_route(
     _: professor_dependency,
 ):
     """
-    Crea de 1 a 50 grupos vacíos en un curso lectivo, con números consecutivos a
-    partir del siguiente libre (si hay grupos 1 a 11, `quantity=3` crea 12, 13 y
-    14). Mismos permisos que `POST /projects`. Es todo o nada. Cada grupo nace
-    con privacidad `public` y en estado `uninsured` (Desasegurado).
+    Crea de 1 a 50 grupos vacíos en un curso lectivo, con los **primeros números
+    libres** (los huecos se reutilizan; por ejemplo, con grupos 1, 2, 3 y 6,
+    `quantity=3` crea 4, 5 y 7). Mismos permisos que `POST /projects`. Es todo o
+    nada. Cada grupo nace con privacidad `public` y en estado `uninsured`
+    (Desasegurado).
     """
     return await create_projects_bulk(db, await build_access(db, user), data)
 

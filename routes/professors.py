@@ -4,7 +4,11 @@ from config.database import db_dependency
 from schemas.professor import ProfessorCreate, ProfessorPublic, ProfessorUpdate
 from utils.email import send_mail_change_notifications, send_welcome_emails
 from utils.permissions import super_admin_dependency
-from utils.professors import create_professor, update_professor
+from utils.professors import (
+    create_professor,
+    delete_professor,
+    update_professor,
+)
 
 professors_router = APIRouter(prefix="/professors", tags=["professors"])
 
@@ -111,3 +115,36 @@ async def update_professor_route(
             send_mail_change_notifications, old_mail, updated.email, updated.first_name
         )
     return updated
+
+
+@professors_router.delete(
+    "/{id_professor}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar un profesor (alta errónea)",
+    responses={
+        **_AUTH_ERRORS,
+        404: {"description": "No existe el profesor"},
+        409: {
+            "description": (
+                "El profesor es super admin o está asignado a un curso lectivo y "
+                "no se puede eliminar"
+            )
+        },
+    },
+)
+async def delete_professor_route(
+    id_professor: int, db: db_dependency, _: super_admin_dependency
+):
+    """
+    Elimina a un profesor. **Solo super admin.**
+
+    Pensado solo para **altas erróneas**. No se puede eliminar un **super admin**
+    (primero hay que quitarle el rol con `PATCH /professors/{id_professor}`) ni un
+    profesor **asignado a un curso lectivo** (primero hay que quitar la
+    asignación); en ambos casos responde **409**.
+
+    Al eliminarlo se borran sus datos personales, el registro de profesor, sus
+    sesiones (refresh tokens) y sus códigos de contraseña pendientes; su mail y su
+    legajo quedan libres para volver a cargarlo.
+    """
+    await delete_professor(db, id_professor)

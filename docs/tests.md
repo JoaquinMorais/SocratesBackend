@@ -136,6 +136,19 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
+**Eliminar un usuario (`DELETE /users/{id}`)**
+- `test_delete_requires_authentication`: testear que eliminar un usuario sin login responde 401.
+- `test_student_cannot_delete_users`: testear que un alumno no puede eliminar usuarios (403).
+- `test_regular_professor_cannot_delete_users`: testear que un profesor que no es super admin no puede eliminar usuarios (403).
+- `test_super_admin_deletes_student_user`: testear que un super admin elimina a un alumno por esta vía (204) y que ya no puede iniciar sesión.
+- `test_delete_student_with_current_membership_rejected`: testear que no se puede eliminar a un alumno con una membresía vigente (409).
+- `test_super_admin_deletes_professor_user`: testear que un super admin elimina a un profesor (204) y que ya no puede iniciar sesión.
+- `test_delete_professor_with_assignment_rejected`: testear que no se puede eliminar a un profesor asignado a un curso lectivo (409) y que la asignación sigue existiendo.
+- `test_delete_super_admin_rejected`: testear que no se puede eliminar a un super admin, ni a uno mismo ni a otro, hasta quitarle el rol (409).
+- `test_delete_user_not_found`: testear que un usuario inexistente responde 404.
+- `test_delete_frees_mail_and_legajo`: testear que tras eliminar a un profesor se puede volver a crear con el mismo mail y legajo.
+- `test_delete_professor_removes_sessions_and_otp`: testear que al eliminar un profesor se cierran sus sesiones (el refresh deja de servir) y se borran sus códigos pendientes.
+
 ## `tests/test_professors.py`
 
 **Permisos de alta**
@@ -173,6 +186,17 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_professor_not_found`: testear que un profesor inexistente responde 404.
 - `test_patch_professor_forbidden_fields`: testear que contraseña, id y `email` no se pueden modificar (422).
 - `test_patch_professor_empty_body_rejected`: testear que un body vacío se rechaza.
+
+**Eliminar un profesor (`DELETE /professors/{id}`)**
+- `test_delete_requires_authentication`: testear que sin login responde 401.
+- `test_student_cannot_delete_professors`: testear que un alumno no puede eliminar profesores (403).
+- `test_regular_professor_cannot_delete_professors`: testear que un profesor que no es super admin no puede eliminar profesores (403).
+- `test_super_admin_deletes_professor`: testear que un super admin elimina a un profesor (204) y deja de existir.
+- `test_delete_professor_closes_sessions`: testear que al eliminar un profesor se cierran sus sesiones.
+- `test_delete_frees_mail_and_legajo`: testear que tras eliminarlo se puede volver a crear un profesor con el mismo mail y legajo.
+- `test_delete_professor_not_found`: testear que un profesor inexistente responde 404.
+- `test_cannot_delete_super_admin`: testear que no se puede eliminar a un super admin (409).
+- `test_cannot_delete_assigned_professor`: testear que no se puede eliminar a un profesor asignado a un curso lectivo (409).
 
 ## `tests/test_sections.py`
 
@@ -294,7 +318,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Crear**
 - `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
-- `test_create_assigns_next_group_number`: testear que sin `group_number` toma el siguiente libre, también después de un número explícito.
+- `test_create_assigns_first_free_group_number`: testear que sin `group_number` toma el primer hueco libre (no el mayor + 1), también después de números explícitos, y que sin huecos continúa después del mayor.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
 - `test_create_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
@@ -302,7 +326,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Crear en masa**
 - `test_bulk_create`: testear que se crean grupos consecutivos, todos con el estado inicial, y que una segunda tanda continúa la numeración.
-- `test_bulk_continues_after_last_group_number`: testear que tras eliminar un grupo intermedio la numeración sigue desde el mayor.
+- `test_bulk_reuses_freed_group_number`: testear que tras eliminar un grupo intermedio la masiva reutiliza ese hueco.
+- `test_bulk_uses_first_free_numbers`: testear que la masiva usa los primeros números libres aunque haya huecos (por ejemplo, con 1, 2, 3 y 6 crea 4, 5 y 7).
 - `test_bulk_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
 - `test_bulk_invalid_rejected`: testear que se rechaza una cantidad fuera de 1-50, campos faltantes y campos desconocidos.
 
@@ -347,7 +372,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_cannot_delete_project_with_students`: testear que no se puede eliminar un proyecto con alumnos (409).
 - `test_cannot_delete_insured_project`: testear que no se puede eliminar un proyecto asegurado (por ejemplo `in_idea`) aunque esté vacío (409).
 - `test_cannot_delete_final_project`: testear que no se puede eliminar un proyecto en estado final (por ejemplo `approved`) aunque esté vacío (409).
-- `test_deleted_group_number_can_be_reused`: testear que un número de grupo eliminado puede volver a crearse enviándolo.
+- `test_deleted_group_number_can_be_reused`: testear que un número de grupo eliminado se puede volver a crear enviándolo y que el alta automática también lo reutiliza.
 - `test_cannot_delete_section_year_with_projects`: testear que no se puede eliminar un curso lectivo con proyectos (409) y que sí se puede después de eliminarlos.
 
 ## `tests/test_project_statuses.py`
