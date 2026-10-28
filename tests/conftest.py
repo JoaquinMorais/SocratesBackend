@@ -1,6 +1,8 @@
 import os
+import re
 import shutil
 import tempfile
+import uuid
 from datetime import date
 
 # Estas variables tienen que fijarse ANTES de importar la app: el engine y el
@@ -8,7 +10,19 @@ from datetime import date
 from sqlalchemy.engine import make_url
 
 _main = make_url(os.environ["DATABASE_URL"])
-TEST_DB = f"{_main.database}_test"
+
+# Cada corrida usa su propia BD. El sufijo se puede fijar con `TEST_DB_SUFFIX`
+# (por ejemplo, una sesión de trabajo por cada agente: "historias", "bugs"),
+# para tener un nombre estable que se recicla en cada corrida; si no se define,
+# se usa uno aleatorio. Así dos suites no se pisan aunque corran a la vez.
+_raw_suffix = os.environ.get("TEST_DB_SUFFIX", "").strip().lower()
+_suffix = (re.sub(r"[^a-z0-9_]", "_", _raw_suffix) or uuid.uuid4().hex[:8])[:30]
+_marker = f"_test_{_suffix}"
+# PostgreSQL trunca los identificadores a 63 bytes: recortamos la base, nunca el sufijo.
+TEST_DB = f"{_main.database[: 63 - len(_marker)]}{_marker}"
+assert len(TEST_DB) <= 63, "El nombre de la BD de test supera el límite de PostgreSQL"
+assert TEST_DB != _main.database and "_test_" in TEST_DB, "Nunca se debe tocar la BD principal"
+
 os.environ["DATABASE_URL"] = _main.set(database=TEST_DB).render_as_string(hide_password=False)
 os.environ["EMAIL_BACKEND"] = "console"
 os.environ["EMAIL_DEV_REDIRECT"] = ""
@@ -81,48 +95,59 @@ async def _admin(sql: str) -> None:
         await conn.close()
 
 
+async def _drop_test_db() -> None:
+    await _admin(f'DROP DATABASE IF EXISTS "{TEST_DB}" WITH (FORCE)')
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def database():
-    """Crea la BD de test una sola vez y la siembra una sola vez por sesión.
+    """Crea la BD de test (única por corrida) y la siembra una sola vez por sesión.
 
     Toda la suite comparte una conexión con una transacción externa. Cada test
     corre dentro de un savepoint (ver `clean_db`) que se revierte, así que nunca
     hace falta volver a truncar ni sembrar entre tests.
     """
-    assert TEST_DB.endswith("_test"), "Nunca se debe tocar la BD principal"
-    await _admin(f'DROP DATABASE IF EXISTS "{TEST_DB}" WITH (FORCE)')
-    await _admin(f'CREATE DATABASE "{TEST_DB}"')
+    await _drop_test_db()  # por si quedó de una corrida interrumpida con el mismo sufijo
+    connection = None
+    transaction = None
+    try:
+        await _admin(f'CREATE DATABASE "{TEST_DB}"')
 
-    connection = await engine.connect()
-    transaction = await connection.begin()
-    await connection.run_sync(SQLModel.metadata.create_all)
+        connection = await engine.connect()
+        transaction = await connection.begin()
+        await connection.run_sync(SQLModel.metadata.create_all)
 
-    session_factory = async_sessionmaker(
-        bind=connection,
-        class_=AsyncSession,
-        expire_on_commit=False,
-        join_transaction_mode="create_savepoint",
-    )
-    session_local_proxy._factory = session_factory
+        session_factory = async_sessionmaker(
+            bind=connection,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        )
+        session_local_proxy._factory = session_factory
 
-    async def _override_get_session():
-        async with session_factory() as session:
-            yield session
+        async def _override_get_session():
+            async with session_factory() as session:
+                yield session
 
-    app.dependency_overrides[get_session] = _override_get_session
+        app.dependency_overrides[get_session] = _override_get_session
 
-    async with session_local_proxy() as session:
-        await load_seed(session, seed_path=TEST_SEED_PATH)
+        async with session_local_proxy() as session:
+            await load_seed(session, seed_path=TEST_SEED_PATH)
 
-    yield connection
-
-    app.dependency_overrides.clear()
-    session_local_proxy._factory = None
-    await transaction.rollback()
-    await connection.close()
-    await engine.dispose()
-    shutil.rmtree(MEDIA_DIR_PATH, ignore_errors=True)
-    await _admin(f'DROP DATABASE IF EXISTS "{TEST_DB}" WITH (FORCE)')
+        yield connection
+    finally:
+        app.dependency_overrides.clear()
+        session_local_proxy._factory = None
+        if transaction is not None:
+            await transaction.rollback()
+        if connection is not None:
+            await connection.close()
+        await engine.dispose()
+        shutil.rmtree(MEDIA_DIR_PATH, ignore_errors=True)
+        try:
+            await _drop_test_db()
+        except Exception as exc:  # la BD pudo caerse: no enmascarar el resultado
+            print(f"\nAviso: no se pudo borrar la BD de test {TEST_DB}: {exc}")
 
 
 @pytest_asyncio.fixture(autouse=True)

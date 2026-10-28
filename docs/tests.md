@@ -10,7 +10,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 ## Cómo funcionan
 
-- Cada corrida crea una BD temporal (`<nombre_bd>_test`) y la borra al terminar. La BD principal no se toca.
+- Cada corrida crea su **propia** BD temporal (`<nombre_bd>_test_<sufijo>`) y la borra al terminar; la BD principal no se toca. El sufijo sale de `TEST_DB_SUFFIX` (por ejemplo `historias` o `bugs`, uno por sesión de trabajo) o es aleatorio si no se define, así dos suites pueden correr en paralelo sin pisarse. Si una corrida se interrumpe de golpe (SIGKILL), la BD puede quedar: con un sufijo fijo se recicla en la próxima corrida; si no, se limpia con `docker compose down -v`.
 - La BD de test se siembra **una sola vez por sesión** (`data/seed_test.json`: Ana, Luis y Marta). Cada test corre dentro de un **savepoint** que se revierte al terminar, así que no se vuelve a truncar ni sembrar entre tests: es rápido y cada test queda aislado.
 - La app y los ayudantes de los tests comparten la misma conexión (el `conftest` publica una fábrica de sesiones bindeada a la transacción de test). Por eso se ve todo lo que cada test escribe, pero nada queda entre tests.
 - En tests, Argon2 usa parámetros baratos (misma lógica de auth; el hasher de producción no cambia). Esto acelera el seed y los logins.

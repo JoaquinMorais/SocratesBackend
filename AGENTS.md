@@ -90,6 +90,8 @@ Login con mail completo + contraseña → access JWT (15 min, header `Bearer`) +
 docker compose up --build -d          # primera vez, o si cambia requirements.txt / Dockerfile
 docker compose up -d                  # si cambia .env o docker-compose.yml
 docker compose exec backend pytest -q # correr todos los tests
+# en paralelo, una sesión por sufijo (ver docs/commands.md):
+# docker compose run --rm --no-deps -T -e TEST_DB_SUFFIX=historias backend python -m pytest -q
 docker compose exec backend pytest tests/test_projects.py -k delete   # algunos tests
 docker compose logs -f backend        # logs en vivo
 docker compose down -v                # borra la BD (necesario si cambian columnas)
@@ -97,7 +99,7 @@ docker compose down -v                # borra la BD (necesario si cambian column
 
 - El código `.py` se recarga solo (`--reload`).
 - Las tablas se crean con `create_all`, que **no modifica tablas existentes**: si cambias columnas de una tabla que ya existe, hay que hacer `docker compose down -v` (o migrar con Alembic cuando se incorpore).
-- Los tests usan una BD temporal `<bd>_test` que se crea y se borra sola; la BD principal no se toca.
+- Los tests usan una BD temporal por corrida (`<bd>_test_<sufijo>`) que se crea y se borra sola; la BD principal no se toca. Para trabajar con dos sesiones en paralelo, cada una define su `TEST_DB_SUFFIX` (ver `docs/commands.md`).
 
 ## Datos del seed (útiles para los tests)
 
