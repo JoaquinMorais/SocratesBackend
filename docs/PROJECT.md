@@ -32,6 +32,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - **Comisión (`Section`)**: una división de la carrera, por ejemplo `3K1` o `3K2`. El nombre es único y se guarda en mayúsculas.
 - **Curso lectivo (`SectionYear`)**: una comisión en un año concreto (por ejemplo, `3K1` de `2025`). La combinación año + comisión es única. Define además la cantidad mínima y máxima de estudiantes que debe tener cada grupo (`min_students` y `max_students`, entre 1 y 100, con `max_students >= min_students`); se usará más adelante para validar el estado del grupo.
 - **Asignación de profesor (`ProfessorSectionYear`)**: qué profesor dicta qué curso lectivo. Es una relación muchos a muchos.
+- **Cursada del alumno (`StudentSectionYear`)**: qué alumno cursó qué curso lectivo. Es una relación muchos a muchos: un alumno puede haber cursado varios años lectivos a lo largo del tiempo (distintas comisiones y/o años) y un curso lectivo tiene muchos alumnos; el mismo par alumno + curso lectivo no se repite. Al crear un alumno (individual o en masa) se puede indicar `id_section_year` para registrar su cursada; las demás se agregan con `POST /student-section-years`. Un curso lectivo con cursadas no se puede eliminar (**409**) hasta quitarlas.
 
 ### Proyectos (grupos)
 
@@ -61,6 +62,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   | Unirse al grupo | ✅ | ❌ 409 | ❌ 409 |
   | Abandonar el grupo (integrante `active`) | ✅ | ❌ 409 | ❌ 409 |
   | Expulsar a un integrante `active` | ✅ | ❌ 409 | ❌ 409 |
+  | Añadir un integrante (profesor del curso lectivo o super admin) | ✅ | ❌ 409 | ❌ 409 |
   | Delegar la jefatura a un integrante `active` | ✅ | ✅ | ❌ 409 |
   | Asegurar el grupo | ✅ | ❌ 409 | ❌ 409 |
   | Aceptar o rechazar solicitudes | ✅ | ✅ | ✅ |
@@ -71,6 +73,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - **Sucesión de jefe**: si el jefe deja el grupo —abandona o es expulsado—, el integrante **`active` más antiguo** (`enrolled_at`) pasa a ser el nuevo jefe. Si no queda ningún `active`, el grupo queda sin jefe.
 - **Abandonar** (`POST /projects/{id}/members/{id_student_project}/abandon`): **el propio alumno** abandona su membresía `active`, y solo mientras el proyecto está `uninsured` (si no, **409**).
 - **Expulsar** (`POST /projects/{id}/members/{id_student_project}/expel`): **un profesor del curso lectivo o un super admin** expulsa a un integrante `active`, y solo mientras el proyecto está `uninsured` (si no, **409**).
+- **Añadir** (`POST /projects/{id}/members/{id_student}`): **un profesor del curso lectivo o un super admin** añade un alumno al grupo; entra siempre como `active` (y como jefe si el grupo no tenía uno), solo mientras el proyecto está `uninsured` (si no, **409**). Aplica la regla de un solo `member` y rechaza las otras solicitudes `pending_approval` del alumno.
 - **Delegar la jefatura** (`POST /projects/{id}/members/{id_student_project}/leader`): **solo el jefe actual**, hacia otro integrante `active` del grupo, mientras el proyecto no esté en un estado final. El jefe saliente sigue en el grupo como `active`.
 - **Asegurar el grupo** (`POST /projects/{id}/insure`): **el jefe del grupo, un profesor del curso lectivo o un super admin** sacan al proyecto de `uninsured` y lo pasan a un estado asegurado, confirmando el equipo. Solo desde `uninsured` (si no, **409**); la cantidad de integrantes `active` debe estar entre `min_students` y `max_students` del curso lectivo (si no, **409**). El estado destino es el subestado asegurado recordado (`id_status_insured`) o, si el grupo nunca estuvo asegurado, `in_idea`. Al asegurar, las solicitudes `pending_approval` pasan a `rejected`, el proyecto deja de tratarse como público y **ya no se pueden unir** integrantes nuevos. Se registra en el historial de estados.
 - **Transiciones de estado del proyecto** (todas por **un profesor del curso lectivo o un super admin**, ninguna admite un estado final → **409**):
@@ -108,8 +111,9 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Comisiones | Cualquier usuario logueado | Super admin |
 | Cursos lectivos | Cualquier usuario logueado | Super admin |
 | Asignaciones de profesores | Cualquier usuario logueado | Super admin |
+| Cursadas de alumnos | Profesores y super admin | Super admin |
 | Proyectos | Cualquier usuario logueado (el detalle depende de la privacidad) | Profesores del curso lectivo, super admin y miembros `active`/`finished` (solo modificar atributos). Asegurar: jefe del grupo, profesor del curso lectivo o super admin |
-| Integrantes del proyecto | Privilegiados (miembros `active`/`finished`, profesores del curso lectivo y super admin) | Unirse y abandonar: el propio alumno; aceptar/rechazar y delegar jefatura: el jefe del grupo; expulsar: el profesor del curso lectivo o super admin |
+| Integrantes del proyecto | Privilegiados (miembros `active`/`finished`, profesores del curso lectivo y super admin) | Unirse y abandonar: el propio alumno; aceptar/rechazar y delegar jefatura: el jefe del grupo; expulsar y añadir: el profesor del curso lectivo o super admin |
 | Tecnologías | Cualquier usuario logueado | Cualquier profesor (incluye super admin) |
 | Imágenes | Cualquier usuario logueado (datos) y público (el archivo en `/media`) | Cualquier profesor (incluye super admin) |
 | Imagen de una tecnología | Cualquier usuario logueado (viene con la tecnología) | Cualquier profesor (incluye super admin) |
@@ -137,18 +141,19 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ## Estado actual
 
 **Hecho**
-- Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos y miembros).
+- Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos, miembros y cursadas de alumnos).
 - Login, refresh, logout y flujo de contraseña por código (OTP).
-- Alta de alumnos (individual y masiva) y de profesores.
-- Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; libera el legajo y cierra sus sesiones y códigos pendientes.
+- Alta de alumnos (individual y masiva) y de profesores. Cada alumno puede indicar en qué curso lectivo cursa (`id_section_year` en `POST /students` o por fila en `/students/bulk`), lo que crea su cursada.
+- Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; borra también sus cursadas, libera el legajo y cierra sus sesiones y códigos pendientes.
 - Eliminación de un profesor (`DELETE /professors/{id}`, solo super admin): pensada para altas erróneas; bloqueada si es super admin o está asignado a un curso lectivo (**409**); libera su mail y su legajo, y cierra sus sesiones y códigos pendientes.
 - Eliminación de un usuario (`DELETE /users/{id}`, solo super admin): pensada para altas erróneas y aplica la regla del rol, sea alumno o profesor. También existen `DELETE /students/{id}` y `DELETE /professors/{id}` con el mismo comportamiento.
 - Consulta de alumnos registrados con sus grupos (`GET /students`), filtrable por estado de la membresía, curso lectivo, año, comisión y búsqueda por nombre/apellido/legajo o nombre de proyecto.
 - Edición de datos propios y de otros usuarios; listado de usuarios.
-- CRUD de comisiones y de cursos lectivos.
+- CRUD de comisiones y de cursos lectivos (un curso lectivo con profesores asignados, cursadas de alumnos o proyectos no se puede eliminar: **409**).
+- Cursadas de alumnos (`/student-section-years`): alta, consulta, edición y baja del vínculo alumno + curso lectivo (lectura: profesores y super admin; escritura: super admin), con el par único y sin exponer datos privados del alumno.
 - Asignación de profesores a cursos lectivos (CRUD).
 - Proyectos: crear (individual y masivo), listar (con búsqueda `q` por nombre), consultar, modificar atributos (privilegiados, mientras no sea final) y eliminar (solo si están `uninsured` y vacíos), con visibilidad según privacidad (los `uninsured` se tratan como públicos; se crean `public`).
-- Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`, solo alumnos y solo en `uninsured`, el primero es jefe/`active` y el resto `pending_approval`), aceptar o rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`, solo el jefe), abandonar (`POST .../abandon`, el propio alumno y solo en `uninsured`), expulsar (`POST .../expel`, profesor del curso lectivo o super admin y solo en `uninsured`), delegar la jefatura (`POST .../leader`, solo el jefe, en estados no finales) y listar integrantes (`GET /projects/{id}/members`, privilegiados). Sucesión de jefe al `active` más antiguo (`enrolled_at`) al irse el jefe. Regla de un solo `member` (`active`/`finished`) por alumno en todo el sistema, con cascada de `pending_approval` a `rejected`.
+- Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`, solo alumnos y solo en `uninsured`, el primero es jefe/`active` y el resto `pending_approval`), aceptar o rechazar solicitudes (`PATCH /projects/{id}/members/{id_student_project}`, solo el jefe), abandonar (`POST .../abandon`, el propio alumno y solo en `uninsured`), expulsar (`POST .../expel`, profesor del curso lectivo o super admin y solo en `uninsured`), añadir (`POST /projects/{id}/members/{id_student}`, profesor del curso lectivo o super admin y solo en `uninsured`, entra como `active` y jefe si el grupo estaba vacío), delegar la jefatura (`POST .../leader`, solo el jefe, en estados no finales) y listar integrantes (`GET /projects/{id}/members`, privilegiados). Sucesión de jefe al `active` más antiguo (`enrolled_at`) al irse el jefe. Regla de un solo `member` (`active`/`finished`) por alumno en todo el sistema, con cascada de `pending_approval` a `rejected`.
 - Estados: catálogo base cargado por el backend (proyectos y membresías), estado actual de cada proyecto y membresía, marca de estado final (`is_final`), jefe de grupo (`is_leader`) y consulta `GET /statuses`.
 - Estados de proyecto: máquina de estados (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`), categoría `insured` y método `is_insured` en la respuesta de `GET /statuses`.
 - Historial de estados de proyecto: tabla `project_statuses` con registro inicial al crear (estado anterior `null` y nuevo `uninsured`) y consulta `GET /projects/{id}/status-history`, con la misma visibilidad que el detalle del proyecto.

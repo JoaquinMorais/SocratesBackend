@@ -1,17 +1,22 @@
 from datetime import date
 
-from pydantic import field_validator
+from pydantic import ConfigDict, field_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.status import StatusPublic
 from schemas.user import UserUpdate, ensure_adult
 
 class StudentCreate(SQLModel):
+    model_config = ConfigDict(extra="forbid")  # campos desconocidos -> 422
+
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
     legajo: int = Field(gt=0)
     birth_date: date
     enrollment_year: int = Field(ge=1950, le=2100)
+    # Cursada a la que se inscribe al crearlo (opcional); se puede sumar más
+    # después con `POST /student-section-years`.
+    id_section_year: int | None = Field(default=None, gt=0)
 
     @field_validator("birth_date")
     @classmethod
@@ -20,6 +25,8 @@ class StudentCreate(SQLModel):
 
 
 class StudentBulkCreate(SQLModel):
+    model_config = ConfigDict(extra="forbid")
+
     students: list[StudentCreate] = Field(min_length=1, max_length=500)
 
 

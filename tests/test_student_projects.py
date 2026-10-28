@@ -64,6 +64,12 @@ async def _expel(client, headers, id_project: int, id_student_project: int):
     )
 
 
+async def _add(client, headers, id_project: int, id_student: int):
+    return await client.post(
+        f"{URL}/{id_project}/members/{id_student}", headers=headers
+    )
+
+
 async def _leader(client, headers, id_project: int, id_student_project: int):
     return await client.post(
         f"{URL}/{id_project}/members/{id_student_project}/leader", headers=headers
@@ -563,6 +569,122 @@ async def test_expel_leader_promotes_oldest_active(client, login):
     members = (await _members(client, admin, project["id_project"])).json()["items"]
     leader = next(m for m in members if m["is_leader"])
     assert leader["id_student"] == LUIS_ID
+
+
+# ---------- añadir integrante (profesor / super admin) ----------
+async def test_add_requires_authentication(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    student_id = await _make_student(900010)
+    assert (await _add(client, {}, project["id_project"], student_id)).status_code == 401
+
+
+async def test_student_cannot_add_member(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    student_id = await _make_student(900011)
+    r = await _add(client, await login(STUDENT), project["id_project"], student_id)
+    assert r.status_code == 403
+
+
+async def test_unassigned_professor_cannot_add_member(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    student_id = await _make_student(900012)
+    other = await login(await make_professor("otro@frc.utn.edu.ar"))
+    assert (await _add(client, other, project["id_project"], student_id)).status_code == 403
+
+
+async def test_professor_can_add_member(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    mail = await make_professor("prof@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    student_id = await _make_student(900013)
+    r = await _add(client, await login(mail), project["id_project"], student_id)
+    assert r.status_code == 201, r.text
+    assert r.json()["status"]["code"] == "active"
+    assert r.json()["is_leader"] is True  # grupo vacío: el añadido es jefe
+
+
+async def test_super_admin_can_add_member(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    student_id = await _make_student(900014)
+    r = await _add(client, admin, project["id_project"], student_id)
+    assert r.status_code == 201, r.text
+    assert r.json()["status"]["code"] == "active"
+    assert r.json()["is_leader"] is False
+
+
+async def test_add_unknown_student(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    assert (await _add(client, admin, project["id_project"], 999999)).status_code == 404
+
+
+async def test_add_unknown_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    student_id = await _make_student(900015)
+    assert (await _add(client, admin, 999999, student_id)).status_code == 404
+
+
+async def test_cannot_add_in_insured_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    student_id = await _make_student(900016)
+    await _set_status(project["id_project"], "in_idea")
+    assert (await _add(client, admin, project["id_project"], student_id)).status_code == 409
+
+
+async def test_cannot_add_already_member(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], ANA_ID, "active", is_leader=True)
+    r = await _add(client, admin, project["id_project"], ANA_ID)
+    assert r.status_code == 409
+
+
+async def test_cannot_add_member_of_another_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    p1 = await _create(client, admin, sy)
+    p2 = await _create(client, admin, sy)
+    await _add_membership(p1["id_project"], ANA_ID, "active", is_leader=True)
+    r = await _add(client, admin, p2["id_project"], ANA_ID)
+    assert r.status_code == 409
+
+
+async def test_add_reactivates_rejected_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], LUIS_ID, "rejected")
+    r = await _add(client, admin, project["id_project"], LUIS_ID)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
+
+
+async def test_add_rejects_other_pending_requests(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    p1 = await _create(client, admin, sy)
+    p2 = await _create(client, admin, sy)
+    # Luis tiene una solicitud pending en p2
+    await _add_membership(p2["id_project"], LUIS_ID, "pending_approval")
+    await _add(client, admin, p1["id_project"], LUIS_ID)
+    # la solicitud pendiente en p2 pasa a rejected
+    members = (await _members(client, admin, p2["id_project"], status="pending_approval")).json()["items"]
+    assert all(m["id_student"] != LUIS_ID for m in members)
 
 
 # ---------- delegar jefatura ----------

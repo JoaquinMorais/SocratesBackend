@@ -12,6 +12,7 @@ from models import (
     Status,
     Student,
     StudentProject,
+    StudentSectionYear,
     User,
 )
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN
@@ -43,6 +44,7 @@ async def test_seed_loads_expected_counts():
     assert await _count(ProfessorSectionYear) == 21
     assert await _count(Project) == 14
     assert await _count(StudentProject) == 22
+    assert await _count(StudentSectionYear) == 33
 
 
 async def test_seed_group_size_ranges():
@@ -205,3 +207,39 @@ async def test_seed_users_can_log_in(client, login):
         json={"email": "carlos.ruiz@frc.utn.edu.ar", "password": PASSWORD},
     )
     assert r.status_code == 200
+
+
+async def test_seed_student_section_years_are_consistent():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        rows = (await session.exec(select(StudentSectionYear))).all()
+        pairs = [(r.id_student, r.id_section_year) for r in rows]
+        assert len(pairs) == len(set(pairs)), "hay cursadas repetidas"
+
+        student_ids = set((await session.exec(select(Student.id_student))).all())
+        section_year_ids = set(
+            (await session.exec(select(SectionYear.id_section_year))).all()
+        )
+        assert all(
+            s in student_ids and sy in section_year_ids for s, sy in pairs
+        ), "alguna cursada apunta a un alumno o curso lectivo inexistente"
+
+        # todo alumno con grupo está inscripto en el curso lectivo de ese proyecto
+        memberships = (
+            await session.exec(
+                select(StudentProject.id_student, Project.id_section_year).join(
+                    Project, Project.id_project == StudentProject.id_project
+                )
+            )
+        ).all()
+        assert all((s, sy) in set(pairs) for s, sy in memberships)
+
+
+async def test_seed_students_may_have_several_section_years():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        rows = (await session.exec(select(StudentSectionYear))).all()
+        counts: dict[int, int] = {}
+        for row in rows:
+            counts[row.id_student] = counts.get(row.id_student, 0) + 1
+        assert any(count >= 2 for count in counts.values())

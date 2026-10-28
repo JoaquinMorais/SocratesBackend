@@ -1,5 +1,6 @@
 from models.user import User, UserBase
 from models.student import Student
+from models.student_section_year import StudentSectionYear
 from models.professor import Professor
 from models.section import Section
 from models.section_year import SectionYear
@@ -17,7 +18,8 @@ from models.state import ProjectState, State, StudentProjectState
 
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
-    "ProfessorSectionYear", "Project", "ProjectStatus", "StudentProject", "Status",
+    "StudentSectionYear", "ProfessorSectionYear", "Project", "ProjectStatus",
+    "StudentProject", "Status",
     "Technology", "ProjectTechnology", "Image",
     "RefreshToken", "EmailVerification", "State", "ProjectState", "StudentProjectState",
 ]

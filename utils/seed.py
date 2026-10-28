@@ -15,6 +15,7 @@ from models import (
     Status,
     Student,
     StudentProject,
+    StudentSectionYear,
     User,
 )
 from models.state import PROJECT_INITIAL
@@ -120,6 +121,29 @@ async def _load_professor_section_years(
         session.add(
             ProfessorSectionYear(
                 id_professor=professor.id_professor,
+                id_section_year=sy.id_section_year,
+            )
+        )
+    await session.flush()
+
+
+async def _load_student_section_years(
+    session: AsyncSession,
+    data: dict,
+    students: dict[int, Student],
+    section_years: dict[tuple[str, int], SectionYear],
+) -> None:
+    for item in data.get("student_section_years", []):
+        student = students.get(item["student"])
+        if student is None:
+            raise _missing("el alumno", item["student"])
+        key = (item["section"], item["year"])
+        sy = section_years.get(key)
+        if sy is None:
+            raise _missing("el curso lectivo", key)
+        session.add(
+            StudentSectionYear(
+                id_student=student.id_student,
                 id_section_year=sy.id_section_year,
             )
         )
@@ -235,6 +259,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     sections = await _load_sections(session, data)
     section_years = await _load_section_years(session, data, sections)
     await _load_professor_section_years(session, data, professors, section_years)
+    await _load_student_section_years(session, data, students, section_years)
     projects = await _load_projects(session, data, section_years, statuses)
     await _load_student_projects(session, data, students, projects, statuses)
 

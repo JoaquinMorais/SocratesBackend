@@ -336,3 +336,21 @@ async def test_deleted_combination_can_be_reused(client, login):
     created = await _create(client, headers, id_section, 2025)
     await client.delete(f"/section-years/{created['id_section_year']}", headers=headers)
     await _create(client, headers, id_section, 2025)
+
+async def test_delete_with_student_enrollments_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    id_section = await _section(client, headers, "3K1")
+    sy = await _create(client, headers, id_section, 2025)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": 1, "id_section_year": sy["id_section_year"]},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    url = f"/section-years/{sy['id_section_year']}"
+    assert (await client.delete(url, headers=headers)).status_code == 409
+    # tras quitar la cursada, se puede eliminar
+    assert (
+        await client.delete(f"/student-section-years/{r.json()['id_student_section_year']}", headers=headers)
+    ).status_code == 204
+    assert (await client.delete(url, headers=headers)).status_code == 204

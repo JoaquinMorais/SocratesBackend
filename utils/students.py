@@ -11,6 +11,7 @@ from models import (
     Status,
     Student,
     StudentProject,
+    StudentSectionYear,
     User,
 )
 from schemas.status import StatusPublic
@@ -57,6 +58,26 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
             {"row": first_row[legajo], "legajo": legajo, "detail": "A student with this legajo already exists"}
         )
 
+    # los cursos lectivos indicados para la cursada tienen que existir
+    section_year_ids = {
+        item.id_section_year for item in items if item.id_section_year is not None
+    }
+    if section_year_ids:
+        found = set(
+            (
+                await db.exec(
+                    select(SectionYear.id_section_year).where(
+                        SectionYear.id_section_year.in_(section_year_ids)
+                    )
+                )
+            ).all()
+        )
+        for row, item in enumerate(items, start=1):
+            if item.id_section_year is not None and item.id_section_year not in found:
+                errors.append(
+                    {"row": row, "legajo": item.legajo, "detail": "Section year not found"}
+                )
+
     if errors:
         errors.sort(key=lambda e: e["row"])
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=errors)
@@ -72,6 +93,12 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
         db.add(user)
         await db.flush()  # obtiene id_user
         db.add(Student(id_student=user.id_user, enrollment_year=item.enrollment_year))
+        if item.id_section_year is not None:
+            db.add(
+                StudentSectionYear(
+                    id_student=user.id_user, id_section_year=item.id_section_year
+                )
+            )
         created.append(
             StudentPublic(
                 id_student=user.id_user,
@@ -136,7 +163,8 @@ async def delete_student(db, id_student: int) -> None:
 
     Solo si no tiene ninguna participación vigente ni en espera; los restos
     viejos (abandonos, expulsiones y rechazos) se borran con él. También borra
-    sus sesiones (refresh tokens) y códigos OTP pendientes.
+    sus cursadas (alumno + curso lectivo), sus sesiones (refresh tokens) y
+    códigos OTP pendientes.
     """
     student = await db.get(Student, id_student)
     if not student:
@@ -161,6 +189,7 @@ async def delete_student(db, id_student: int) -> None:
 
     await db.exec(delete(RefreshToken).where(RefreshToken.id_user == id_student))
     await db.exec(delete(EmailVerification).where(EmailVerification.id_user == id_student))
+    await db.exec(delete(StudentSectionYear).where(StudentSectionYear.id_student == id_student))
     await db.exec(delete(StudentProject).where(StudentProject.id_student == id_student))
     user = student.user
     await db.delete(student)

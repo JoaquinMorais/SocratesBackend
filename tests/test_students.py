@@ -175,6 +175,65 @@ async def test_bulk_student_under_18_rejected(client, login):
     assert (await client.post("/students", json=student(100010), headers=headers)).status_code == 201
 
 
+async def test_create_student_with_section_year(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    created = await client.post(
+        "/students", json=student(100010, id_section_year=sy), headers=headers
+    )
+    assert created.status_code == 201, created.text
+    id_student = created.json()["id_student"]
+    listing = await client.get(
+        "/student-section-years", params={"id_student": id_student}, headers=headers
+    )
+    assert listing.status_code == 200, listing.text
+    assert listing.json()["total"] == 1
+    assert listing.json()["items"][0]["id_section_year"] == sy
+
+
+async def test_create_student_unknown_section_year_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        "/students", json=student(100010, id_section_year=999), headers=headers
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["detail"] == "Section year not found"
+    # todo o nada: el alumno no se creó
+    assert (await client.get("/students", params={"q": "100010"}, headers=headers)).json()["total"] == 0
+
+
+async def test_bulk_with_section_years(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    r = await client.post(
+        "/students/bulk",
+        json={"students": [student(100010, id_section_year=sy), student(100011, id_section_year=sy)]},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    listing = await client.get("/student-section-years", params={"id_section_year": sy}, headers=headers)
+    assert listing.json()["total"] == 2
+
+
+async def test_bulk_unknown_section_year_is_all_or_nothing(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    r = await client.post(
+        "/students/bulk",
+        json={"students": [student(100010, id_section_year=sy), student(100011, id_section_year=999)]},
+        headers=headers,
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"] == [{"row": 2, "legajo": 100011, "detail": "Section year not found"}]
+    assert (await client.get("/students", params={"q": "100010"}, headers=headers)).json()["total"] == 0
+
+
+async def test_create_student_unknown_field_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post("/students", json={**student(100010), "mail": "x@x.com"}, headers=headers)
+    assert r.status_code == 422
+
+
 # ---------- GET /students (consultar) ----------
 async def test_list_requires_authentication(client):
     assert (await client.get(URL)).status_code == 401
@@ -549,3 +608,18 @@ async def test_delete_removes_sessions_and_otp(client, login, outbox):
     r = await client.post("/auth/refresh", headers={"Cookie": f"refresh_token={cookie}"})
     assert r.status_code == 401  # la sesión y el usuario quedaron invalidados
     assert len(outbox) >= 1
+
+
+async def test_delete_student_with_enrollments(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    created = (
+        await client.post("/students", json=student(100010, id_section_year=sy), headers=headers)
+    ).json()
+    id_student = created["id_student"]
+    r = await client.delete(f"/students/{id_student}", headers=headers)
+    assert r.status_code == 204, r.text
+    listing = await client.get(
+        "/student-section-years", params={"id_student": id_student}, headers=headers
+    )
+    assert listing.json()["total"] == 0  # las cursadas se borraron con el alumno

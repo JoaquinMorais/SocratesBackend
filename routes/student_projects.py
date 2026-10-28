@@ -14,6 +14,7 @@ from utils.permissions import student_dependency
 from utils.projects import build_access, get_project
 from utils.student_projects import (
     abandon_membership,
+    add_member,
     decide_membership,
     expel_membership,
     join_project,
@@ -229,6 +230,50 @@ async def expel_membership_route(
     """
     access = await build_access(db, user)
     await expel_membership(db, access, id_project, id_student_project)
+
+
+@student_projects_router.post(
+    "/projects/{id_project}/members/{id_student}",
+    response_model=StudentProjectPublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="Añadir un alumno a un proyecto (grupo)",
+    responses={
+        **_AUTH_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto o el alumno"},
+        409: {
+            "description": (
+                "El proyecto no está `uninsured` (Desasegurado), el alumno ya "
+                "pertenece a este u otro proyecto, o ya era miembro"
+            )
+        },
+    },
+)
+async def add_member_route(
+    id_project: int,
+    id_student: int,
+    response: Response,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    **El profesor del curso lectivo** del proyecto (o un **super admin**) añade un
+    alumno al grupo. **Solo profesores asignados a ese curso lectivo y super admin.**
+
+    - Solo si el proyecto está **`uninsured`** (Desasegurado); en cualquier otro
+      estado responde **409**.
+    - El alumno entra siempre como **`active`**; si el grupo no tenía jefe, el
+      alumno añadido pasa a ser el jefe.
+    - Aplica la regla de un solo `member` (`active`/`finished`) por alumno en
+      todo el sistema: si ya pertenece a otro grupo responde **409**.
+    - Si el alumno ya tenía una solicitud `rejected` en este grupo, se reactiva
+      (responde **200**); si ya pertenece en otro estado, responde **409**.
+    - Al pasar a `active` se rechazan sus otras solicitudes `pending_approval`.
+    """
+    access = await build_access(db, user)
+    membership, created = await add_member(db, access, id_project, id_student)
+    response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return membership
 
 
 @student_projects_router.post(

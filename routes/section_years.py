@@ -138,7 +138,7 @@ async def update_section_year_route(
     responses={
         **_AUTH_ERRORS,
         **_NOT_FOUND,
-        409: {"description": "El curso lectivo tiene profesores asignados (u otros datos) y no se puede eliminar"},
+        409: {"description": "El curso lectivo tiene profesores asignados, cursadas de alumnos, proyectos u otros datos y no se puede eliminar"},
     },
 )
 async def delete_section_year_route(
@@ -148,7 +148,8 @@ async def delete_section_year_route(
     Elimina un curso lectivo. **Solo super admin.** La acción es irreversible; la
     combinación año + comisión queda libre para volver a crearse.
 
-    Si tiene profesores asignados (`/professor-section-years`), proyectos
-    (`/projects`) u otros datos asociados responde 409: hay que quitarlos primero.
+    Si tiene profesores asignados (`/professor-section-years`), cursadas de
+    alumnos (`/student-section-years`), proyectos (`/projects`) u otros datos
+    asociados responde 409: hay que quitarlos primero.
     """
     await delete_section_year(db, id_section_year)

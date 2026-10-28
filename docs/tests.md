@@ -84,6 +84,9 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_created_student_can_set_password_and_login`: testear que un alumno recién creado no puede loguearse hasta crear su contraseña, y después sí.
 - `test_duplicate_legajo_rejected`: testear que no se puede crear un alumno con un legajo ya existente.
 - `test_invalid_student_data`: testear que datos inválidos (año de ingreso fuera de rango) devuelven 422.
+- `test_create_student_with_section_year`: testear que el alta con `id_section_year` crea la cursada del alumno en ese curso lectivo.
+- `test_create_student_unknown_section_year_rejected`: testear que un curso lectivo inexistente responde 422 con el detalle de la fila y no crea al alumno.
+- `test_create_student_unknown_field_rejected`: testear que un campo desconocido en el alta responde 422.
 - `test_create_student_under_18_rejected`: testear que un alumno con menos de 18 años no se puede crear (422).
 - `test_create_student_exactly_18_allowed`: testear que un alumno que cumple 18 años hoy sí se puede crear.
 
@@ -92,6 +95,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_bulk_is_all_or_nothing`: testear que si una fila falla no se crea ninguna y el error indica el número de fila.
 - `test_bulk_duplicate_inside_request`: testear que un legajo repetido dentro del mismo lote se rechaza.
 - `test_bulk_student_under_18_rejected`: testear que si un alumno del lote tiene menos de 18 años se rechaza todo el lote (422).
+- `test_bulk_with_section_years`: testear que cada fila puede indicar su curso lectivo y que se crean las cursadas.
+- `test_bulk_unknown_section_year_is_all_or_nothing`: testear que un curso lectivo inexistente en una fila rechaza todo el lote (422) con el detalle por fila.
 
 **Modificar un alumno (`PATCH /students/{id}`)**
 - `test_patch_requires_authentication`: testear que sin login responde 401.
@@ -117,6 +122,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_blocked_by_current_membership`: testear que no se puede eliminar un alumno con alguna membresía `active`, `finished` o `pending_approval` (409), y que el alumno sigue existiendo.
 - `test_delete_with_only_past_memberships`: testear que un alumno con solo restos viejos (`abandoned`, `expelled`, `rejected`) se puede eliminar, que esas membresías se borran con él y que los proyectos siguen existiendo.
 - `test_delete_removes_sessions_and_otp`: testear que el alumno con una sesión iniciada y un código OTP pendiente se puede eliminar y su refresh token pasa a ser inválido.
+- `test_delete_student_with_enrollments`: testear que al eliminar un alumno se borran también sus cursadas.
 
 **Consultar alumnos (`GET /students`)**
 - `test_list_requires_authentication`: testear que listar alumnos sin login responde 401.
@@ -148,6 +154,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_user_not_found`: testear que un usuario inexistente responde 404.
 - `test_delete_frees_mail_and_legajo`: testear que tras eliminar a un profesor se puede volver a crear con el mismo mail y legajo.
 - `test_delete_professor_removes_sessions_and_otp`: testear que al eliminar un profesor se cierran sus sesiones (el refresh deja de servir) y se borran sus códigos pendientes.
+- `test_delete_student_user_with_enrollments`: testear que eliminar un alumno por `/users/{id}` borra también sus cursadas.
 
 ## `tests/test_professors.py`
 
@@ -269,7 +276,41 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_not_found`: testear que eliminar un curso lectivo inexistente responde 404.
 - `test_cannot_delete_section_in_use`: testear que no se puede eliminar una comisión con cursos lectivos (409) y que sí se puede después de eliminarlos.
 - `test_deleted_combination_can_be_reused`: testear que la combinación de un curso lectivo eliminado vuelve a estar disponible.
+- `test_delete_with_student_enrollments_rejected`: testear que un curso lectivo con cursadas de alumnos responde 409 y se puede eliminar tras quitarlas.
 
+
+## `tests/test_student_section_years.py`
+
+Cursadas: qué alumno cursó qué curso lectivo (`POST /student-section-years`, `GET /student-section-years`, `GET /student-section-years/{id}`, `PATCH`, `DELETE`); lectura para profesores y super admin, escritura solo super admin.
+
+**Permisos**
+- `test_requires_authentication`: testear que las cinco operaciones responden 401 sin login.
+- `test_student_cannot_read_or_write`: testear que un alumno no puede leer ni escribir cursadas (403).
+- `test_regular_professor_can_read_but_not_write`: testear que un profesor común puede listar pero no crear (403).
+
+**Crear**
+- `test_create_enrollment`: testear el alta del vínculo y que la respuesta aplana los datos del alumno y del curso lectivo.
+- `test_create_duplicate_rejected`: testear que el mismo par alumno + curso lectivo no se repite (409).
+- `test_create_unknown_references`: testear que un alumno o un curso lectivo inexistente responde 404.
+- `test_create_invalid_rejected`: testear ids faltantes, ids no positivos y campos desconocidos (422).
+- `test_many_to_many`: testear un alumno con dos cursadas y un curso lectivo con dos alumnos.
+
+**Consultar**
+- `test_list_ordering`: testear el orden (año más reciente, comisión y apellido del alumno).
+- `test_list_filters`: testear los filtros por alumno, curso lectivo, año y comisión, solos y combinados.
+- `test_list_pagination`: testear `limit`/`offset`, `total` y que `limit=0` responde 422.
+- `test_get_by_id_and_not_found`: testear la consulta por id (un alumno recibe 403) y el 404.
+- `test_list_does_not_expose_private_data`: testear que no se expone el mail ni la fecha de nacimiento del alumno.
+
+**Modificar**
+- `test_patch_each_side`: testear que se puede cambiar el alumno y el curso lectivo.
+- `test_patch_same_values_is_ok`: testear que reenviar el mismo par no da error.
+- `test_patch_duplicate_pair_rejected`: testear que dejar un par ya existente responde 409.
+- `test_patch_invalid_and_not_found`: testear body vacío, campos desconocidos (422), referencias inexistentes y cursada inexistente (404).
+
+**Eliminar**
+- `test_delete_enrollment`: testear que se borra solo el vínculo (204) y que el alumno y el curso lectivo siguen existiendo.
+- `test_delete_not_found`: testear que eliminar una cursada inexistente responde 404.
 
 ## `tests/test_professor_section_years.py`
 
@@ -543,6 +584,20 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_expel_unknown_membership`: testear que una membresía inexistente responde 404.
 - `test_expel_leader_promotes_oldest_active`: testear que al expulsar al jefe, la jefatura pasa al integrante `active` más antiguo.
 
+**Añadir integrante**
+- `test_add_requires_authentication`: testear que sin login responde 401.
+- `test_student_cannot_add_member`: testear que un alumno no puede añadir integrantes (403).
+- `test_unassigned_professor_cannot_add_member`: testear que un profesor no asignado al curso lectivo recibe 403.
+- `test_professor_can_add_member`: testear que un profesor asignado añade un alumno como `active` y, si el grupo estaba vacío, como jefe (201).
+- `test_super_admin_can_add_member`: testear que el super admin puede añadir un alumno (`active`, no jefe si ya había jefe) (201).
+- `test_add_unknown_student`: testear que un alumno inexistente responde 404.
+- `test_add_unknown_project`: testear que un proyecto inexistente responde 404.
+- `test_cannot_add_in_insured_project`: testear que no se puede añadir si el proyecto no está `uninsured` (409).
+- `test_cannot_add_already_member`: testear que un alumno que ya pertenece al proyecto en otro estado responde 409.
+- `test_cannot_add_member_of_another_project`: testear que un alumno que ya es `member` de otro proyecto responde 409.
+- `test_add_reactivates_rejected_membership`: testear que una solicitud `rejected` previa se reactiva como `active` (200).
+- `test_add_rejects_other_pending_requests`: testear que al añadir se rechazan las otras solicitudes `pending_approval` del alumno.
+
 **Delegar jefatura**
 - `test_leader_can_transfer_leadership`: testear que el jefe delega la jefatura en otro integrante `active` (200) y deja de ser jefe.
 - `test_cannot_transfer_to_pending`: testear que no se puede delegar a un integrante `pending_approval` (409).
@@ -695,7 +750,7 @@ Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), a
 
 Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
 
-- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos y 22 membresías.
+- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías y 33 cursadas de alumnos.
 - `test_seed_group_size_ranges`: testear que las cursadas de 2025 tienen mínimo 3 y máximo 10, y las de 2026 mínimo 5 y máximo 10.
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
 - `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
@@ -710,6 +765,8 @@ Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consis
 - `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
+- `test_seed_student_section_years_are_consistent`: testear que las cursadas no se repiten, apuntan a alumnos y cursos lectivos existentes, y que todo alumno con grupo está inscripto en el curso lectivo de su proyecto.
+- `test_seed_students_may_have_several_section_years`: testear que hay al menos un alumno con más de una cursada (varios años lectivos).
 
 ## `tests/test_statuses.py`
 

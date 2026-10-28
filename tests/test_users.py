@@ -258,3 +258,17 @@ async def test_delete_professor_removes_sessions_and_otp(client, login, make_pro
     assert (await client.delete(f"/users/{id_professor}", headers=headers)).status_code == 204
     r = await client.post("/auth/refresh", headers={"Cookie": f"refresh_token={cookie}"})
     assert r.status_code == 401  # la sesión quedó invalidada con el usuario
+
+
+async def test_delete_student_user_with_enrollments(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers)
+    r = await client.post(
+        "/student-section-years", json={"id_student": 2, "id_section_year": sy}, headers=headers
+    )
+    assert r.status_code == 201, r.text
+    assert (await client.delete("/users/2", headers=headers)).status_code == 204
+    listing = await client.get(
+        "/student-section-years", params={"id_student": 2}, headers=headers
+    )
+    assert listing.status_code == 200 and listing.json()["total"] == 0

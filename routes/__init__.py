@@ -6,6 +6,7 @@ from routes.users import users_router
 from routes.sections import sections_router
 from routes.section_years import section_years_router
 from routes.professor_section_years import professor_section_years_router
+from routes.student_section_years import student_section_years_router
 from routes.projects import projects_router
 from routes.student_projects import student_projects_router
 from routes.technologies import technologies_router
@@ -22,6 +23,7 @@ __all__ = [
     "sections_router",
     "section_years_router",
     "professor_section_years_router",
+    "student_section_years_router",
     "projects_router",
     "student_projects_router",
     "technologies_router",

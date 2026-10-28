@@ -136,6 +136,67 @@ async def join_project(
     return _public(membership), created
 
 
+async def add_member(
+    db, access, id_project: int, id_student: int
+) -> tuple[StudentProjectPublic, bool]:
+    """Un profesor del curso lectivo (o super admin) añade un alumno a un grupo.
+
+    El alumno entra siempre como `active` (y como jefe si el grupo no tenía uno);
+    solo mientras el proyecto está `uninsured`. Aplica la regla de un solo
+    `member` y la cascada de solicitudes pendientes.
+    """
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise _forbidden(
+            "Only a professor of this section year or a super admin can add members"
+        )
+    if not is_uninsured(project):
+        raise _conflict("Only an uninsured project allows members to be added")
+
+    student = await db.get(Student, id_student)
+    if not student:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student not found")
+
+    existing = (
+        await db.exec(
+            select(StudentProject).where(
+                StudentProject.id_project == id_project,
+                StudentProject.id_student == id_student,
+            )
+        )
+    ).first()
+
+    created = False
+    if existing is not None:
+        if existing.status.code != RejectedMember.code:
+            raise _conflict("This student already belongs to this project")
+        membership, created = existing, False
+    else:
+        membership, created = (
+            StudentProject(id_student=id_student, id_project=id_project),
+            True,
+        )
+
+    if await _has_member_membership(
+        db, id_student, exclude_id=membership.id_student_project
+    ):
+        raise _conflict("This student already belongs to another project")
+
+    has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
+
+    await MembershipEffector(db).reject_other_pending(membership)
+
+    membership.is_leader = not has_leader
+    membership.status = await get_status(db, "student_project", Active.code)
+    db.add(membership)
+    try:
+        await db.commit()
+    except IntegrityError:  # dos altas simultáneas
+        await db.rollback()
+        raise _conflict("This student already belongs to this project")
+    return _public(membership), created
+
+
 async def decide_membership(
     db, id_user: int, id_project: int, id_student_project: int, target: str
 ) -> StudentProjectPublic:
