@@ -1,5 +1,7 @@
 from datetime import date
+from pathlib import Path
 
+from config.settings import settings
 from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor, section_year
 
 URL = "/calendar-classes"
@@ -440,3 +442,118 @@ async def test_errors(client, login):
             filename="grande.txt",
         )
     ).status_code == 413
+
+
+async def test_explicit_formats(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+
+    # .txt con contenido CSV, forzando el parser CSV
+    r = await _import_file(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        "100001,Gómez,Ana\n100002,Pérez,Luis",
+        filename="chat.txt",
+        format="csv",
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["summary"]["would_create"] == 2
+
+    # .csv con contenido de chat libre, forzando el parser de texto
+    r = await _import_file(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        "100001-GomezAna\n100002-PerezLuis",
+        filename="lista.csv",
+        format="text",
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["summary"]["would_create"] == 2
+
+    # CSV pegado con encabezado y dos columnas
+    r = await _import_text(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        "legajo,nombre\n100001,GomezAna",
+        fmt="csv",
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["summary"]["would_create"] == 1
+
+
+async def test_multiple_attempts_in_one_line(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+
+    report = (
+        await _import_file(
+            client,
+            admin,
+            calendar_class["id_calendar_class"],
+            "18:30 Ana: 100001-GomezAna 18:31 Luis: 100002-PerezLuis",
+        )
+    ).json()
+    assert report["summary"]["attempts"] == 2
+    assert report["summary"]["would_create"] == 2
+    assert _statuses(report) == {100001: "would_create", 100002: "would_create"}
+
+
+def _media_files() -> set[Path]:
+    return {
+        path
+        for path in Path(settings.MEDIA_DIR).rglob("*")
+        if path.is_file()
+    }
+
+
+async def test_import_does_not_store_the_file(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+
+    before = _media_files()
+    r = await _import_file(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        "100001-GomezAna",
+        filename="chat.txt",
+    )
+    assert r.status_code == 200
+    assert _media_files() == before
+
+
+async def test_report_includes_file_name(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+
+    report = (
+        await _import_file(
+            client,
+            admin,
+            calendar_class["id_calendar_class"],
+            "100001-GomezAna",
+            filename="chat-clase.txt",
+        )
+    ).json()
+    assert report["file_name"] == "chat-clase.txt"
+
+
+async def test_empty_text_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    r = await _import_text(client, admin, calendar_class["id_calendar_class"], "")
+    assert r.status_code == 422

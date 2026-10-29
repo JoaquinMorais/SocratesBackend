@@ -204,3 +204,38 @@ async def test_ordering_and_pagination(client, login):
     page2 = (await client.get(PROJECTS, params={"limit": 1, "offset": 1}, headers=headers)).json()
     assert len(page2["items"]) == 1
     assert (await client.get(PROJECTS, params={"limit": 0}, headers=headers)).status_code == 422
+
+
+async def test_super_admin_with_assignments_gets_courses(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    mail = await make_professor("super-docente@frc.utn.edu.ar", is_super_admin=True)
+    sy = await section_year(client, admin, "3K1", 2026)
+    await assign_professor(client, admin, mail, sy)
+    project = await _project(client, admin, sy)
+
+    headers = await login(mail)
+    body = (await client.get(URL, headers=headers)).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy]
+    listing = (await client.get(PROJECTS, headers=headers)).json()
+    assert project["id_project"] in [item["id_project"] for item in listing["items"]]
+
+
+async def test_student_prefers_cursada_over_group(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_old = await section_year(client, admin, "3K1", 2025)
+    sy_new = await section_year(client, admin, "3K2", 2026)
+    await _enroll(client, admin, ANA_ID, sy_old)
+    project_new = await _project(client, admin, sy_new)
+    joined = await client.post(
+        f"/projects/{project_new['id_project']}/members",
+        headers=await login(STUDENT),
+    )
+    assert joined.status_code == 201, joined.text
+
+    headers = await login(STUDENT)
+    body = (await client.get(URL, headers=headers)).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_old]
+    listing = (await client.get(PROJECTS, headers=headers)).json()
+    assert project_new["id_project"] not in [
+        item["id_project"] for item in listing["items"]
+    ]

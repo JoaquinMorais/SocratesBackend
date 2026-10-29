@@ -372,8 +372,13 @@ async def test_patch_calendar_class(client, login):
     assert body["modality"] == "virtual"
     assert body["meeting_url"] == "https://meet.example.com/clase"
 
-    r = await client.patch(url, json={"title": None, "location": None}, headers=admin)
-    assert r.status_code == 200 and r.json()["title"] is None and r.json()["location"] is None
+    r = await client.patch(
+        url, json={"title": None, "location": None, "meeting_url": None}, headers=admin
+    )
+    assert r.status_code == 200
+    assert r.json()["title"] is None
+    assert r.json()["location"] is None
+    assert r.json()["meeting_url"] is None
 
     assert (await client.patch(url, json={}, headers=admin)).status_code == 422
     assert (await client.patch(url, json={"otro": 1}, headers=admin)).status_code == 422
@@ -608,3 +613,35 @@ async def test_bulk_delete_validation(client, login):
             headers=admin,
         )
     ).status_code == 422
+
+
+async def test_calendar_unknown_section_year(client, login):
+    assert (
+        await client.get(f"{URL}/999/calendar", headers=await login(SUPER_ADMIN))
+    ).status_code == 404
+
+
+async def test_bulk_operations_with_foreign_ids(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_a = await _sy(client, admin, "3K1", 2026)
+    sy_b = await _sy(client, admin, "3K2", 2026)
+    class_b = await _create(client, admin, sy_b)
+
+    r = await client.patch(
+        f"{URL}/{sy_a}/calendar-classes/bulk",
+        json={"ids": [class_b["id_calendar_class"]], "changes": {"modality": "virtual"}},
+        headers=admin,
+    )
+    assert r.status_code == 404
+
+    r = await client.request(
+        "DELETE",
+        f"{URL}/{sy_a}/calendar-classes/bulk",
+        json={"ids": [class_b["id_calendar_class"]]},
+        headers=admin,
+    )
+    assert r.status_code == 404
+    # la clase del otro calendario sigue existiendo
+    assert (
+        await client.get(f"{ITEM}/{class_b['id_calendar_class']}", headers=admin)
+    ).status_code == 200

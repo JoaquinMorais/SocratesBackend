@@ -282,3 +282,42 @@ async def test_delete_and_cascade(client, login):
     other = await _create(client, admin, other_sy)
     assert (await client.delete(f"{URL}/{other_sy}", headers=admin)).status_code == 204
     assert (await client.get(f"{ITEM}/{other['id_activity']}", headers=admin)).status_code == 404
+
+
+async def test_item_permissions(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    activity = await _create(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    assigned = await make_professor("prof-act-item@frc.utn.edu.ar")
+    other = await make_professor("prof-act-item-otro@frc.utn.edu.ar", legajo=300001)
+    await assign_professor(client, admin, assigned, sy)
+    url = f"{ITEM}/{activity['id_activity']}"
+
+    # alumno del curso: lee, pero no modifica
+    ana = await login(STUDENT)
+    assert (await client.get(url, headers=ana)).status_code == 200
+    assert (await client.patch(url, json={"title": "X"}, headers=ana)).status_code == 403
+    assert (await client.delete(url, headers=ana)).status_code == 403
+
+    # alumno de otro curso: no puede leer
+    assert (await client.get(url, headers=await login(LUIS))).status_code == 403
+
+    # profesor asignado: gestiona
+    assigned_headers = await login(assigned)
+    assert (await client.get(url, headers=assigned_headers)).status_code == 200
+    assert (
+        await client.patch(url, json={"title": "Editada"}, headers=assigned_headers)
+    ).status_code == 200
+    assert (await client.delete(url, headers=assigned_headers)).status_code == 204
+
+    # profesor ajeno: no lee ni gestiona; la actividad sigue existiendo
+    second = await _create(client, admin, sy, title="Otra")
+    second_url = f"{ITEM}/{second['id_activity']}"
+    other_headers = await login(other)
+    assert (await client.get(second_url, headers=other_headers)).status_code == 403
+    assert (
+        await client.patch(second_url, json={"title": "X"}, headers=other_headers)
+    ).status_code == 403
+    assert (await client.delete(second_url, headers=other_headers)).status_code == 403
+    assert (await client.get(second_url, headers=admin)).status_code == 200

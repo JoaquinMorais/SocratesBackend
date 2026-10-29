@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import select
 
 from config.database import SessionLocal
-from models import AttendanceSession
+from models import Attendance, AttendanceSession
 from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor, section_year
 
 URL = "/calendar-classes"
@@ -156,10 +156,25 @@ async def test_super_admin_manages_any_course(client, login):
     enrollment = await _enroll(client, admin, ANA_ID, sy)
     assert (
         await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/open",
+            headers=admin,
+        )
+    ).status_code == 200
+    assert (
+        await _list(client, admin, calendar_class["id_calendar_class"])
+    ).status_code == 200
+    assert (
+        await client.post(
             f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/{enrollment['id_student_section_year']}",
             headers=admin,
         )
     ).status_code == 200
+    assert (
+        await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/close",
+            headers=admin,
+        )
+    ).status_code == 204
 
 
 # ---------- check-in ----------
@@ -218,7 +233,8 @@ async def test_professor_cannot_check_in(client, login, make_professor):
     assert r.status_code == 403
 
 
-async def test_wrong_code_closed_and_expired(client, login):
+async def test_wrong_code_closed_and_expired(client, login, monkeypatch):
+    monkeypatch.setattr("utils.attendance.generate_otp", lambda: "123456")
     admin = await login(SUPER_ADMIN)
     sy = await _sy(client, admin)
     calendar_class = await _class(client, admin, sy)
@@ -250,7 +266,9 @@ async def test_wrong_code_closed_and_expired(client, login):
     assert r.status_code == 409
 
 
-async def test_rotation_invalidates_previous_code(client, login):
+async def test_rotation_invalidates_previous_code(client, login, monkeypatch):
+    codes = iter(["111111", "222222"])
+    monkeypatch.setattr("utils.attendance.generate_otp", lambda: next(codes))
     admin = await login(SUPER_ADMIN)
     sy = await _sy(client, admin)
     calendar_class = await _class(client, admin, sy)
@@ -288,7 +306,9 @@ async def test_check_in_is_idempotent(client, login):
     assert len(history["items"]) == 1
 
 
-async def test_code_from_other_class_does_not_work(client, login):
+async def test_code_from_other_class_does_not_work(client, login, monkeypatch):
+    codes = iter(["111111", "222222"])
+    monkeypatch.setattr("utils.attendance.generate_otp", lambda: next(codes))
     admin = await login(SUPER_ADMIN)
     sy = await _sy(client, admin)
     class_a = await _class(client, admin, sy)
@@ -498,3 +518,134 @@ async def test_delete_enrollment_removes_attendance(client, login):
     ).status_code == 204
     history = (await client.get("/me/attendance", headers=await login(STUDENT))).json()
     assert history["items"] == []
+
+
+async def test_enrolled_student_cannot_manage_attendance(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    enrollment = await _enroll(client, admin, ANA_ID, sy)
+    headers = await login(STUDENT)
+
+    assert (
+        await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/open",
+            headers=headers,
+        )
+    ).status_code == 403
+    assert (
+        await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/close",
+            headers=headers,
+        )
+    ).status_code == 403
+    assert (
+        await _list(client, headers, calendar_class["id_calendar_class"])
+    ).status_code == 403
+    assert (
+        await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/{enrollment['id_student_section_year']}",
+            headers=headers,
+        )
+    ).status_code == 403
+    assert (
+        await client.delete(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/{enrollment['id_student_section_year']}",
+            headers=headers,
+        )
+    ).status_code == 403
+
+
+async def test_my_attendance_is_private(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, 2, sy)  # Luis
+    opened = await _open(client, admin, calendar_class["id_calendar_class"])
+
+    ana = await login(STUDENT)
+    luis = await login(LUIS)
+    ana_mark = await _checkin(
+        client, ana, calendar_class["id_calendar_class"], opened["code"]
+    )
+    luis_mark = await _checkin(
+        client, luis, calendar_class["id_calendar_class"], opened["code"]
+    )
+    assert ana_mark.status_code == 200 and luis_mark.status_code == 200
+
+    ana_history = (await client.get("/me/attendance", headers=ana)).json()
+    luis_history = (await client.get("/me/attendance", headers=luis)).json()
+    assert [item["id_attendance"] for item in ana_history["items"]] == [
+        ana_mark.json()["id_attendance"]
+    ]
+    assert [item["id_attendance"] for item in luis_history["items"]] == [
+        luis_mark.json()["id_attendance"]
+    ]
+    assert ana_mark.json()["id_attendance"] != luis_mark.json()["id_attendance"]
+
+
+async def test_delete_student_removes_attendance(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    opened = await _open(client, admin, calendar_class["id_calendar_class"])
+    r = await _checkin(
+        client, await login(STUDENT), calendar_class["id_calendar_class"], opened["code"]
+    )
+    assert r.status_code == 200
+
+    assert (await client.delete(f"/users/{ANA_ID}", headers=admin)).status_code == 204
+    async with SessionLocal() as session:
+        rows = (await session.exec(select(Attendance))).all()
+        assert rows == []
+
+
+async def test_attendance_errors_for_unknown_class(client, login):
+    admin = await login(SUPER_ADMIN)
+    assert (await _list(client, admin, 999)).status_code == 404
+    assert (
+        await client.post(f"{URL}/999/attendance/students/1", headers=admin)
+    ).status_code == 404
+    assert (
+        await client.delete(f"{URL}/999/attendance/students/1", headers=admin)
+    ).status_code == 404
+
+
+async def test_close_is_idempotent_and_reopen(client, login, monkeypatch):
+    codes = iter(["111111", "222222"])
+    monkeypatch.setattr("utils.attendance.generate_otp", lambda: next(codes))
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    ana = await login(STUDENT)
+
+    first = await _open(client, admin, calendar_class["id_calendar_class"])
+    url = f"{URL}/{calendar_class['id_calendar_class']}/attendance/close"
+    assert (await client.post(url, headers=admin)).status_code == 204
+    assert (await client.post(url, headers=admin)).status_code == 204
+    assert (
+        await _checkin(client, ana, calendar_class["id_calendar_class"], first["code"])
+    ).status_code == 409
+
+    second = await _open(client, admin, calendar_class["id_calendar_class"])
+    r = await _checkin(
+        client, ana, calendar_class["id_calendar_class"], second["code"]
+    )
+    assert r.status_code == 200
+
+
+async def test_check_in_requires_cursada_in_class_course(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_a = await _sy(client, admin, "3K1", 2026)
+    sy_b = await _sy(client, admin, "3K2", 2026)
+    calendar_class = await _class(client, admin, sy_a)
+    await _enroll(client, admin, ANA_ID, sy_b)
+    opened = await _open(client, admin, calendar_class["id_calendar_class"])
+
+    r = await _checkin(
+        client, await login(STUDENT), calendar_class["id_calendar_class"], opened["code"]
+    )
+    assert r.status_code == 403

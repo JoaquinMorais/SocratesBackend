@@ -122,3 +122,15 @@ async def test_delete_image(client, login):
     assert not _file_path(url).exists()
     assert (await client.get(f"{URL}/{body['id_image']}", headers=headers)).status_code == 404
     assert (await client.delete(f"{URL}/{body['id_image']}", headers=headers)).status_code == 404
+
+
+async def test_media_file_is_served_publicly(client, login):
+    body = (
+        await _upload(
+            client, await login(SUPER_ADMIN), "public.png", PNG, "image/png"
+        )
+    ).json()
+    path = urlsplit(body["url"]).path
+    r = await client.get(path)
+    assert r.status_code == 200
+    assert r.content  # el archivo se sirve sin login desde /media

@@ -84,13 +84,14 @@ async def build_access(db, user: User) -> Access:
     access = Access()
     if user.professor:
         access.is_super_admin = user.professor.is_super_admin
-        if not access.is_super_admin:
-            rows = await db.exec(
-                select(ProfessorSectionYear.id_section_year).where(
-                    ProfessorSectionYear.id_professor == user.id_user
-                )
+        # Se cargan siempre: un super admin también puede dictar cursos y sus
+        # endpoints "/me" necesitan sus asignaciones.
+        rows = await db.exec(
+            select(ProfessorSectionYear.id_section_year).where(
+                ProfessorSectionYear.id_professor == user.id_user
             )
-            access.section_year_ids = set(rows.all())
+        )
+        access.section_year_ids = set(rows.all())
     if user.student:
         rows = await db.exec(
             select(StudentProject.id_project)
@@ -501,9 +502,8 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     """Los cursos lectivos "actuales" del usuario: los del año máximo.
 
     - Profesor: sus cursos asignados; puede haber varias comisiones del mismo año.
-    - Alumno: si es miembro (`active`/`finished`) de un proyecto, el curso
-      lectivo de ese proyecto (tiene prioridad sobre la cursada); si no, todas
-      las comisiones del año más reciente de sus cursadas.
+    - Alumno: el curso de sus cursadas y, si no tiene ninguna, el de su grupo
+      actual (membresía `active`/`finished`).
     - Sin cursos (incluido un super admin que no dicta) devuelve `[]`.
 
     Orden: comisión (nombre) y luego id.
@@ -512,45 +512,24 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     if user.professor:
         ids = set(access.section_year_ids)
     elif user.student:
-        # Un miembro (`active`/`finished`) de un proyecto se gestiona en el curso
-        # lectivo de ese proyecto, que tiene prioridad sobre su cursada.
-        if access.project_ids:
-            member_years = (
+        cursadas = (
+            await db.exec(
+                select(StudentSectionYear.id_section_year).where(
+                    StudentSectionYear.id_student == user.id_user
+                )
+            )
+        ).all()
+        ids = set(cursadas)
+        if not ids and access.project_ids:
+            # Sin cursadas, se usa el curso lectivo de su grupo actual.
+            fallback = (
                 await db.exec(
                     select(Project.id_section_year).where(
                         Project.id_project.in_(access.project_ids)
                     )
                 )
             ).all()
-            ids = set(member_years)
-        else:
-            cursadas = (
-                await db.exec(
-                    select(StudentSectionYear.id_section_year).where(
-                        StudentSectionYear.id_student == user.id_user
-                    )
-                )
-            ).all()
-            if cursadas:
-                max_cursada_year = (
-                    await db.exec(
-                        select(func.max(SectionYear.year)).where(
-                            SectionYear.id_section_year.in_(set(cursadas))
-                        )
-                    )
-                ).one()
-                # Sin grupo, el alumno ve todas las comisiones de su año más
-                # reciente (no solo la suya), para explorar otros grupos.
-                all_same_year = (
-                    await db.exec(
-                        select(SectionYear.id_section_year).where(
-                            SectionYear.year == max_cursada_year
-                        )
-                    )
-                ).all()
-                ids = set(all_same_year)
-            else:
-                ids = set()
+            ids = set(fallback)
 
     if not ids:
         return []

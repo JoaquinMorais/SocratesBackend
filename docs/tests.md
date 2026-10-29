@@ -334,13 +334,14 @@ Calendario del curso lectivo (1 a 1) y sus clases concretas: consulta (`GET /sec
 - `test_calendar_range_validation`: testear que se envíen ambos `from`/`to` o ninguno, `from <= to` y rango máximo de 366 días (422).
 - `test_calendar_filters_by_range`: testear que el rango filtra las clases devueltas.
 - `test_calendar_includes_activities`: testear que el calendario del curso trae sus actividades y que el rango también las filtra.
+- `test_calendar_unknown_section_year`: testear que consultar el calendario de un curso lectivo inexistente responde 404.
 
 **Clase puntual**
 - `test_create_calendar_class`: testear el alta de una clase con fecha, horario, modalidad y datos opcionales, y que el día de la semana se deriva de la fecha.
 - `test_create_validation`: testear fin no posterior al inicio, link inválido, campos faltantes/desconocidos y fecha fuera del año del curso lectivo (422); curso inexistente (404).
 - `test_duplicate_and_overlap`: testear que no se repite la misma fecha/hora (409) ni se superponen clases (409), y que tocarse o caer en otro día es válido.
 - `test_get_not_found`: testear que una clase inexistente responde 404.
-- `test_patch_calendar_class`: testear que se puede mover la fecha, cambiar horario/modalidad/link, limpiar textos con `null`, y que body vacío, campos desconocidos o fecha fuera del año responden 422.
+- `test_patch_calendar_class`: testear que se puede mover la fecha, cambiar horario/modalidad/link, limpiar `title`, `location` y `meeting_url` con `null`, y que body vacío, campos desconocidos o fecha fuera del año responden 422.
 - `test_patch_overlap_rejected`: testear que mover una clase sobre otra responde 409.
 - `test_delete_and_cascade`: testear el borrado (204, deja de existir, 404 al repetir) y que al eliminar el curso lectivo se borra el calendario con sus clases.
 
@@ -354,6 +355,7 @@ Calendario del curso lectivo (1 a 1) y sus clases concretas: consulta (`GET /sec
 - `test_bulk_update_by_filter`: testear que modifica solo las clases que cumplen el filtro de días y rango.
 - `test_bulk_update_overlap_is_rejected`: testear que si el resultado se superpone con otra clase responde 409 y no modifica nada.
 - `test_bulk_update_validation`: testear `ids` y `filter` juntos, sin selector, `changes` vacío, intento de cambiar `date` o ninguna clase coincidente (422).
+- `test_bulk_operations_with_foreign_ids`: testear que un `ids` de otro calendario responde 404 al modificar y al borrar, y que la clase ajena sigue existiendo.
 
 **Borrado en lote**
 - `test_bulk_delete_by_filter`: testear que se pueden borrar las clases de un día (por ejemplo, un feriado) con un filtro.
@@ -367,6 +369,7 @@ Actividades/entregas del curso lectivo (`GET/POST /section-years/{id}/activities
 **Permisos**
 - `test_requires_authentication`: testear que todos los endpoints responden 401 sin login.
 - `test_student_of_other_course_forbidden`: testear que un alumno ajeno al curso no puede ver ni gestionar actividades (403).
+- `test_item_permissions`: testear la matriz de permisos por ítem: alumno del curso lee pero no modifica, alumno ajeno no lee, profesor asignado gestiona y profesor ajeno no.
 - `test_enrolled_student_can_read_but_not_write`: testear que un alumno con cursada puede listar y consultar, pero no crear (403).
 - `test_member_of_project_can_read`: testear que un alumno sin cursada pero con un grupo en el curso lectivo puede leer.
 - `test_assigned_professor_manages_and_other_cannot`: testear que el profesor asignado crea, edita y elimina, y que otro profesor no puede ver ni gestionar (403).
@@ -379,7 +382,7 @@ Actividades/entregas del curso lectivo (`GET/POST /section-years/{id}/activities
 - `test_title_is_trimmed`: testear que el título se recorta.
 
 **Consultar**
-- `test_list_ordering_filters_and_pagination`: testear el orden por fecha/hora (sin hora al final), los filtros `from`/`to`, `limit`/`offset`, `total` y los rangos inválidos (422).
+- `test_list_ordering_filters_and_pagination`: testear el orden por fecha/hora (sin hora al final), los filtros `from`/`to`, `limit`/`offset`, `total`, los rangos inválidos (422) y el curso lectivo inexistente (404).
 - `test_get_not_found`: testear que una actividad inexistente responde 404.
 
 **Modificar**
@@ -397,10 +400,13 @@ Mi calendario (`GET /me/calendar`): clases y actividades de los cursos actuales 
 
 **Profesores**
 - `test_professor_gets_current_year_across_commissions`: testear que con asignaciones en 2025 y 2026 devuelve solo los cursos de 2026 (todas las comisiones) con sus clases y actividades.
+- `test_super_admin_with_assignments_gets_calendar`: testear que un super admin que también dicta ve las clases y actividades de sus cursos.
 
 **Alumnos**
 - `test_student_gets_current_cursada_year`: testear que con cursadas en 2025 y 2026 devuelve solo 2026, con sus clases y actividades.
 - `test_student_falls_back_to_current_group`: testear que un alumno sin cursadas usa el curso lectivo de su grupo actual.
+- `test_student_prefers_cursada_over_group`: testear que si tiene cursada y grupo en años distintos, prevalece la cursada.
+- `test_student_prefers_cursada_over_group_for_calendar`: testear que si tiene cursada y grupo en años distintos, el calendario corresponde a la cursada.
 
 **Sin curso actual**
 - `test_no_current_section_year`: testear que un profesor sin asignaciones, un alumno sin cursadas ni grupo y un super admin que no dicta reciben los tres arreglos vacíos.
@@ -420,6 +426,8 @@ Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/atten
 **Preview y confirmación**
 - `test_preview_then_confirm`: testear que el preview no escribe, que la confirmación crea con `method: transcript`, que aparece en la lista/historial y que reenviar el archivo es idempotente.
 - `test_existing_attendance_is_not_overwritten`: testear que una asistencia por código no se pisa y se reporta `already_present` con su método original.
+- `test_import_does_not_store_the_file`: testear que la importación no guarda el archivo en el almacenamiento.
+- `test_report_includes_file_name`: testear que el reporte incluye el nombre del archivo subido.
 
 **Matching del nombre**
 - `test_name_tolerance`: testear tildes/espacios, falta del segundo nombre, uso solo del segundo nombre, typo y orden invertido; y que los duplicados se consolidan con `occurrences`.
@@ -432,9 +440,12 @@ Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/atten
 - `test_csv_file_with_header`: testear CSV con encabezado `legajo,apellido,nombre` y filas inválidas.
 - `test_csv_text_with_semicolon`: testear CSV pegado con delimitador `;`.
 - `test_file_with_bom_and_latin1`: testear UTF-8 con BOM y Latin-1.
+- `test_explicit_formats`: testear `format=csv` sobre un `.txt`, `format=text` sobre un `.csv` y CSV pegado con encabezado y dos columnas.
+- `test_multiple_attempts_in_one_line`: testear que procesa varias apariciones de legajo-nombre en una misma línea.
 
 **Errores**
 - `test_errors`: testear archivo vacío (422), texto sin pares (422), texto con legajo sin nombre (422) y archivo demasiado grande (413).
+- `test_empty_text_rejected`: testear que el body de texto vacío responde 422.
 
 ## `tests/test_attendance.py`
 
@@ -443,33 +454,39 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 **Permisos**
 - `test_requires_authentication`: testear que abrir, cerrar, check-in, listar, marcar/quitar a mano y el historial responden 401 sin login.
 - `test_student_cannot_manage_attendance`: testear que un alumno no puede abrir, cerrar, listar ni marcar a mano (403).
+- `test_enrolled_student_cannot_manage_attendance`: testear que un alumno **con cursada** tampoco puede abrir, cerrar, listar ni marcar/quitar a mano (403).
 - `test_assigned_professor_manages_and_other_cannot`: testear que el profesor asignado abre, lista, marca y cierra, y que otro profesor no puede (403).
-- `test_super_admin_manages_any_course`: testear que el super admin marca en cualquier curso.
+- `test_super_admin_manages_any_course`: testear que el super admin abre, lista, marca y cierra en cualquier curso.
 - `test_professor_cannot_check_in`: testear que un profesor no puede marcar su asistencia como alumno (403).
 
 **Abrir y cerrar**
 - `test_open_and_close_errors`: testear que abrir/cerrar una clase inexistente responde 404 y cerrar sin toma responde 404.
 - `test_rotation_invalidates_previous_code`: testear que reabrir rota el código y que el anterior deja de servir.
 - `test_wrong_code_closed_and_expired`: testear código incorrecto (422), toma cerrada (409) y toma vencida (409).
+- `test_close_is_idempotent_and_reopen`: testear que cerrar dos veces responde 204, que el check-in queda bloqueado y que reabrir vuelve a habilitarlo.
 
 **Check-in**
 - `test_enrolled_student_checks_in`: testear que un alumno con cursada marca con el código y que aparece en la lista y en su historial.
 - `test_student_without_cursada_forbidden`: testear que un alumno sin cursada no puede marcar (403).
 - `test_check_in_is_idempotent`: testear que repetir el código devuelve la misma marca y no duplica filas.
 - `test_code_from_other_class_does_not_work`: testear que el código de otra clase no sirve (422).
+- `test_check_in_requires_cursada_in_class_course`: testear que un alumno con cursada en un curso no puede marcar en una clase de otro curso (403).
 
 **Manual y listado**
 - `test_manual_mark_and_unmark`: testear el marcado y quitado a mano, la idempotencia y que la lista refleje `present`/`method`.
 - `test_manual_foreign_enrollment_rejected`: testear que una cursada de otro curso lectivo responde 422 y una inexistente 404.
 - `test_list_includes_all_enrolled_in_order`: testear que la lista incluye a todos los alumnos del curso (los no marcados en `false`), ordenados por apellido, y que no expone el código.
+- `test_attendance_errors_for_unknown_class`: testear que listar, marcar o quitar a mano con una clase inexistente responde 404.
 
 **Historial**
 - `test_my_attendance_filters_and_order`: testear que el alumno ve solo lo suyo, con el más reciente primero, filtros de rango y validaciones (422).
 - `test_my_attendance_is_student_only`: testear que un profesor recibe 403.
+- `test_my_attendance_is_private`: testear que cada alumno ve solo sus propias asistencias y no las de otros.
 
 **Cascadas**
 - `test_delete_class_removes_session_and_attendance`: testear que al borrar la clase se van la sesión y las asistencias.
 - `test_delete_enrollment_removes_attendance`: testear que al borrar la cursada se va su asistencia.
+- `test_delete_student_removes_attendance`: testear que al eliminar al alumno (vía `/users`) se borran sus asistencias.
 
 ## `tests/test_professor_section_years.py`
 
@@ -802,6 +819,7 @@ Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/secti
 **Profesores**
 - `test_professor_gets_latest_section_year`: testear que con cursos 2025 y 2026 devuelve solo el de 2026 y que los proyectos son solo de ese curso.
 - `test_professor_with_two_commissions_in_latest_year`: testear que si dicta dos comisiones del mismo año devuelve ambas y los proyectos de las dos.
+- `test_super_admin_with_assignments_gets_courses`: testear que un super admin que también dicta ve sus cursos y proyectos.
 
 **Alumnos**
 - `test_student_gets_latest_cursada_year`: testear que con cursadas 2025 y 2026 devuelve solo 2026 y sus proyectos.
@@ -832,6 +850,7 @@ Imágenes del sistema (`POST /images`, `GET /images/{id}`, `DELETE /images/{id}`
 
 **Eliminar**
 - `test_delete_image`: testear que elimina la fila y el archivo, y que un id inexistente responde 404.
+- `test_media_file_is_served_publicly`: testear que el archivo se sirve sin login desde `/media/...`.
 
 ## `tests/test_technologies.py`
 
@@ -885,6 +904,9 @@ Tecnologías: alta, edición, consulta y baja del catálogo (`POST /technologies
 - `test_delete_technology_deletes_its_image`: testear que al eliminar la tecnología también se borra su imagen.
 - `test_delete_image_in_use_by_technology_rejected`: testear que `DELETE /images/{id}` responde 409 mientras la imagen esté asignada a una tecnología.
 - `test_unsupported_content_type_rejected`: testear que un body que no es JSON ni multipart responde 422.
+- `test_patch_json_replaces_image_and_deletes_previous`: testear que un PATCH con `id_image` reemplaza la imagen, borra la anterior (fila y disco) y responde con la nueva.
+- `test_patch_json_image_taken_by_another_rejected`: testear que asignar por JSON una imagen que ya usa otra tecnología responde 409.
+- `test_put_image_errors`: testear que `PUT .../image` con una tecnología inexistente responde 404 y con un archivo inválido 422.
 
 ## `tests/test_project_technologies.py`
 

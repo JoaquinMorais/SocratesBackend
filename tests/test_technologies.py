@@ -397,3 +397,75 @@ async def test_unsupported_content_type_rejected(client, login):
     )
     assert r.status_code == 422, r.text  # body JSON inválido
 
+
+
+async def test_patch_json_replaces_image_and_deletes_previous(client, login):
+    headers = await login(SUPER_ADMIN)
+    tech = (
+        await client.post(
+            URL,
+            data={"name": "JsonReplace"},
+            files=_fmultipart("a.png", PNG, "image/png"),
+            headers=headers,
+        )
+    ).json()
+    old_image = tech["image"]
+    image = (
+        await client.post(
+            "/images", files=_fmultipart("b.png", JPEG, "image/jpeg"), headers=headers
+        )
+    ).json()
+
+    r = await client.patch(
+        f"{URL}/{tech['id_technology']}",
+        json={"id_image": image["id_image"]},
+        headers=headers,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["image"] == image
+    assert not _file_path(old_image["url"]).exists()
+    assert (
+        await client.get(f"/images/{old_image['id_image']}", headers=headers)
+    ).status_code == 404
+
+
+async def test_patch_json_image_taken_by_another_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    owner = (
+        await client.post(
+            URL,
+            data={"name": "Owner"},
+            files=_fmultipart("o.png", PNG, "image/png"),
+            headers=headers,
+        )
+    ).json()
+    other = await _create(client, headers, "Otro")
+
+    r = await client.patch(
+        f"{URL}/{other['id_technology']}",
+        json={"id_image": owner["image"]["id_image"]},
+        headers=headers,
+    )
+    assert r.status_code == 409, r.text
+    assert (
+        await client.get(f"{URL}/{other['id_technology']}", headers=headers)
+    ).json()["image"] is None
+
+
+async def test_put_image_errors(client, login):
+    headers = await login(SUPER_ADMIN)
+    assert (
+        await client.put(
+            f"{URL}/999/image",
+            files=_fmultipart("a.png", PNG, "image/png"),
+            headers=headers,
+        )
+    ).status_code == 404
+
+    tech = await _create(client, headers, "PutErrors")
+    r = await client.put(
+        f"{URL}/{tech['id_technology']}/image",
+        files=_fmultipart("bad.png", BAD, "image/png"),
+        headers=headers,
+    )
+    assert r.status_code == 422, r.text

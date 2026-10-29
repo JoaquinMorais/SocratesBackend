@@ -28,6 +28,9 @@ os.environ["EMAIL_BACKEND"] = "console"
 os.environ["EMAIL_DEV_REDIRECT"] = ""
 os.environ["OTP_COOLDOWN_SECONDS"] = "0"
 os.environ["SEND_WELCOME_EMAILS"] = "true"
+os.environ["ATTENDANCE_CODE_MINUTES"] = "10"
+os.environ["ATTENDANCE_NAME_SIMILARITY"] = "0.75"
+os.environ["ATTENDANCE_TRANSCRIPT_MAX_BYTES"] = "2000000"
 
 # Los archivos de imagen van a un directorio temporal de la sesión.
 MEDIA_DIR_PATH = tempfile.mkdtemp(prefix="socrates-media-")
