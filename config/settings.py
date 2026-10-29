@@ -35,6 +35,9 @@ class Settings(BaseSettings):
 
     # Asistencia: minutos que vale el código de una clase.
     ATTENDANCE_CODE_MINUTES: int = 10
+    # Asistencia desde el chat: tamaño máximo del texto y tolerancia del nombre.
+    ATTENDANCE_TRANSCRIPT_MAX_BYTES: int = 2_000_000
+    ATTENDANCE_NAME_SIMILARITY: float = 0.75
 
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

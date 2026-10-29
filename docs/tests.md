@@ -409,6 +409,33 @@ Mi calendario (`GET /me/calendar`): clases y actividades de los cursos actuales 
 - `test_range_validation_and_filtering`: testear que el rango es opcional (ambos o ninguno, máximo 366 días) y filtra clases y actividades.
 - `test_ordering`: testear que clases y actividades vienen ordenadas por fecha y hora.
 
+## `tests/test_attendance_transcript.py`
+
+Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/attendance/import-transcript` y `.../text`): preview y confirmación, legajo exacto y nombre tolerante.
+
+**Permisos**
+- `test_requires_authentication`: testear que ambos endpoints responden 401 sin login.
+- `test_permissions`: testear que alumno y profesor ajeno no pueden importar (403), que el profesor asignado sí, que un profesor de otro curso lectivo no, y que una clase inexistente responde 404.
+
+**Preview y confirmación**
+- `test_preview_then_confirm`: testear que el preview no escribe, que la confirmación crea con `method: transcript`, que aparece en la lista/historial y que reenviar el archivo es idempotente.
+- `test_existing_attendance_is_not_overwritten`: testear que una asistencia por código no se pisa y se reporta `already_present` con su método original.
+
+**Matching del nombre**
+- `test_name_tolerance`: testear tildes/espacios, falta del segundo nombre, uso solo del segundo nombre, typo y orden invertido; y que los duplicados se consolidan con `occurrences`.
+- `test_name_mismatch_is_not_marked`: testear que solo apellido, solo nombre o el nombre de otro alumno no se marcan y quedan como `name_mismatch`.
+
+**Legajos**
+- `test_unknown_and_not_enrolled`: testear alumno no inscripto y legajo de profesor (`not_enrolled`), legajo inexistente o con un dígito de menos (`unknown_legajo`).
+
+**Formatos**
+- `test_csv_file_with_header`: testear CSV con encabezado `legajo,apellido,nombre` y filas inválidas.
+- `test_csv_text_with_semicolon`: testear CSV pegado con delimitador `;`.
+- `test_file_with_bom_and_latin1`: testear UTF-8 con BOM y Latin-1.
+
+**Errores**
+- `test_errors`: testear archivo vacío (422), texto sin pares (422), texto con legajo sin nombre (422) y archivo demasiado grande (413).
+
 ## `tests/test_attendance.py`
 
 Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar la toma, check-in del alumno con código, marcado manual del profesor, lista de la clase e historial propio (`GET /me/attendance`).

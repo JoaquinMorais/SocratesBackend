@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status
+from typing import Annotated, Literal
+
+from fastapi import APIRouter, File, Query, UploadFile, status
 
 from config.database import db_dependency
 from schemas.attendance import (
@@ -6,6 +8,14 @@ from schemas.attendance import (
     AttendancePublic,
     AttendanceSessionOpenedPublic,
     ClassAttendancePublic,
+)
+from schemas.attendance_transcript import (
+    AttendanceTranscriptReport,
+    AttendanceTranscriptText,
+)
+from utils.attendance_transcript import (
+    import_transcript_from_file,
+    import_transcript_from_text,
 )
 from utils.attendance import (
     check_in,
@@ -203,4 +213,105 @@ async def unmark_manual_route(
         await build_access(db, user),
         id_calendar_class,
         id_student_section_year,
+    )
+
+
+_TRANSCRIPT_ERRORS = {
+    401: {"description": "Token ausente, inválido o vencido"},
+    403: {
+        "description": (
+            "El usuario no es profesor, o no está asignado al curso lectivo de la clase"
+        )
+    },
+    404: {"description": "No existe la clase"},
+    413: {"description": "El texto supera el tamaño máximo"},
+    422: {
+        "description": (
+            "Texto vacío, no se encontró ningún par legajo-nombre, CSV inválido "
+            "o formato desconocido"
+        )
+    },
+}
+
+
+@attendance_router.post(
+    "/{id_calendar_class}/attendance/import-transcript",
+    response_model=AttendanceTranscriptReport,
+    summary="Importar asistencia desde un archivo de chat",
+    responses=_TRANSCRIPT_ERRORS,
+)
+async def import_transcript_file_route(
+    id_calendar_class: int,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+    file: Annotated[
+        UploadFile,
+        File(description="Transcripción del chat (.txt) o un CSV con legajo y nombre"),
+    ],
+    dry_run: Annotated[
+        bool,
+        Query(description="true: solo preview; false: crea las asistencias"),
+    ] = True,
+    fmt: Annotated[
+        Literal["auto", "text", "csv"],
+        Query(alias="format", description="Formato del archivo (auto detecta por extensión)"),
+    ] = "auto",
+):
+    """
+    Importa asistencias desde la transcripción del chat. **Profesor del curso
+    lectivo o super admin.**
+
+    - Espera mensajes con `LEGAJO-ApellidoNombre` (separadores `-`, `–`, `—`,
+      `:`, `,` o `;`). El **legajo debe ser exacto**; el nombre tolera tildes,
+      errores, orden invertido y nombres faltantes (umbral configurable).
+    - `dry_run` es **true por defecto**: solo devuelve el reporte. Para crear las
+      asistencias, repetir con `?dry_run=false`.
+    - Los asistentes se marcan con `method: "transcript"`; una asistencia
+      existente (`code`/`manual`) no se pisa y se reporta `already_present`.
+    - El archivo no se guarda. Límite `ATTENDANCE_TRANSCRIPT_MAX_BYTES` (2 MB).
+    - Funciona para cualquier modalidad de clase.
+    """
+    return await import_transcript_from_file(
+        db,
+        await build_access(db, user),
+        id_calendar_class,
+        file,
+        dry_run=dry_run,
+        fmt=fmt,
+    )
+
+
+@attendance_router.post(
+    "/{id_calendar_class}/attendance/import-transcript/text",
+    response_model=AttendanceTranscriptReport,
+    summary="Importar asistencia desde texto o CSV pegado",
+    responses=_TRANSCRIPT_ERRORS,
+)
+async def import_transcript_text_route(
+    id_calendar_class: int,
+    data: AttendanceTranscriptText,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+    dry_run: Annotated[
+        bool,
+        Query(description="true: solo preview; false: crea las asistencias"),
+    ] = True,
+):
+    """
+    Igual que la importación desde archivo, pero con el texto pegado en el body.
+
+    - `format` es `text` (chat libre) o `csv` (`legajo,nombre` /
+      `legajo,apellido,nombre`, con encabezado opcional).
+    - `dry_run` es **true por defecto**; enviar `?dry_run=false` para confirmar.
+    - Se aplican las mismas reglas de legajo exacto y nombre tolerante.
+    """
+    return await import_transcript_from_text(
+        db,
+        await build_access(db, user),
+        id_calendar_class,
+        data.text,
+        dry_run=dry_run,
+        fmt=data.format,
     )

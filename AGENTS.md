@@ -34,7 +34,7 @@ Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + Pos
 - Código, identificadores y mensajes de error (`detail`): **inglés**, `snake_case`.
 - Documentación para el frontend (`summary`, docstrings, descripciones de `responses`) y los `.md`: **español**.
 - Excepción deliberada: `legajo` queda en español (decisión del proyecto).
-- Equivalencias del dominio: `Section` = comisión (`3K1`), `SectionYear` = curso lectivo (comisión + año), `StudentSectionYear` = cursada del alumno (alumno + curso lectivo), `Calendar` = calendario 1 a 1 del curso lectivo, `CalendarClass` = clase concreta del calendario, `Activity` = actividad/entrega del curso lectivo, `AttendanceSession` = toma de asistencia de una clase, `Attendance` = asistencia de un alumno a una clase, `Project` = proyecto/grupo.
+- Equivalencias del dominio: `Section` = comisión (`3K1`), `SectionYear` = curso lectivo (comisión + año), `StudentSectionYear` = cursada del alumno (alumno + curso lectivo), `Calendar` = calendario 1 a 1 del curso lectivo, `CalendarClass` = clase concreta del calendario, `Activity` = actividad/entrega del curso lectivo, `AttendanceSession` = toma de asistencia de una clase, `Attendance` = asistencia de un alumno a una clase (`code`/`manual`/`transcript`), `Project` = proyecto/grupo.
 - Tablas en plural (`section_years`), claves primarias `id_<entidad>` (`id_section_year`), rutas en plural con guiones (`/section-years`).
 
 ## Convenciones de código

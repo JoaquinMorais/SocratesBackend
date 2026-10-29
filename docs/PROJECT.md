@@ -99,9 +99,10 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
   - CRUD (`/section-years/{id}/activities` y `/activities/{id}`): la gestionan el profesor asignado y el super admin; la ven todos los alumnos del curso lectivo.
   - `GET /me/calendar?from&to` devuelve **mi calendario** (`section_years`, `classes`, `activities`) de los cursos lectivos del **año más reciente** del usuario (profesor: sus asignaciones; alumno: el curso de su grupo si es miembro de uno, o todas las comisiones del año de su cursada más reciente), ordenado por fecha y hora.
   - El **entregable** (relación proyecto ↔ actividad, con visibilidad por grupo) queda para más adelante.
-- **Asistencia (`Attendance`)**: una fila por alumno y clase a la que asistió (tabla intermedia entre la cursada y la clase). Solo se guardan los **presentes**: la ausencia es la falta de fila. El método indica `code` (el alumno ingresó el código) o `manual` (lo marcó el profesor).
+- **Asistencia (`Attendance`)**: una fila por alumno y clase a la que asistió (tabla intermedia entre la cursada y la clase). Solo se guardan los **presentes**: la ausencia es la falta de fila. El método indica `code` (el alumno ingresó el código), `manual` (lo marcó el profesor) o `transcript` (se importó desde el chat de la clase).
   - **Toma (`AttendanceSession`)**: una por clase. El profesor la habilita o reabre y se genera un **código de 6 dígitos** que vence a los `ATTENDANCE_CODE_MINUTES` minutos (10 por defecto); se guarda hasheado y solo se muestra al abrirlo. Reabrir rota el código; cerrar corta los check-ins (las marcas manuales siguen disponibles).
   - El alumno marca con el código solo si tiene **cursada** en ese curso lectivo; si la toma está cerrada o vencida **409**, código inválido **422**, y repetir es **idempotente**. La lista de la clase (todos los alumnos del curso con `present`) es solo para el profesor/super admin; el alumno consulta su historial en `GET /me/attendance`.
+  - **Importación desde el chat**: el profesor sube un archivo de texto/CSV o pega el chat en `POST /calendar-classes/{id}/attendance/import-transcript` (y `.../text`). Se buscan mensajes `LEGAJO-ApellidoNombre`: el **legajo debe ser exacto**; el nombre tolera tildes, errores, orden invertido y nombres faltantes (umbral `ATTENDANCE_NAME_SIMILARITY`, 0.75). Es en dos pasos (`dry_run` por defecto): primero un reporte y luego la confirmación. Las filas quedan `method: transcript`, no se pisa una asistencia existente y no se guarda el archivo. Funciona en cualquier modalidad.
 
 ## Flujos principales
 
@@ -141,6 +142,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 | Actividades del curso lectivo | Alumnos del curso lectivo, profesores asignados y super admin | Profesor del curso lectivo y super admin |
 | Asistencia de una clase | Profesor del curso lectivo y super admin | Profesor del curso lectivo y super admin |
 | Marcar mi asistencia (check-in) | El alumno con cursada en el curso lectivo | n/a |
+| Importar asistencia desde el chat | Profesor del curso lectivo y super admin | Profesor del curso lectivo y super admin |
 | Mi asistencia (`/me/attendance`) | El propio alumno | n/a (solo lectura) |
 | Mi calendario (`/me/calendar`) | El propio usuario (profesor o alumno) | n/a (solo lectura) |
 | Mi proyecto (`/me/project`) | El propio alumno (solo alumnos) | n/a (solo lectura) |
@@ -192,11 +194,12 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 - Calendario del curso lectivo (`GET /section-years/{id}/calendar`): un calendario 1 a 1 con clases concretas (fecha, horario, modalidad y aula/link). Alta puntual o en lote por patrón de días, modificación y borrado de a una o en lote; un feriado es borrar las clases de ese día. Gestión del profesor del curso y super admin, lectura acotada al curso y sin solapamientos.
 - Actividades/entregas del curso lectivo (`/section-years/{id}/activities` y `/activities/{id}`): actividades para todo el curso con fecha y hora de entrega opcional; gestión del profesor del curso y super admin, lectura para los alumnos del curso. `GET /me/calendar` devuelve las clases y actividades de los cursos actuales del usuario (año más reciente).
 - Asistencia por clase (`/calendar-classes/{id}/attendance`): el profesor habilita una toma con código de 6 dígitos que vence (o rota), el alumno con cursada marca con el código, el profesor puede marcar/quitar a mano y ver la lista con los presentes. Solo se guardan presentes; `GET /me/attendance` devuelve el historial del alumno.
+- Importación de asistencia desde el chat de la clase (`.txt`/CSV o texto pegado): legajo exacto, nombre tolerante (tildes/errores/nombres faltantes), preview + confirmación, `method: transcript` y reporte detallado por intento.
 - Tests automáticos de todo lo anterior y documentación de los endpoints en `/docs`.
 
 **Pendiente**
 - Calendario, siguientes etapas: **entregable** (relación proyecto ↔ actividad, con visibilidad por grupo) y entregas de documentación con archivos.
-- Asistencia, siguientes etapas: estados (tarde/justificado), justificaciones, QR/importación, reportes y límite de intentos para el código.
+- Asistencia, siguientes etapas: estados (tarde/justificado), justificaciones, QR/importación desde otros formatos, reportes y límite de intentos para el código.
 - Finalizar la participación de un integrante (`active → finished`): todavía no tiene endpoint.
 - Idea del proyecto y los campos sensibles (documentación, directorio de GitHub).
 - Almacenamiento de imágenes en la nube (S3, Cloudinary...): hoy es local, detrás de una capa de almacenamiento (`utils/storage.py`) para cambiarlo sin tocar la API ni la BD.

@@ -21,7 +21,8 @@ class Attendance(SQLModel, table=True):
             name="uq_attendance_student_class",
         ),
         CheckConstraint(
-            "method IN ('code', 'manual')", name="ck_attendance_method"
+            "method IN ('code', 'manual', 'transcript')",
+            name="ck_attendance_method",
         ),
     )
 
