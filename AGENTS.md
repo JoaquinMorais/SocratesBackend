@@ -103,7 +103,7 @@ docker compose down -v                # borra la BD (necesario si cambian column
 
 ## Datos del seed (útiles para los tests)
 
-Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed realista `data/seed.json` (comisiones, cursos lectivos, profesores, alumnos, asignaciones, calendarios con sus clases, actividades, grupos, miembros, inscripciones y cursadas de alumnos). Los ids de abajo corresponden a `seed_test.json`.
+Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed realista `data/seed.json` (200 alumnos, 10 cursos lectivos 2024-2026, proyectos con estados e historial, tecnologías, calendarios con feriados, inscripciones, cursadas y asistencias). Los ids de abajo corresponden a `seed_test.json`.
 
 | Quién | Mail | Contraseña | id |
 |---|---|---|---|

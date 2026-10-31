@@ -31,7 +31,7 @@ socrates-backend/
 │   └── database.py
 │
 ├── data/
-│   ├── seed.json                 # Datos de ejemplo (usuarios, comisiones, cursadas, grupos)
+│   ├── seed.json                 # Seed realista (200 alumnos, cursos 2024-2026, proyectos, asistencias)
 │   └── seed_test.json            # Seed mínimo y fijo que usan los tests
 │
 ├── models/                       # Tablas de la base de datos (SQLModel)
@@ -223,7 +223,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 
 | Archivo | Para qué sirve |
 |---|---|
-| `seed.json` | Datos de ejemplo realistas (alumnos, profesores, comisiones, cursos lectivos, asignaciones, grupos y miembros), para poder probar sin cargar nada. Solo se carga si la BD está vacía. |
+| `seed.json` | Seed realista para probar sin cargar nada: ~200 alumnos, 4 comisiones, 10 cursos lectivos (2024-2026; `3K4` solo en 2024), proyectos con estados e historial, tecnologías, actividades, calendarios con feriados y asistencias. Solo se carga si la BD está vacía. |
 | `seed_test.json` | Seed mínimo y fijo que usan los tests (Ana, Luis y Marta). Así el seed real puede cambiar sin romper los tests. |
 
 ## `models/`
@@ -294,7 +294,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `permissions.py` | Dependencias de rol: `professor_dependency`, `super_admin_dependency` y `student_dependency`. |
 | `email.py` | Envío de mails (por consola o por SMTP): código de verificación y bienvenida. |
 | `verification.py` | Creación y consumo de códigos OTP (vencimiento, intentos y espera entre pedidos). |
-| `seed.py` | Carga inicial desde un archivo JSON (`data/seed.json` por defecto; los tests usan `data/seed_test.json`): usuarios, comisiones, cursos lectivos, asignaciones, grupos y miembros, resolviendo las referencias por claves naturales. |
+| `seed.py` | Carga inicial desde un archivo JSON (`data/seed.json` por defecto; los tests usan `data/seed_test.json`): usuarios, comisiones, cursos lectivos, asignaciones, historial de estados, grupos, miembros, tecnologías, feriados y asistencias generadas de forma determinista. |
 | `users.py` | Armado de respuestas de usuario, edición de datos propios, listado con filtros y baja de usuarios (aplica la regla del rol, delegando en alumnos o profesores). |
 | `students.py` | Alta masiva de alumnos, modificación de un alumno, su eliminación (solo super admin; bloqueada con membresías vigentes, limpia restos viejos, sesiones y OTP) y listado con los grupos de cada alumno (filtrado por estado de la membresía). |
 | `professors.py` | Alta, modificación y eliminación de profesores. |
@@ -353,7 +353,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_images.py` | Imágenes: permisos, subida con conversión a WebP y archivo en disco, límites de tamaño (413) y formato (422), saneado del nombre y borrado de fila + archivo. |
 | `test_project_technologies.py` | Tecnologías del proyecto: permisos, asociar (individual y en lote todo o nada), regla de estado final, visibilidad según privacidad, quitado y cascada al borrar el proyecto. |
 | `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito, paginación y reglas por ámbito (jerarquía `State`: categorías `member` e `insured`, inicial, transiciones, registro y fallback). |
-| `test_seed.py` | Carga del seed real: conteos, rangos de estudiantes, asignaciones, grupos, privacidad, estados, jefes de grupo, unicidad y referencias. |
+| `test_seed.py` | Seed real una vez por módulo: conteos clave, cobertura de estados, historial, grupos, cursadas, asistencias, tecnologías y reglas del dominio. |
 
 El detalle de cada test está en `docs/tests.md`.
 

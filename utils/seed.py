@@ -1,5 +1,6 @@
 import json
-from datetime import date, datetime, time, timedelta
+import math
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 from sqlmodel import select
@@ -7,6 +8,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models import (
     Activity,
+    Attendance,
+    AttendanceSession,
     Calendar,
     CalendarClass,
     Professor,
@@ -19,12 +22,15 @@ from models import (
     Student,
     StudentProject,
     StudentSectionYear,
+    Technology,
+    ProjectTechnology,
     User,
 )
 from models.state import PROJECT_INITIAL
 from models.state.state_project import Approved, Cancelled
 from models.state.state_student_project import (
     Abandoned,
+    Active,
     Expelled,
     Finished,
     PendingApprovalMember,
@@ -37,6 +43,7 @@ from models.student_section_year import (
     FINISHED_FAILED,
     REGISTERED,
 )
+from utils.security import hash_otp
 from utils.statuses import (
     ensure_statuses,
     membership_initial_status,
@@ -115,6 +122,7 @@ async def _load_section_years(
             id_section=section.id_section,
             min_students=item["min_students"],
             max_students=item["max_students"],
+            allow_project_joins=item.get("allow_project_joins", False),
         )
         session.add(sy)
         section_years[(name, item["year"])] = sy
@@ -181,6 +189,9 @@ async def _load_calendar_classes(
     section_years: dict[tuple[str, int], SectionYear],
     calendars: dict[int, Calendar],
 ) -> None:
+    holidays = {
+        date.fromisoformat(value) for value in data.get("calendar_holidays", [])
+    }
     for item in data.get("calendar_class_series", []):
         key = (item["section"], item["year"])
         sy = section_years.get(key)
@@ -189,9 +200,12 @@ async def _load_calendar_classes(
         calendar = calendars[sy.id_section_year]
         from_date = date.fromisoformat(item["from"])
         to_date = date.fromisoformat(item["to"])
+        skipped = holidays | {
+            date.fromisoformat(value) for value in item.get("skip_dates", [])
+        }
         day = from_date
         while day <= to_date:
-            if day.isoweekday() == item["weekday"]:
+            if day.isoweekday() == item["weekday"] and day not in skipped:
                 session.add(
                     CalendarClass(
                         id_calendar=calendar.id_calendar,
@@ -233,6 +247,73 @@ async def _load_student_section_years(
     await session.flush()
 
 
+_PROJECT_HISTORY = {
+    "uninsured": ("uninsured",),
+    "in_idea": ("uninsured", "in_idea"),
+    "in_progress": ("uninsured", "in_idea", "in_progress"),
+    "pending_approval": (
+        "uninsured",
+        "in_idea",
+        "in_progress",
+        "pending_approval",
+    ),
+    "rejected": (
+        "uninsured",
+        "in_idea",
+        "in_progress",
+        "pending_approval",
+        "rejected",
+    ),
+    "approved": (
+        "uninsured",
+        "in_idea",
+        "in_progress",
+        "pending_approval",
+        "approved",
+    ),
+    "cancelled": ("uninsured", "in_idea", "in_progress", "cancelled"),
+}
+_HISTORY_MONTH_DAY = {
+    "uninsured": (3, 1),
+    "in_idea": (3, 15),
+    "in_progress": (5, 1),
+    "pending_approval": (10, 1),
+    "rejected": (10, 15),
+    "approved": (11, 15),
+    "cancelled": (9, 15),
+}
+
+
+def _history_datetime(year: int, index: int, code: str) -> datetime:
+    if year == 2026 and code in ("pending_approval", "approved", "rejected"):
+        month, day = {
+            "pending_approval": (9, 20),
+            "approved": (10, 15),
+            "rejected": (9, 25),
+        }[code]
+    else:
+        month, day = _HISTORY_MONTH_DAY.get(code, (3, 1))
+    hour = 12 + min(index, 6)
+    return datetime(year, month, day, hour, tzinfo=timezone.utc)
+
+
+async def _load_technologies(
+    session: AsyncSession, data: dict
+) -> dict[str, Technology]:
+    technologies: dict[str, Technology] = {}
+    for item in data.get("technologies", []):
+        key = item["name"].strip().lower()
+        if key in technologies:
+            raise ValueError(f"Seed: tecnología repetida {item['name']!r}")
+        technology = Technology(
+            name=item["name"].strip(), description=item.get("description")
+        )
+        session.add(technology)
+        technologies[key] = technology
+    await session.flush()
+    return technologies
+
+
 async def _load_projects(
     session: AsyncSession,
     data: dict,
@@ -245,14 +326,31 @@ async def _load_projects(
         sy = section_years.get(key)
         if sy is None:
             raise _missing("el curso lectivo", key)
-        status = statuses.get(("project", item.get("status", PROJECT_INITIAL)))
-        if status is None:
-            raise _missing("el estado", item.get("status"))
+
+        final_code = item.get("status", PROJECT_INITIAL)
+        final_status = statuses.get(("project", final_code))
+        if final_status is None:
+            raise _missing("el estado", final_code)
+
+        raw_history = item.get("status_history")
+        if raw_history:
+            history = [
+                (entry["status"] if isinstance(entry, dict) else entry)
+                for entry in raw_history
+            ]
+        else:
+            history = list(_PROJECT_HISTORY.get(final_code, (final_code,)))
+        if history[-1] != final_code:
+            raise ValueError(
+                f"Seed: el historial del proyecto {key} termina en "
+                f"{history[-1]!r} y no en {final_code!r}"
+            )
+
         project = Project(
             id_section_year=sy.id_section_year,
             group_number=item["group_number"],
             privacy=item["privacy"],
-            status=status,
+            status=final_status,
             name=item.get("name"),
             description=item.get("description"),
             objective=item.get("objective"),
@@ -260,16 +358,59 @@ async def _load_projects(
         )
         session.add(project)
         await session.flush()  # obtiene id_project
-        session.add(
-            ProjectStatus(
-                id_project=project.id_project,
-                id_status_from=None,
-                id_status_to=status.id_status,
+
+        previous: Status | None = None
+        for index, code in enumerate(history):
+            status = statuses.get(("project", code))
+            if status is None:
+                raise _missing("el estado", code)
+            changed_at = None
+            if raw_history and isinstance(raw_history[index], dict):
+                value = raw_history[index].get("changed_at")
+                if value:
+                    changed_at = datetime.fromisoformat(value)
+            session.add(
+                ProjectStatus(
+                    id_project=project.id_project,
+                    id_status_from=previous.id_status if previous else None,
+                    id_status_to=status.id_status,
+                    changed_at=changed_at
+                    or _history_datetime(sy.year, index, code),
+                )
             )
-        )
+            previous = status
+
         projects[(item["section"], item["year"], item["group_number"])] = project
     await session.flush()
     return projects
+
+
+async def _load_project_technologies(
+    session: AsyncSession,
+    data: dict,
+    projects: dict[tuple[str, int, int], Project],
+    technologies: dict[str, Technology],
+) -> None:
+    seen: set[tuple[int, int]] = set()
+    for item in data.get("project_technologies", []):
+        key = (item["section"], item["year"], item["group_number"])
+        project = projects.get(key)
+        if project is None:
+            raise _missing("el proyecto", key)
+        technology = technologies.get(item["technology"].strip().lower())
+        if technology is None:
+            raise _missing("la tecnología", item["technology"])
+        pair = (project.id_project, technology.id_technology)
+        if pair in seen:
+            raise ValueError(f"Seed: tecnología repetida en el proyecto {key}")
+        seen.add(pair)
+        session.add(
+            ProjectTechnology(
+                id_project=project.id_project,
+                id_technology=technology.id_technology,
+            )
+        )
+    await session.flush()
 
 
 def _leader_counts(items: list[dict]) -> dict[tuple[str, int, int], int]:
@@ -357,12 +498,17 @@ async def _load_student_cursadas(session: AsyncSession) -> None:
         ):
             continue
         project_code = project.status.code
-        if membership_code in (Abandoned.code, Expelled.code):
+        if project_code == Cancelled.code and membership_code in (
+            Active.code,
+            Finished.code,
+            Abandoned.code,
+            Expelled.code,
+        ):
+            state = FINISHED_FAILED
+        elif membership_code in (Abandoned.code, Expelled.code):
             state = ABANDONED
         elif project_code == Approved.code:
             state = FINISHED_APPROVED
-        elif project_code == Cancelled.code:
-            state = FINISHED_FAILED
         elif membership_code == Finished.code:
             state = FINISHED_APPROVED
         else:
@@ -394,6 +540,121 @@ async def _load_student_cursadas(session: AsyncSession) -> None:
     await session.flush()
 
 
+async def _load_attendance(
+    session: AsyncSession,
+    data: dict,
+    section_years: dict[tuple[str, int], SectionYear],
+    calendars: dict[int, Calendar],
+) -> None:
+    """Genera asistencia determinista para una parte de las clases pasadas.
+
+    La selección no usa azar: se eligen ~55% de las clases de cada curso y cada
+    alumno tiene una tasa objetivo (la mayoría entre 60% y 100%). Así el seed es
+    reproducible y sirve para probar listas, historiales y reportes.
+    """
+    config = data.get("attendance")
+    if not config:
+        return
+
+    until = date.fromisoformat(config.get("until", "2026-10-30"))
+    fraction = int(config.get("class_fraction", 55))
+    high_rate = int(config.get("high_rate", 85))
+    high_min = int(config.get("high_min", 60))
+    high_max = int(config.get("high_max", 100))
+    low_min = int(config.get("low_min", 35))
+    low_max = int(config.get("low_max", 60))
+
+    calendar_by_id = {
+        calendar.id_calendar: calendar for calendar in calendars.values()
+    }
+    classes = (
+        await session.exec(
+            select(CalendarClass).where(CalendarClass.date <= until)
+        )
+    ).all()
+    classes_by_section: dict[int, list[CalendarClass]] = {}
+    for calendar_class in classes:
+        calendar = calendar_by_id.get(calendar_class.id_calendar)
+        if calendar is None:
+            continue
+        classes_by_section.setdefault(calendar.id_section_year, []).append(
+            calendar_class
+        )
+
+    cursadas = (
+        await session.exec(
+            select(StudentSectionYear).where(
+                StudentSectionYear.state.in_(
+                    (ATTENDING, FINISHED_APPROVED, FINISHED_FAILED)
+                )
+            )
+        )
+    ).all()
+    cursadas_by_section: dict[int, list[StudentSectionYear]] = {}
+    for cursada in cursadas:
+        cursadas_by_section.setdefault(cursada.id_section_year, []).append(cursada)
+
+    for (section, year), sy in section_years.items():
+        available = sorted(
+            classes_by_section.get(sy.id_section_year, []),
+            key=lambda item: (item.date, item.start_time, item.id_calendar_class),
+        )
+        if not available:
+            continue
+        selected = [
+            item
+            for index, item in enumerate(available)
+            if ((index + 1) * 37 + sy.id_section_year * 13) % 100 < fraction
+        ]
+        if not selected:
+            selected = [available[-1]]
+
+        for calendar_class in selected:
+            start = datetime.combine(
+                calendar_class.date, calendar_class.start_time
+            ).replace(tzinfo=timezone.utc)
+            session.add(
+                AttendanceSession(
+                    id_calendar_class=calendar_class.id_calendar_class,
+                    code_hash=hash_otp("000000"),
+                    opened_at=start - timedelta(minutes=5),
+                    expires_at=start + timedelta(minutes=10),
+                    closed_at=start + timedelta(minutes=5),
+                )
+            )
+
+        for cursada in cursadas_by_section.get(sy.id_section_year, []):
+            bucket = (cursada.id_student * 17 + sy.id_section_year * 31) % 100
+            if bucket < high_rate:
+                rate = high_min + bucket % (high_max - high_min + 1)
+            else:
+                rate = low_min + bucket % (low_max - low_min + 1)
+            target = math.ceil(rate * len(selected) / 100)
+            ordered = sorted(
+                selected,
+                key=lambda item: (
+                    (cursada.id_student * 31 + item.id_calendar_class * 17) % 1000,
+                    item.date,
+                    item.start_time,
+                ),
+            )
+            for calendar_class in ordered[:target]:
+                mix = (cursada.id_student * 13 + calendar_class.id_calendar_class) % 10
+                method = "code" if mix <= 6 else "manual" if mix <= 8 else "transcript"
+                start = datetime.combine(
+                    calendar_class.date, calendar_class.start_time
+                ).replace(tzinfo=timezone.utc)
+                session.add(
+                    Attendance(
+                        id_student_section_year=cursada.id_student_section_year,
+                        id_calendar_class=calendar_class.id_calendar_class,
+                        method=method,
+                        recorded_at=start + timedelta(minutes=1 + mix % 5),
+                    )
+                )
+    await session.flush()
+
+
 async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
     # Los estados son la base de proyectos y membresías: se aseguran siempre,
     # exista o no la seed (más adelante la seed puede sumar los suyos).
@@ -413,6 +674,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     section_years = await _load_section_years(session, data, sections)
     await _load_professor_section_years(session, data, professors, section_years)
     await _load_student_section_years(session, data, students, section_years)
+    technologies = await _load_technologies(session, data)
     calendars = {
         calendar.id_section_year: calendar
         for calendar in (
@@ -428,7 +690,9 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     await _load_calendar_classes(session, data, section_years, calendars)
     await _load_activities(session, data, section_years, calendars)
     projects = await _load_projects(session, data, section_years, statuses)
+    await _load_project_technologies(session, data, projects, technologies)
     await _load_student_projects(session, data, students, projects, statuses)
     await _load_student_cursadas(session)
+    await _load_attendance(session, data, section_years, calendars)
 
     await session.commit()

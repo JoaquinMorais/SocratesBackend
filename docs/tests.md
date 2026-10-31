@@ -1034,28 +1034,33 @@ Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), a
 
 ## `tests/test_seed.py`
 
-Carga el seed real (`data/seed.json`) en una BD vacía y valida que quede consistente.
+Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volumen, relaciones y reglas del dominio. Al terminar restaura `seed_test.json` para no afectar al resto de la suite. `seed_test.json` sigue siendo el seed mínimo de los tests de recursos.
 
-- `test_seed_loads_expected_counts`: testear que se cargan 4 comisiones, 7 cursos lectivos, 10 profesores, 25 alumnos, 21 asignaciones, 14 grupos, 22 membresías, 41 filas de inscripción/cursada (32 inscripciones + 9 cursadas), 7 calendarios, 548 clases y 14 actividades.
-- `test_seed_section_years_disallow_project_joins_by_default`: testear que todos los cursos lectivos del seed tienen `allow_project_joins` en `false`.
-- `test_seed_group_size_ranges`: testear que los cursos lectivos de 2025 tienen mínimo 3 y máximo 10, y los de 2026 mínimo 5 y máximo 10.
-- `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos asignados.
-- `test_seed_two_groups_per_section_year`: testear que cada curso lectivo tiene los grupos 1 y 2.
+- `test_seed_key_counts`: testear los conteos clave: 4 comisiones, 10 cursos lectivos, 16 profesores, 200 alumnos, 30 asignaciones, 32 proyectos, 10 calendarios, 30 actividades, 20 tecnologías y 95 vínculos proyecto-tecnología.
+- `test_seed_section_years_allow_project_joins`: testear que `allow_project_joins` está activo solo en `3K2` 2025 y `3K3` 2026.
+- `test_seed_group_size_ranges_and_years`: testear que `3K4` solo existe en 2024, que los cursos lectivos son 2024-2026 y que todos los grupos tienen entre 5 y 10 miembros.
+- `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos.
+- `test_seed_projects_have_unique_group_numbers_per_section_year`: testear que los números de grupo son únicos y consecutivos por curso lectivo, con 2 a 4 grupos.
+- `test_seed_projects_cover_all_states`: testear que hay al menos un proyecto en cada estado (`uninsured`, `in_idea`, `in_progress`, `pending_approval`, `rejected`, `approved` y `cancelled`).
+- `test_seed_memberships_cover_all_states`: testear que hay membresías en todos los estados (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`).
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los 13 estados base (7 de `project` y 6 de `student_project`) y que los finales son `approved`, `cancelled`, `abandoned`, `finished` y `expelled`.
-- `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada grupo con alumnos tiene exactamente un jefe.
-- `test_seed_membership_status_follows_leader_rule`: testear que el jefe queda `active` y los demás miembros `pending_approval`.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 13 estados base (7 de `project` y 6 de `student_project`) y sus estados finales.
+- `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada proyecto con integrantes tiene exactamente un jefe.
+- `test_seed_membership_statuses_are_valid_and_consistent`: testear que cada membresía tiene un estado de su ámbito y que los jefes no quedan en estados de solicitud.
+- `test_seed_cancelled_projects_have_failed_cursadas`: testear que los integrantes de proyectos cancelados quedan `abandoned`/`rejected` y sus cursadas `finished_failed`.
 - `test_seed_projects_and_memberships_have_status_of_their_ambito`: testear que cada proyecto tiene un estado del ámbito `project` y cada membresía del ámbito `student_project`.
-- `test_seed_every_project_has_initial_status_history`: testear que cada proyecto del seed tiene al menos un registro de historial y que el primero tiene `status_from` en `null`.
+- `test_seed_project_status_history_matches_current_status`: testear que cada proyecto tiene historial, que empieza con `status_from=null` y termina en su estado actual.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores, legajos de profesores ni legajos de alumnos.
 - `test_seed_users_are_adults`: testear que todos los usuarios del seed son mayores de edad.
 - `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
-- `test_seed_users_can_log_in`: testear que un alumno, el super admin y un profesor común del seed pueden loguearse con su contraseña.
-- `test_seed_student_section_years_are_consistent`: testear que hay una inscripción por alumno y año, una sola cursada actual por alumno y una fila de cursada por curso lectivo, que todas apuntan a alumnos y cursos existentes y que cada membresía (salvo solicitudes) tiene su cursada en el curso del proyecto.
-- `test_seed_students_may_have_several_section_years`: testear que hay al menos un alumno con más de una fila (inscripción/cursada) en distintos cursos lectivos.
-- `test_seed_calendars_are_consistent`: testear que hay un calendario por curso lectivo (1 a 1), que las clases caen dentro del año del curso, con fin posterior al inicio y modalidad válida, que no se superponen en el mismo día y que cada calendario tiene clases.
-- `test_seed_activities_are_consistent`: testear que las actividades caen dentro del año de su curso lectivo, tienen título y apuntan a calendarios del seed, y que cada curso lectivo tiene actividades.
+- `test_seed_users_can_log_in`: testear que Ana, el super admin y Carlos pueden loguearse con su contraseña.
+- `test_seed_student_section_years_are_consistent`: testear inscripción única por alumno/año, cursada única por comisión, una sola cursada `attending` por alumno, cobertura de todos los estados y relación con las membresías.
+- `test_seed_students_may_have_several_section_years`: testear que hay alumnos con más de una fila en distintos cursos lectivos.
+- `test_seed_calendars_are_consistent`: testear un calendario por curso lectivo, clases dentro del año, horarios válidos, sin solapamientos y con clases en todos los calendarios.
+- `test_seed_activities_are_consistent`: testear actividades dentro del año, con título y calendario válido, y al menos una por curso lectivo.
+- `test_seed_technology_catalog_and_links`: testear nombres únicos sin distinguir mayúsculas y vínculos proyecto-tecnología válidos y sin duplicados.
+- `test_seed_attendance_is_consistent`: testear asistencias únicas, solo sobre cursadas válidas y clases pasadas, sesiones cerradas, ~50-60% de clases con toma y que al menos el 80% de los alumnos tenga 60-100% de asistencia sobre esas clases.
 
 ## `tests/test_statuses.py`
 

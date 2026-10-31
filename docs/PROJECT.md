@@ -173,7 +173,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ## Estado actual
 
 **Hecho**
-- Base de datos, Docker y seed realista con datos de ejemplo (alumnos, profesores, comisiones, cursadas, asignaciones, grupos, miembros y cursadas de alumnos).
+- Base de datos, Docker y seed realista con 200 alumnos, 4 comisiones, 10 cursos lectivos (2024-2026; `3K4` solo en 2024), 32 proyectos con estados variados e historial, 20 tecnologías, actividades, calendarios con feriados y asistencias históricas.
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores. Cada alumno puede indicar en qué curso lectivo cursa (`id_section_year` en `POST /students` o por fila en `/students/bulk`), lo que crea su **inscripción** (`registered`); la cursada se crea al integrar un proyecto.
 - Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; borra también sus inscripciones y cursadas, libera el legajo y cierra sus sesiones y códigos pendientes.

@@ -4,201 +4,1601 @@
       "first_name": "Ana",
       "last_name": "Gómez",
       "legajo": 100001,
-      "birth_date": "2002-03-14",
-      "enrollment_year": 2021,
-      "password": "Test1234!"
+      "birth_date": "2001-12-05",
+      "password": "Test1234!",
+      "enrollment_year": 2024
     },
     {
       "first_name": "Luis",
       "last_name": "Pérez",
       "legajo": 100002,
-      "birth_date": "2003-07-22",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2002-07-16",
+      "password": "Test1234!",
+      "enrollment_year": 2023
     },
     {
       "first_name": "Tomás",
       "last_name": "Fernández",
       "legajo": 100003,
-      "birth_date": "2002-09-05",
-      "enrollment_year": 2021,
-      "password": "Test1234!"
+      "birth_date": "2003-02-27",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Julieta",
       "last_name": "Romero",
       "legajo": 100004,
-      "birth_date": "2003-01-18",
-      "enrollment_year": 2021,
-      "password": "Test1234!"
+      "birth_date": "2004-09-11",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Bruno",
       "last_name": "Aguirre",
       "legajo": 100005,
-      "birth_date": "2002-11-30",
-      "enrollment_year": 2021,
-      "password": "Test1234!"
+      "birth_date": "2000-04-22",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Camila",
       "last_name": "Benítez",
       "legajo": 100006,
-      "birth_date": "2003-05-09",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2001-11-06",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Facundo",
       "last_name": "Molina",
       "legajo": 100007,
-      "birth_date": "2003-08-27",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2002-06-17",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Martina",
       "last_name": "Suárez",
       "legajo": 100008,
-      "birth_date": "2004-02-11",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2003-01-01",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Nicolás",
       "last_name": "Ferreyra",
       "legajo": 100009,
-      "birth_date": "2003-12-03",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2004-08-12",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Agustina",
       "last_name": "Pereyra",
       "legajo": 100010,
-      "birth_date": "2004-06-21",
-      "enrollment_year": 2022,
-      "password": "Test1234!"
+      "birth_date": "2000-03-23",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Tobías",
       "last_name": "Quiroga",
       "legajo": 100011,
-      "birth_date": "2004-10-14",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2001-10-07",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Valentina",
       "last_name": "Ríos",
       "legajo": 100012,
-      "birth_date": "2005-03-02",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2002-05-18",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Mateo",
       "last_name": "Navarro",
       "legajo": 100013,
-      "birth_date": "2004-07-16",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2003-12-02",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Catalina",
       "last_name": "Ibáñez",
       "legajo": 100014,
-      "birth_date": "2005-01-25",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2004-07-13",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Santiago",
       "last_name": "Domínguez",
       "legajo": 100015,
-      "birth_date": "2004-11-08",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2000-02-24",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Lucía",
       "last_name": "Cáceres",
       "legajo": 100016,
-      "birth_date": "2005-04-19",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2001-09-08",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Joaquín",
       "last_name": "Escobar",
       "legajo": 100017,
-      "birth_date": "2005-08-30",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2002-04-19",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Delfina",
       "last_name": "Acosta",
       "legajo": 100018,
-      "birth_date": "2005-12-12",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2003-11-03",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Benjamín",
       "last_name": "Miranda",
       "legajo": 100019,
-      "birth_date": "2005-02-27",
-      "enrollment_year": 2023,
-      "password": "Test1234!"
+      "birth_date": "2004-06-14",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Micaela",
       "last_name": "Duarte",
       "legajo": 100020,
-      "birth_date": "2006-05-06",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2000-01-25",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Thiago",
       "last_name": "Salas",
       "legajo": 100021,
-      "birth_date": "2006-09-23",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2001-08-09",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Emma",
       "last_name": "Godoy",
       "legajo": 100022,
-      "birth_date": "2006-01-31",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2002-03-20",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Franco",
       "last_name": "Villalba",
       "legajo": 100023,
-      "birth_date": "2006-07-14",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2003-10-04",
+      "password": "Test1234!",
+      "enrollment_year": 2022
     },
     {
       "first_name": "Abril",
       "last_name": "Coronel",
       "legajo": 100024,
-      "birth_date": "2006-11-02",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2004-05-15",
+      "password": "Test1234!",
+      "enrollment_year": 2021
     },
     {
       "first_name": "Lautaro",
       "last_name": "Rojas",
       "legajo": 100025,
-      "birth_date": "2006-03-08",
-      "enrollment_year": 2024,
-      "password": "Test1234!"
+      "birth_date": "2000-12-26",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Suárez",
+      "legajo": 100026,
+      "birth_date": "2001-07-10",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Luis",
+      "last_name": "Suárez",
+      "legajo": 100027,
+      "birth_date": "2002-02-21",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Domínguez",
+      "legajo": 100028,
+      "birth_date": "2003-09-05",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Godoy",
+      "legajo": 100029,
+      "birth_date": "2004-04-16",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Rivas",
+      "legajo": 100030,
+      "birth_date": "2000-11-27",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Vargas",
+      "legajo": 100031,
+      "birth_date": "2001-06-11",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Facundo",
+      "last_name": "Fernández",
+      "legajo": 100032,
+      "birth_date": "2002-01-22",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Pereyra",
+      "legajo": 100033,
+      "birth_date": "2003-08-06",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Escobar",
+      "legajo": 100034,
+      "birth_date": "2004-03-17",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Coronel",
+      "legajo": 100035,
+      "birth_date": "2000-10-01",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Tobías",
+      "last_name": "Medina",
+      "legajo": 100036,
+      "birth_date": "2001-05-12",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Silva",
+      "legajo": 100037,
+      "birth_date": "2002-12-23",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Mateo",
+      "last_name": "Aguirre",
+      "legajo": 100038,
+      "birth_date": "2003-07-07",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Catalina",
+      "last_name": "Ríos",
+      "legajo": 100039,
+      "birth_date": "2004-02-18",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Miranda",
+      "legajo": 100040,
+      "birth_date": "2000-09-02",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Lucía",
+      "last_name": "Herrera",
+      "legajo": 100041,
+      "birth_date": "2001-04-13",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Ortiz",
+      "legajo": 100042,
+      "birth_date": "2002-11-24",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Delfina",
+      "last_name": "Ramos",
+      "legajo": 100043,
+      "birth_date": "2003-06-08",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Molina",
+      "legajo": 100044,
+      "birth_date": "2004-01-19",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Ibáñez",
+      "legajo": 100045,
+      "birth_date": "2000-08-03",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Josefina",
+      "last_name": "Campos",
+      "legajo": 100046,
+      "birth_date": "2001-03-14",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Emma",
+      "last_name": "Campos",
+      "legajo": 100047,
+      "birth_date": "2002-10-25",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Franco",
+      "last_name": "Ledesma",
+      "legajo": 100048,
+      "birth_date": "2003-05-09",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Abril",
+      "last_name": "Pérez",
+      "legajo": 100049,
+      "birth_date": "2004-12-20",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Lautaro",
+      "last_name": "Ferreyra",
+      "legajo": 100050,
+      "birth_date": "2000-07-04",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Sofía",
+      "last_name": "Cáceres",
+      "legajo": 100051,
+      "birth_date": "2001-02-15",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Bautista",
+      "last_name": "Villalba",
+      "legajo": 100052,
+      "birth_date": "2002-09-26",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Renata",
+      "last_name": "Ponce",
+      "legajo": 100053,
+      "birth_date": "2003-04-10",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Ignacio",
+      "last_name": "Morales",
+      "legajo": 100054,
+      "birth_date": "2004-11-21",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Emilia",
+      "last_name": "Romero",
+      "legajo": 100055,
+      "birth_date": "2000-06-05",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Gonzalo",
+      "last_name": "Quiroga",
+      "legajo": 100056,
+      "birth_date": "2001-01-16",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Josefina",
+      "last_name": "Acosta",
+      "legajo": 100057,
+      "birth_date": "2002-08-27",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Ramiro",
+      "last_name": "Rojas",
+      "legajo": 100058,
+      "birth_date": "2003-03-11",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Victoria",
+      "last_name": "Sosa",
+      "legajo": 100059,
+      "birth_date": "2004-10-22",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Castro",
+      "legajo": 100060,
+      "birth_date": "2000-05-06",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Florencia",
+      "last_name": "Benítez",
+      "legajo": 100061,
+      "birth_date": "2001-12-17",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Leandro",
+      "last_name": "Navarro",
+      "legajo": 100062,
+      "birth_date": "2002-07-01",
+      "password": "Test1234!",
+      "enrollment_year": 2021
+    },
+    {
+      "first_name": "Milagros",
+      "last_name": "Duarte",
+      "legajo": 100063,
+      "birth_date": "2003-02-12",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Federico",
+      "last_name": "Luna",
+      "legajo": 100064,
+      "birth_date": "2004-09-23",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Rocío",
+      "last_name": "Cabrera",
+      "legajo": 100065,
+      "birth_date": "2000-04-07",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Matías",
+      "last_name": "Gómez",
+      "legajo": 100066,
+      "birth_date": "2001-11-18",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Suárez",
+      "legajo": 100067,
+      "birth_date": "2002-06-02",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Rivas",
+      "legajo": 100068,
+      "birth_date": "2003-01-13",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Godoy",
+      "legajo": 100069,
+      "birth_date": "2004-08-24",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Julián",
+      "last_name": "Rivas",
+      "legajo": 100070,
+      "birth_date": "2000-03-08",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Vargas",
+      "legajo": 100071,
+      "birth_date": "2001-10-19",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Fernández",
+      "legajo": 100072,
+      "birth_date": "2002-05-03",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Coronel",
+      "legajo": 100073,
+      "birth_date": "2003-12-14",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Lorenzo",
+      "last_name": "Escobar",
+      "legajo": 100074,
+      "birth_date": "2004-07-25",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Coronel",
+      "legajo": 100075,
+      "birth_date": "2000-02-09",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Ana",
+      "last_name": "Sosa",
+      "legajo": 100076,
+      "birth_date": "2001-09-20",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Luis",
+      "last_name": "Castro",
+      "legajo": 100077,
+      "birth_date": "2002-04-04",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Benítez",
+      "legajo": 100078,
+      "birth_date": "2003-11-15",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Navarro",
+      "legajo": 100079,
+      "birth_date": "2004-06-26",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Duarte",
+      "legajo": 100080,
+      "birth_date": "2000-01-10",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Luna",
+      "legajo": 100081,
+      "birth_date": "2001-08-21",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Facundo",
+      "last_name": "Cabrera",
+      "legajo": 100082,
+      "birth_date": "2002-03-05",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Gómez",
+      "legajo": 100083,
+      "birth_date": "2003-10-16",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Suárez",
+      "legajo": 100084,
+      "birth_date": "2004-05-27",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Domínguez",
+      "legajo": 100085,
+      "birth_date": "2000-12-11",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Tobías",
+      "last_name": "Godoy",
+      "legajo": 100086,
+      "birth_date": "2001-07-22",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Rivas",
+      "legajo": 100087,
+      "birth_date": "2002-02-06",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Mateo",
+      "last_name": "Vargas",
+      "legajo": 100088,
+      "birth_date": "2003-09-17",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Catalina",
+      "last_name": "Fernández",
+      "legajo": 100089,
+      "birth_date": "2004-04-01",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Pereyra",
+      "legajo": 100090,
+      "birth_date": "2000-11-12",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Lucía",
+      "last_name": "Escobar",
+      "legajo": 100091,
+      "birth_date": "2001-06-23",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Coronel",
+      "legajo": 100092,
+      "birth_date": "2002-01-07",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Delfina",
+      "last_name": "Medina",
+      "legajo": 100093,
+      "birth_date": "2003-08-18",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Silva",
+      "legajo": 100094,
+      "birth_date": "2004-03-02",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Aguirre",
+      "legajo": 100095,
+      "birth_date": "2000-10-13",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Thiago",
+      "last_name": "Ríos",
+      "legajo": 100096,
+      "birth_date": "2001-05-24",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Emma",
+      "last_name": "Miranda",
+      "legajo": 100097,
+      "birth_date": "2002-12-08",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Franco",
+      "last_name": "Herrera",
+      "legajo": 100098,
+      "birth_date": "2003-07-19",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Abril",
+      "last_name": "Ortiz",
+      "legajo": 100099,
+      "birth_date": "2004-02-03",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Lautaro",
+      "last_name": "Ramos",
+      "legajo": 100100,
+      "birth_date": "2000-09-14",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Sofía",
+      "last_name": "Molina",
+      "legajo": 100101,
+      "birth_date": "2001-04-25",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Bautista",
+      "last_name": "Ibáñez",
+      "legajo": 100102,
+      "birth_date": "2002-11-09",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Renata",
+      "last_name": "Salas",
+      "legajo": 100103,
+      "birth_date": "2003-06-20",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Ignacio",
+      "last_name": "Campos",
+      "legajo": 100104,
+      "birth_date": "2004-01-04",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Emilia",
+      "last_name": "Ledesma",
+      "legajo": 100105,
+      "birth_date": "2000-08-15",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Gonzalo",
+      "last_name": "Pérez",
+      "legajo": 100106,
+      "birth_date": "2001-03-26",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Josefina",
+      "last_name": "Ferreyra",
+      "legajo": 100107,
+      "birth_date": "2002-10-10",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Ramiro",
+      "last_name": "Cáceres",
+      "legajo": 100108,
+      "birth_date": "2003-05-21",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Victoria",
+      "last_name": "Villalba",
+      "legajo": 100109,
+      "birth_date": "2004-12-05",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Ponce",
+      "legajo": 100110,
+      "birth_date": "2000-07-16",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Florencia",
+      "last_name": "Morales",
+      "legajo": 100111,
+      "birth_date": "2001-02-27",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Leandro",
+      "last_name": "Romero",
+      "legajo": 100112,
+      "birth_date": "2002-09-11",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Milagros",
+      "last_name": "Quiroga",
+      "legajo": 100113,
+      "birth_date": "2003-04-22",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Federico",
+      "last_name": "Acosta",
+      "legajo": 100114,
+      "birth_date": "2004-11-06",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Rocío",
+      "last_name": "Rojas",
+      "legajo": 100115,
+      "birth_date": "2000-06-17",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Matías",
+      "last_name": "Sosa",
+      "legajo": 100116,
+      "birth_date": "2001-01-01",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Castro",
+      "legajo": 100117,
+      "birth_date": "2002-08-12",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Benítez",
+      "legajo": 100118,
+      "birth_date": "2003-03-23",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Navarro",
+      "legajo": 100119,
+      "birth_date": "2004-10-07",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Julián",
+      "last_name": "Duarte",
+      "legajo": 100120,
+      "birth_date": "2000-05-18",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Luna",
+      "legajo": 100121,
+      "birth_date": "2001-12-02",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Cabrera",
+      "legajo": 100122,
+      "birth_date": "2002-07-13",
+      "password": "Test1234!",
+      "enrollment_year": 2022
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Gómez",
+      "legajo": 100123,
+      "birth_date": "2003-02-24",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Lorenzo",
+      "last_name": "Suárez",
+      "legajo": 100124,
+      "birth_date": "2004-09-08",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Domínguez",
+      "legajo": 100125,
+      "birth_date": "2000-04-19",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ana",
+      "last_name": "Villalba",
+      "legajo": 100126,
+      "birth_date": "2001-11-03",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Luis",
+      "last_name": "Ponce",
+      "legajo": 100127,
+      "birth_date": "2002-06-14",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Morales",
+      "legajo": 100128,
+      "birth_date": "2003-01-25",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Quiroga",
+      "legajo": 100129,
+      "birth_date": "2004-08-09",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Quiroga",
+      "legajo": 100130,
+      "birth_date": "2000-03-20",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Acosta",
+      "legajo": 100131,
+      "birth_date": "2001-10-04",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Facundo",
+      "last_name": "Rojas",
+      "legajo": 100132,
+      "birth_date": "2002-05-15",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Sosa",
+      "legajo": 100133,
+      "birth_date": "2003-12-26",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Castro",
+      "legajo": 100134,
+      "birth_date": "2004-07-10",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Benítez",
+      "legajo": 100135,
+      "birth_date": "2000-02-21",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tobías",
+      "last_name": "Navarro",
+      "legajo": 100136,
+      "birth_date": "2001-09-05",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Duarte",
+      "legajo": 100137,
+      "birth_date": "2002-04-16",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Mateo",
+      "last_name": "Luna",
+      "legajo": 100138,
+      "birth_date": "2003-11-27",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Catalina",
+      "last_name": "Cabrera",
+      "legajo": 100139,
+      "birth_date": "2004-06-11",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Gómez",
+      "legajo": 100140,
+      "birth_date": "2000-01-22",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Lucía",
+      "last_name": "Suárez",
+      "legajo": 100141,
+      "birth_date": "2001-08-06",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Domínguez",
+      "legajo": 100142,
+      "birth_date": "2002-03-17",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Delfina",
+      "last_name": "Godoy",
+      "legajo": 100143,
+      "birth_date": "2003-10-01",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Rivas",
+      "legajo": 100144,
+      "birth_date": "2004-05-12",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Vargas",
+      "legajo": 100145,
+      "birth_date": "2000-12-23",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Thiago",
+      "last_name": "Fernández",
+      "legajo": 100146,
+      "birth_date": "2001-07-07",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Emma",
+      "last_name": "Pereyra",
+      "legajo": 100147,
+      "birth_date": "2002-02-18",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Franco",
+      "last_name": "Escobar",
+      "legajo": 100148,
+      "birth_date": "2003-09-02",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Medina",
+      "legajo": 100149,
+      "birth_date": "2004-04-13",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Lautaro",
+      "last_name": "Medina",
+      "legajo": 100150,
+      "birth_date": "2000-11-24",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Sofía",
+      "last_name": "Silva",
+      "legajo": 100151,
+      "birth_date": "2001-06-08",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Bautista",
+      "last_name": "Aguirre",
+      "legajo": 100152,
+      "birth_date": "2002-01-19",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Renata",
+      "last_name": "Ríos",
+      "legajo": 100153,
+      "birth_date": "2003-08-03",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ignacio",
+      "last_name": "Miranda",
+      "legajo": 100154,
+      "birth_date": "2004-03-14",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Emilia",
+      "last_name": "Herrera",
+      "legajo": 100155,
+      "birth_date": "2000-10-25",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Gonzalo",
+      "last_name": "Ortiz",
+      "legajo": 100156,
+      "birth_date": "2001-05-09",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Josefina",
+      "last_name": "Ramos",
+      "legajo": 100157,
+      "birth_date": "2002-12-20",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ramiro",
+      "last_name": "Molina",
+      "legajo": 100158,
+      "birth_date": "2003-07-04",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Victoria",
+      "last_name": "Ibáñez",
+      "legajo": 100159,
+      "birth_date": "2004-02-15",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Salas",
+      "legajo": 100160,
+      "birth_date": "2000-09-26",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Florencia",
+      "last_name": "Campos",
+      "legajo": 100161,
+      "birth_date": "2001-04-10",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Leandro",
+      "last_name": "Ledesma",
+      "legajo": 100162,
+      "birth_date": "2002-11-21",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Milagros",
+      "last_name": "Pérez",
+      "legajo": 100163,
+      "birth_date": "2003-06-05",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Federico",
+      "last_name": "Ferreyra",
+      "legajo": 100164,
+      "birth_date": "2004-01-16",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Rocío",
+      "last_name": "Cáceres",
+      "legajo": 100165,
+      "birth_date": "2000-08-27",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Matías",
+      "last_name": "Villalba",
+      "legajo": 100166,
+      "birth_date": "2001-03-11",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Ponce",
+      "legajo": 100167,
+      "birth_date": "2002-10-22",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Morales",
+      "legajo": 100168,
+      "birth_date": "2003-05-06",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Romero",
+      "legajo": 100169,
+      "birth_date": "2004-12-17",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Julián",
+      "last_name": "Quiroga",
+      "legajo": 100170,
+      "birth_date": "2000-07-01",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Acosta",
+      "legajo": 100171,
+      "birth_date": "2001-02-12",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Rojas",
+      "legajo": 100172,
+      "birth_date": "2002-09-23",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Sosa",
+      "legajo": 100173,
+      "birth_date": "2003-04-07",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Lorenzo",
+      "last_name": "Castro",
+      "legajo": 100174,
+      "birth_date": "2004-11-18",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Benítez",
+      "legajo": 100175,
+      "birth_date": "2000-06-02",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ana",
+      "last_name": "Ibáñez",
+      "legajo": 100176,
+      "birth_date": "2001-01-13",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Luis",
+      "last_name": "Salas",
+      "legajo": 100177,
+      "birth_date": "2002-08-24",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Campos",
+      "legajo": 100178,
+      "birth_date": "2003-03-08",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Ledesma",
+      "legajo": 100179,
+      "birth_date": "2004-10-19",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Pérez",
+      "legajo": 100180,
+      "birth_date": "2000-05-03",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Ferreyra",
+      "legajo": 100181,
+      "birth_date": "2001-12-14",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Facundo",
+      "last_name": "Cáceres",
+      "legajo": 100182,
+      "birth_date": "2002-07-25",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Villalba",
+      "legajo": 100183,
+      "birth_date": "2003-02-09",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Ponce",
+      "legajo": 100184,
+      "birth_date": "2004-09-20",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Agustina",
+      "last_name": "Morales",
+      "legajo": 100185,
+      "birth_date": "2000-04-04",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tobías",
+      "last_name": "Romero",
+      "legajo": 100186,
+      "birth_date": "2001-11-15",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Valentina",
+      "last_name": "Quiroga",
+      "legajo": 100187,
+      "birth_date": "2002-06-26",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Mateo",
+      "last_name": "Acosta",
+      "legajo": 100188,
+      "birth_date": "2003-01-10",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Catalina",
+      "last_name": "Rojas",
+      "legajo": 100189,
+      "birth_date": "2004-08-21",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Sosa",
+      "legajo": 100190,
+      "birth_date": "2000-03-05",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Lucía",
+      "last_name": "Castro",
+      "legajo": 100191,
+      "birth_date": "2001-10-16",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Benítez",
+      "legajo": 100192,
+      "birth_date": "2002-05-27",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Delfina",
+      "last_name": "Navarro",
+      "legajo": 100193,
+      "birth_date": "2003-12-11",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Duarte",
+      "legajo": 100194,
+      "birth_date": "2004-07-22",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Micaela",
+      "last_name": "Luna",
+      "legajo": 100195,
+      "birth_date": "2000-02-06",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Thiago",
+      "last_name": "Cabrera",
+      "legajo": 100196,
+      "birth_date": "2001-09-17",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Emma",
+      "last_name": "Gómez",
+      "legajo": 100197,
+      "birth_date": "2002-04-01",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Franco",
+      "last_name": "Suárez",
+      "legajo": 100198,
+      "birth_date": "2003-11-12",
+      "password": "Test1234!",
+      "enrollment_year": 2023
+    },
+    {
+      "first_name": "Abril",
+      "last_name": "Domínguez",
+      "legajo": 100199,
+      "birth_date": "2004-06-23",
+      "password": "Test1234!",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Lautaro",
+      "last_name": "Godoy",
+      "legajo": 100200,
+      "birth_date": "2000-01-07",
+      "password": "Test1234!",
+      "enrollment_year": 2023
     }
   ],
   "professors": [
@@ -291,123 +1691,1953 @@
       "mail": "andres.vargas@frc.utn.edu.ar",
       "is_super_admin": false,
       "password": "Test1234!"
+    },
+    {
+      "first_name": "Paula",
+      "last_name": "Herrera",
+      "legajo": 200011,
+      "birth_date": "1981-02-18",
+      "mail": "paula.herrera@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Ramiro",
+      "last_name": "Luna",
+      "legajo": 200012,
+      "birth_date": "1984-07-09",
+      "mail": "ramiro.luna@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Cecilia",
+      "last_name": "Campos",
+      "legajo": 200013,
+      "birth_date": "1979-12-03",
+      "mail": "cecilia.campos@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Hernán",
+      "last_name": "Rivas",
+      "legajo": 200014,
+      "birth_date": "1986-05-27",
+      "mail": "hernán.rivas@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Mariana",
+      "last_name": "Ponce",
+      "legajo": 200015,
+      "birth_date": "1982-09-14",
+      "mail": "mariana.ponce@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
+    },
+    {
+      "first_name": "Ezequiel",
+      "last_name": "Medina",
+      "legajo": 200016,
+      "birth_date": "1977-04-30",
+      "mail": "ezequiel.medina@frc.utn.edu.ar",
+      "is_super_admin": false,
+      "password": "Test1234!"
     }
   ],
   "sections": [
-    { "name": "3K1" },
-    { "name": "3K2" },
-    { "name": "3K3" },
-    { "name": "3K4" }
+    {
+      "name": "3K1"
+    },
+    {
+      "name": "3K2"
+    },
+    {
+      "name": "3K3"
+    },
+    {
+      "name": "3K4"
+    }
   ],
   "section_years": [
-    { "section": "3K1", "year": 2025, "min_students": 3, "max_students": 10 },
-    { "section": "3K2", "year": 2025, "min_students": 3, "max_students": 10 },
-    { "section": "3K3", "year": 2025, "min_students": 3, "max_students": 10 },
-    { "section": "3K4", "year": 2025, "min_students": 3, "max_students": 10 },
-    { "section": "3K1", "year": 2026, "min_students": 5, "max_students": 10 },
-    { "section": "3K2", "year": 2026, "min_students": 5, "max_students": 10 },
-    { "section": "3K3", "year": 2026, "min_students": 5, "max_students": 10 }
+    {
+      "section": "3K1",
+      "year": 2024,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": true
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": false
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "min_students": 5,
+      "max_students": 10,
+      "allow_project_joins": true
+    }
   ],
-  "calendar_class_series": [
-    { "section": "3K1", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 2, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 12" },
-    { "section": "3K1", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 3, "start_time": "18:00", "end_time": "21:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k1-2025" },
-    { "section": "3K2", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 1, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 8" },
-    { "section": "3K2", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 4, "start_time": "18:00", "end_time": "21:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k2-2025" },
-    { "section": "3K3", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 2, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Teórica", "location": "Aula 3" },
-    { "section": "3K3", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 5, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Práctica", "location": "Laboratorio 1" },
-    { "section": "3K4", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 3, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 5" },
-    { "section": "3K4", "year": 2025, "from": "2025-03-01", "to": "2025-11-30", "weekday": 6, "start_time": "09:00", "end_time": "12:15", "modality": "in_person", "title": "Práctica", "location": "Aula 5" },
-    { "section": "3K1", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 1, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 12" },
-    { "section": "3K1", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 3, "start_time": "18:30", "end_time": "22:00", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k1-2026" },
-    { "section": "3K2", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 2, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Teórica", "location": "Aula 8" },
-    { "section": "3K2", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 4, "start_time": "18:30", "end_time": "22:00", "modality": "in_person", "title": "Práctica", "location": "Aula 8" },
-    { "section": "3K3", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 2, "start_time": "14:00", "end_time": "17:15", "modality": "in_person", "title": "Teórica", "location": "Aula 3" },
-    { "section": "3K3", "year": 2026, "from": "2026-03-01", "to": "2026-11-30", "weekday": 4, "start_time": "14:00", "end_time": "17:15", "modality": "virtual", "title": "Práctica", "meeting_url": "https://meet.example.com/3k3-2026" }
+  "calendar_holidays": [
+    "2024-04-02",
+    "2024-05-01",
+    "2024-05-25",
+    "2024-06-17",
+    "2024-06-20",
+    "2024-07-09",
+    "2024-08-17",
+    "2024-10-12",
+    "2024-11-18",
+    "2025-04-02",
+    "2025-05-01",
+    "2025-05-25",
+    "2025-06-17",
+    "2025-06-20",
+    "2025-07-09",
+    "2025-08-17",
+    "2025-10-12",
+    "2025-11-18",
+    "2026-04-02",
+    "2026-05-01",
+    "2026-05-25",
+    "2026-06-17",
+    "2026-06-20",
+    "2026-07-09",
+    "2026-08-17",
+    "2026-10-12",
+    "2026-11-18"
   ],
   "professor_section_years": [
-    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
-    { "professor": "carlos.ruiz@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
-    { "professor": "laura.fernandez@frc.utn.edu.ar", "section": "3K1", "year": 2025 },
-
-    { "professor": "diego.sosa@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
-    { "professor": "sofia.mendez@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
-    { "professor": "pablo.gutierrez@frc.utn.edu.ar", "section": "3K2", "year": 2025 },
-
-    { "professor": "valeria.ortiz@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
-    { "professor": "martin.cabrera@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
-    { "professor": "natalia.ledesma@frc.utn.edu.ar", "section": "3K3", "year": 2025 },
-
-    { "professor": "andres.vargas@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
-    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
-    { "professor": "carlos.ruiz@frc.utn.edu.ar", "section": "3K4", "year": 2025 },
-
-    { "professor": "laura.fernandez@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
-    { "professor": "diego.sosa@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
-    { "professor": "sofia.mendez@frc.utn.edu.ar", "section": "3K1", "year": 2026 },
-
-    { "professor": "pablo.gutierrez@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
-    { "professor": "valeria.ortiz@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
-    { "professor": "martin.cabrera@frc.utn.edu.ar", "section": "3K2", "year": 2026 },
-
-    { "professor": "natalia.ledesma@frc.utn.edu.ar", "section": "3K3", "year": 2026 },
-    { "professor": "andres.vargas@frc.utn.edu.ar", "section": "3K3", "year": 2026 },
-    { "professor": "marta.rodriguez@frc.utn.edu.ar", "section": "3K3", "year": 2026 }
+    {
+      "professor": "marta.rodriguez@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "professor": "carlos.ruiz@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "professor": "laura.fernandez@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "professor": "diego.sosa@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "professor": "sofia.mendez@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "professor": "pablo.gutierrez@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "professor": "valeria.ortiz@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "professor": "martin.cabrera@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "professor": "natalia.ledesma@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "professor": "andres.vargas@frc.utn.edu.ar",
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "professor": "paula.herrera@frc.utn.edu.ar",
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "professor": "ramiro.luna@frc.utn.edu.ar",
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "professor": "cecilia.campos@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "professor": "hernán.rivas@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "professor": "mariana.ponce@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "professor": "ezequiel.medina@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "professor": "marta.rodriguez@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "professor": "carlos.ruiz@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "professor": "laura.fernandez@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "professor": "diego.sosa@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "professor": "sofia.mendez@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "professor": "pablo.gutierrez@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "professor": "valeria.ortiz@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "professor": "martin.cabrera@frc.utn.edu.ar",
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "professor": "natalia.ledesma@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "professor": "andres.vargas@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "professor": "paula.herrera@frc.utn.edu.ar",
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "professor": "ramiro.luna@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "professor": "cecilia.campos@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "professor": "hernán.rivas@frc.utn.edu.ar",
+      "section": "3K3",
+      "year": 2026
+    }
   ],
   "student_section_years": [
-    { "student": 100001, "section": "3K1", "year": 2025 },
-    { "student": 100002, "section": "3K1", "year": 2025 },
-    { "student": 100003, "section": "3K1", "year": 2025 },
-    { "student": 100004, "section": "3K1", "year": 2025 },
-    { "student": 100005, "section": "3K1", "year": 2025 },
-    { "student": 100006, "section": "3K1", "year": 2025 },
-    { "student": 100017, "section": "3K1", "year": 2025 },
-    { "student": 100021, "section": "3K1", "year": 2025 },
-    { "student": 100007, "section": "3K2", "year": 2025 },
-    { "student": 100008, "section": "3K2", "year": 2025 },
-    { "student": 100009, "section": "3K2", "year": 2025 },
-    { "student": 100018, "section": "3K2", "year": 2025 },
-    { "student": 100019, "section": "3K2", "year": 2025 },
-    { "student": 100022, "section": "3K2", "year": 2025 },
-    { "student": 100023, "section": "3K2", "year": 2025 },
-    { "student": 100010, "section": "3K3", "year": 2025 },
-    { "student": 100011, "section": "3K3", "year": 2025 },
-    { "student": 100012, "section": "3K3", "year": 2025 },
-    { "student": 100013, "section": "3K3", "year": 2025 },
-    { "student": 100020, "section": "3K3", "year": 2025 },
-    { "student": 100024, "section": "3K3", "year": 2025 },
-    { "student": 100014, "section": "3K4", "year": 2025 },
-    { "student": 100015, "section": "3K4", "year": 2025 },
-    { "student": 100016, "section": "3K4", "year": 2025 },
-    { "student": 100025, "section": "3K4", "year": 2025 },
-    { "student": 100001, "section": "3K1", "year": 2026 },
-    { "student": 100017, "section": "3K1", "year": 2026 },
-    { "student": 100007, "section": "3K2", "year": 2026 },
-    { "student": 100018, "section": "3K2", "year": 2026 },
-    { "student": 100019, "section": "3K2", "year": 2026 },
-    { "student": 100003, "section": "3K3", "year": 2026 },
-    { "student": 100020, "section": "3K3", "year": 2026 }
+    {
+      "student": 100003,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100004,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100005,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100006,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100007,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100008,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100009,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100010,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100011,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100012,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100013,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100014,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100015,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100016,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100017,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100018,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100019,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100020,
+      "section": "3K1",
+      "year": 2024
+    },
+    {
+      "student": 100021,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100022,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100023,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100024,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100025,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100026,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100027,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100028,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100029,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100030,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100031,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100032,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100033,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100034,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100035,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100036,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100037,
+      "section": "3K2",
+      "year": 2024
+    },
+    {
+      "student": 100038,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100039,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100040,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100041,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100042,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100043,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100044,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100045,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100046,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100047,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100048,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100049,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100050,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100051,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100052,
+      "section": "3K3",
+      "year": 2024
+    },
+    {
+      "student": 100053,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100054,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100055,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100056,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100057,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100058,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100059,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100060,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100061,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100062,
+      "section": "3K4",
+      "year": 2024
+    },
+    {
+      "student": 100063,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100064,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100065,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100066,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100067,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100068,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100069,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100070,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100071,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100072,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100073,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100074,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100075,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100076,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100077,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100078,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100079,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100080,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100081,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100082,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100083,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100084,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100085,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100086,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100087,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100088,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100089,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100090,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100091,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100092,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100093,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100094,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100095,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100096,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100097,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100098,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100099,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100100,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100101,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100102,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100103,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100104,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100105,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100106,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100107,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100108,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100109,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100110,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100111,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100112,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100113,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100114,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100115,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100116,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100117,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100118,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100119,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100120,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100121,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100122,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100001,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100002,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100123,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100124,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100125,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100126,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100127,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100128,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100129,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100130,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100131,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100132,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100133,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100134,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100135,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100136,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100137,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100138,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100139,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100140,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100141,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100142,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100143,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100144,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100145,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100146,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100147,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100148,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100149,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100150,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100151,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100152,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100153,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100154,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100155,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100156,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100157,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100158,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100159,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100160,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100161,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100162,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100163,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100164,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100165,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100166,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100167,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100168,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100169,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100170,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100171,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100172,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100173,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100174,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100175,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100176,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100177,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100178,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100179,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100180,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100181,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100182,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100183,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100184,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100185,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100186,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100187,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100188,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100189,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100190,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100191,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100192,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100193,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100194,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100195,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100196,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100197,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100198,
+      "section": "3K2",
+      "year": 2026
+    },
+    {
+      "student": 100199,
+      "section": "3K3",
+      "year": 2026
+    },
+    {
+      "student": 100200,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 100141,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100142,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100143,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100144,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100145,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100146,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100147,
+      "section": "3K2",
+      "year": 2025
+    },
+    {
+      "student": 100148,
+      "section": "3K1",
+      "year": 2025
+    },
+    {
+      "student": 100149,
+      "section": "3K3",
+      "year": 2025
+    },
+    {
+      "student": 100150,
+      "section": "3K2",
+      "year": 2025
+    }
+  ],
+  "calendar_class_series": [
+    {
+      "section": "3K1",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 5,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 10"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 2,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "virtual",
+      "title": "Práctica",
+      "location": null,
+      "meeting_url": "https://meet.example.com/3k1-2024"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 1,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 11"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 3,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "in_person",
+      "title": "Práctica",
+      "location": "Laboratorio 2",
+      "meeting_url": null
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 2,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 12"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 4,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "virtual",
+      "title": "Práctica",
+      "location": null,
+      "meeting_url": "https://meet.example.com/3k3-2024"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 3,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 13"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "from": "2024-03-01",
+      "to": "2024-11-30",
+      "weekday": 5,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "in_person",
+      "title": "Práctica",
+      "location": "Laboratorio 4",
+      "meeting_url": null
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 1,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 10"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 3,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "in_person",
+      "title": "Práctica",
+      "location": "Laboratorio 1",
+      "meeting_url": null
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 2,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 11"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 4,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "virtual",
+      "title": "Práctica",
+      "location": null,
+      "meeting_url": "https://meet.example.com/3k2-2025"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 3,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 12"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "from": "2025-03-01",
+      "to": "2025-11-30",
+      "weekday": 5,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "in_person",
+      "title": "Práctica",
+      "location": "Laboratorio 3",
+      "meeting_url": null
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 2,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 10"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 4,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "virtual",
+      "title": "Práctica",
+      "location": null,
+      "meeting_url": "https://meet.example.com/3k1-2026"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 3,
+      "start_time": "18:30",
+      "end_time": "22:00",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 11"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 5,
+      "start_time": "18:00",
+      "end_time": "21:15",
+      "modality": "in_person",
+      "title": "Práctica",
+      "location": "Laboratorio 2",
+      "meeting_url": null
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 4,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "in_person",
+      "title": "Teórica",
+      "location": "Aula 12"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "from": "2026-03-01",
+      "to": "2026-11-30",
+      "weekday": 1,
+      "start_time": "14:00",
+      "end_time": "17:15",
+      "modality": "virtual",
+      "title": "Práctica",
+      "location": null,
+      "meeting_url": "https://meet.example.com/3k3-2026"
+    }
   ],
   "activities": [
-    { "section": "3K1", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
-    { "section": "3K1", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
-    { "section": "3K2", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
-    { "section": "3K2", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
-    { "section": "3K3", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
-    { "section": "3K3", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
-    { "section": "3K4", "year": 2025, "title": "Entrega del informe inicial", "description": "Documento con el relevamiento y el alcance del proyecto.", "due_date": "2025-05-16", "due_time": "23:59" },
-    { "section": "3K4", "year": 2025, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2025-09-12" },
-    { "section": "3K1", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
-    { "section": "3K1", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" },
-    { "section": "3K2", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
-    { "section": "3K2", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" },
-    { "section": "3K3", "year": 2026, "title": "Entrega del anteproyecto", "description": "Documento con objetivos, alcance y tecnologías.", "due_date": "2026-04-24", "due_time": "23:59" },
-    { "section": "3K3", "year": 2026, "title": "Presentación del avance", "description": "Demo del avance con el docente del curso.", "due_date": "2026-09-11" }
+    {
+      "section": "3K1",
+      "year": 2024,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2024-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2024-09-12"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2024-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2024-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2024-09-12"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2024-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2024-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2024-09-12"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2024-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2024-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2024-09-12"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2024-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2025-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2025-09-12"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2025-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2025-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2025-09-12"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2025-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2025-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2025-09-12"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2025-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2026-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2026-09-12"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2026-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2026-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2026-09-12"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2026-11-20",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "title": "Entrega del informe inicial",
+      "description": "Documento con el relevamiento, alcance y objetivos del proyecto.",
+      "due_date": "2026-05-16",
+      "due_time": "23:59"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "title": "Presentación del avance",
+      "description": "Demo del avance con el docente del curso.",
+      "due_date": "2026-09-12"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "title": "Entrega final",
+      "description": "Documentación final, presentación y conclusiones del proyecto.",
+      "due_date": "2026-11-20",
+      "due_time": "23:59"
+    }
+  ],
+  "technologies": [
+    {
+      "name": "Python",
+      "description": "Lenguaje principal para el backend y scripts."
+    },
+    {
+      "name": "FastAPI",
+      "description": "Framework web asíncrono para construir la API."
+    },
+    {
+      "name": "SQLModel",
+      "description": "ORM y validación de datos sobre SQLAlchemy."
+    },
+    {
+      "name": "PostgreSQL",
+      "description": "Base de datos relacional principal."
+    },
+    {
+      "name": "Docker",
+      "description": "Contenedores para desarrollo y despliegue."
+    },
+    {
+      "name": "React",
+      "description": "Biblioteca para interfaces de usuario."
+    },
+    {
+      "name": "TypeScript",
+      "description": "Tipado estático para aplicaciones JavaScript."
+    },
+    {
+      "name": "Node.js",
+      "description": "Entorno de ejecución para servicios JavaScript."
+    },
+    {
+      "name": "Django",
+      "description": "Framework web de alto nivel."
+    },
+    {
+      "name": "Spring Boot",
+      "description": "Framework para servicios Java."
+    },
+    {
+      "name": "Kotlin",
+      "description": "Lenguaje para aplicaciones Android y backend."
+    },
+    {
+      "name": "Flutter",
+      "description": "Framework para aplicaciones móviles multiplataforma."
+    },
+    {
+      "name": "Vue.js",
+      "description": "Framework progresivo para interfaces."
+    },
+    {
+      "name": "Angular",
+      "description": "Plataforma para aplicaciones web empresariales."
+    },
+    {
+      "name": "Tailwind CSS",
+      "description": "Framework de estilos utilitarios."
+    },
+    {
+      "name": "Figma",
+      "description": "Diseño y prototipado de interfaces."
+    },
+    {
+      "name": "Git",
+      "description": "Control de versiones del código."
+    },
+    {
+      "name": "GitHub Actions",
+      "description": "Automatización de integración y despliegue."
+    },
+    {
+      "name": "Redis",
+      "description": "Almacenamiento en memoria para caché y colas."
+    },
+    {
+      "name": "RabbitMQ",
+      "description": "Mensajería entre servicios."
+    }
   ],
   "projects": [
     {
       "section": "3K1",
-      "year": 2025,
+      "year": 2024,
       "group_number": 1,
+      "status": "approved",
       "privacy": "public",
       "name": "Gestión de Turnos",
       "description": "Sistema para reservar y administrar turnos de atención en una clínica.",
@@ -416,19 +3646,21 @@
     },
     {
       "section": "3K1",
-      "year": 2025,
+      "year": 2024,
       "group_number": 2,
-      "privacy": "private",
+      "status": "approved",
+      "privacy": "protected",
       "name": "Sistema de Biblioteca",
       "description": "Préstamo y devolución de libros con catalogación y búsqueda.",
       "objective": "Reemplazar las planillas de préstamo por un sistema centralizado.",
       "problem": "Se pierden registros de préstamos y no hay control de stock."
     },
     {
-      "section": "3K2",
-      "year": 2025,
-      "group_number": 1,
-      "privacy": "protected",
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "approved",
+      "privacy": "private",
       "name": "Control de Stock",
       "description": "Gestión de inventario para un comercio minorista.",
       "objective": "Conocer el stock disponible en tiempo real.",
@@ -436,40 +3668,31 @@
     },
     {
       "section": "3K2",
-      "year": 2025,
-      "group_number": 2,
-      "privacy": "public"
-    },
-    {
-      "section": "3K3",
-      "year": 2025,
+      "year": 2024,
       "group_number": 1,
-      "privacy": "private",
+      "status": "approved",
+      "privacy": "public",
       "name": "Portal de Trámites",
       "description": "Seguimiento en línea del estado de expedientes académicos.",
       "objective": "Que el alumno consulte su trámite sin ir a la facultad.",
       "problem": "No hay visibilidad del avance de los trámites."
     },
     {
-      "section": "3K3",
-      "year": 2025,
+      "section": "3K2",
+      "year": 2024,
       "group_number": 2,
-      "privacy": "protected"
-    },
-    {
-      "section": "3K4",
-      "year": 2025,
-      "group_number": 1,
-      "privacy": "public",
+      "status": "approved",
+      "privacy": "protected",
       "name": "Monitor de Asistencia",
       "description": "Registro de asistencia a clases mediante códigos QR.",
       "objective": "Automatizar la toma de asistencia y generar reportes.",
       "problem": "La asistencia se toma en papel y es lenta de procesar."
     },
     {
-      "section": "3K4",
-      "year": 2025,
-      "group_number": 2,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "approved",
       "privacy": "private",
       "name": "App de Viandas",
       "description": "Pedido anticipado de viandas en el comedor universitario.",
@@ -477,15 +3700,10 @@
       "problem": "No se sabe cuánta comida preparar cada día."
     },
     {
-      "section": "3K1",
-      "year": 2026,
+      "section": "3K3",
+      "year": 2024,
       "group_number": 1,
-      "privacy": "protected"
-    },
-    {
-      "section": "3K1",
-      "year": 2026,
-      "group_number": 2,
+      "status": "approved",
       "privacy": "public",
       "name": "Gestor de Becas",
       "description": "Postulación y seguimiento de becas estudiantiles.",
@@ -493,29 +3711,32 @@
       "problem": "Las postulaciones se manejan por correo y se pierden adjuntos."
     },
     {
-      "section": "3K2",
-      "year": 2026,
-      "group_number": 1,
-      "privacy": "private",
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "approved",
+      "privacy": "protected",
       "name": "Telemedicina",
       "description": "Turnos y videoconsultas para un centro de salud.",
       "objective": "Acercar la atención médica a zonas alejadas.",
       "problem": "Los pacientes deben viajar largas distancias para una consulta."
     },
     {
-      "section": "3K2",
-      "year": 2026,
-      "group_number": 2,
-      "privacy": "protected",
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "approved",
+      "privacy": "private",
       "name": "Reservas de Aulas",
       "description": "Reserva de aulas y laboratorios para actividades académicas.",
       "objective": "Evitar la superposición de reservas.",
       "problem": "Las reservas se anotan en una pizarra y se pisan entre sí."
     },
     {
-      "section": "3K3",
-      "year": 2026,
+      "section": "3K4",
+      "year": 2024,
       "group_number": 1,
+      "status": "cancelled",
       "privacy": "public",
       "name": "Control de Egresados",
       "description": "Seguimiento de egresados y su inserción laboral.",
@@ -523,39 +3744,2602 @@
       "problem": "No hay una base unificada de egresados."
     },
     {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "in_progress",
+      "privacy": "protected",
+      "name": "Sistema de Tutorías",
+      "description": "Asignación y seguimiento de tutorías académicas.",
+      "objective": "Acompañar a los alumnos con dificultades en sus materias.",
+      "problem": "Los tutores se asignan por mensajes y no queda registro del seguimiento."
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "approved",
+      "privacy": "private",
+      "name": "Trazabilidad de Envíos",
+      "description": "Seguimiento de paquetes desde el depósito hasta el destinatario.",
+      "objective": "Dar visibilidad del estado de cada envío.",
+      "problem": "Los reclamos por envíos perdidos se resuelven sin información confiable."
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "approved",
+      "privacy": "public",
+      "name": "Gestión de Laboratorios",
+      "description": "Reserva de equipos y espacios de laboratorio.",
+      "objective": "Evitar el uso duplicado de equipamiento costoso.",
+      "problem": "La disponibilidad se consulta por teléfono y se generan conflictos."
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "approved",
+      "privacy": "protected",
+      "name": "Planificador de Cursadas",
+      "description": "Herramienta para armar la grilla de materias y comisiones.",
+      "objective": "Ayudar a los alumnos a organizar su año académico.",
+      "problem": "Los horarios se comparan a mano y aparecen superposiciones."
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "approved",
+      "privacy": "private",
+      "name": "Mercado de Intercambio",
+      "description": "Publicación de artículos usados dentro de la comunidad universitaria.",
+      "objective": "Facilitar la reutilización de materiales y libros.",
+      "problem": "Las publicaciones se dispersan en grupos informales."
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "approved",
+      "privacy": "public",
+      "name": "Seguimiento de Proyectos",
+      "description": "Tablero de avance para proyectos académicos y grupales.",
+      "objective": "Centralizar entregas, responsables y fechas límite.",
+      "problem": "Cada grupo usa una herramienta distinta y el docente no puede comparar avances."
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "approved",
+      "privacy": "protected",
+      "name": "Gestión de Eventos",
+      "description": "Inscripción y control de asistencia a eventos académicos.",
+      "objective": "Simplificar la organización de jornadas y charlas.",
+      "problem": "Las inscripciones se reciben por formularios sueltos y no hay control de cupos."
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "cancelled",
+      "privacy": "private",
+      "name": "Control de Accesos",
+      "description": "Registro de ingresos a laboratorios y espacios comunes.",
+      "objective": "Mejorar la seguridad y el uso responsable de las instalaciones.",
+      "problem": "No se sabe quién ingresó ni en qué horario."
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Encuestas Académicas",
+      "description": "Creación y análisis de encuestas para evaluar materias.",
+      "objective": "Obtener retroalimentación anónima y procesable.",
+      "problem": "Las encuestas se hacen en papel y se pierden respuestas."
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "rejected",
+      "privacy": "protected",
+      "name": "Gestión de Convenios",
+      "description": "Seguimiento de convenios de práctica y empresas colaboradoras.",
+      "objective": "Ordenar vencimientos, contactos y documentación.",
+      "problem": "Los convenios se archivan en carpetas y vencen sin aviso."
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "in_progress",
+      "privacy": "private",
+      "name": "Inventario de Equipamiento",
+      "description": "Catálogo y mantenimiento de equipos informáticos.",
+      "objective": "Conocer el estado y la ubicación de cada equipo.",
+      "problem": "No hay un inventario actualizado ni historial de reparaciones."
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Turnos de Tutoría",
+      "description": "Reserva de horarios de consulta con docentes.",
+      "objective": "Reducir cruces y tiempos de espera.",
+      "problem": "Los turnos se piden por correo y se superponen."
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "in_progress",
+      "privacy": "protected",
+      "name": "Base de Conocimiento",
+      "description": "Artículos y preguntas frecuentes para soporte interno.",
+      "objective": "Reducir consultas repetidas y tiempos de respuesta.",
+      "problem": "El conocimiento está disperso en conversaciones y documentos."
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "in_progress",
+      "privacy": "private",
+      "name": "Monitor de Servidores",
+      "description": "Panel de estado y alertas de servicios institucionales.",
+      "objective": "Detectar caídas y degradaciones antes de que afecten a los usuarios.",
+      "problem": "Los problemas se descubren cuando alguien reporta una falla."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Voluntariado",
+      "description": "Inscripción y seguimiento de actividades de voluntariado.",
+      "objective": "Organizar cuadrillas y horas de participación.",
+      "problem": "La coordinación se hace por planillas y mensajes sueltos."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "in_progress",
+      "privacy": "protected",
+      "name": "Catálogo de Cursos",
+      "description": "Búsqueda y comparación de cursos y talleres disponibles.",
+      "objective": "Facilitar la inscripción a propuestas extracurriculares.",
+      "problem": "La oferta está repartida en distintos canales."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "pending_approval",
+      "privacy": "private",
+      "name": "Gestión de Comedor",
+      "description": "Menús, reservas y control de consumo del comedor.",
+      "objective": "Planificar compras y evitar desperdicios.",
+      "problem": "La demanda diaria se estima sin datos confiables."
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "pending_approval",
+      "privacy": "public",
+      "name": "Bolsa de Trabajo",
+      "description": "Publicación de ofertas laborales y postulaciones.",
+      "objective": "Conectar estudiantes con empresas de la región.",
+      "problem": "Las ofertas se comparten por redes y se pierden oportunidades."
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "in_idea",
+      "privacy": "protected",
+      "name": "Reservas Deportivas",
+      "description": "Reserva de canchas y espacios deportivos.",
+      "objective": "Ordenar el uso de instalaciones compartidas.",
+      "problem": "Las reservas se coordinan informalmente y se superponen."
+    },
+    {
       "section": "3K3",
       "year": 2026,
       "group_number": 2,
-      "privacy": "private"
+      "status": "uninsured",
+      "privacy": "private",
+      "name": "Gestión de Transporte",
+      "description": "Seguimiento de viajes y cupos de transporte académico.",
+      "objective": "Planificar recorridos y ocupación de vehículos.",
+      "problem": "Los cupos se controlan en planillas manuales."
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "cancelled",
+      "privacy": "public",
+      "name": "Control de Documentación",
+      "description": "Repositorio y vencimiento de documentación institucional.",
+      "objective": "Evitar pérdidas y vencimientos de documentación clave.",
+      "problem": "Cada área guarda sus archivos de forma aislada."
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "approved",
+      "privacy": "protected",
+      "name": "Tablero de Indicadores",
+      "description": "Panel de métricas académicas y de gestión.",
+      "objective": "Apoyar decisiones con datos actualizados.",
+      "problem": "Los indicadores se arman a mano y llegan tarde."
+    }
+  ],
+  "project_technologies": [
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Python"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Docker"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "PostgreSQL"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "React"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Django"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Node.js"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Spring Boot"
+    },
+    {
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "TypeScript"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Spring Boot"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Angular"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Tailwind CSS"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Vue.js"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Figma"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Git"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "GitHub Actions"
+    },
+    {
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Redis"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "RabbitMQ"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Redis"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "PostgreSQL"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "SQLModel"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Docker"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "Node.js"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "React"
+    },
+    {
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "technology": "TypeScript"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Django"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "technology": "Node.js"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Flutter"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "technology": "Vue.js"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Angular"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Figma"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Git"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Tailwind CSS"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "Git"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "GitHub Actions"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "Python"
+    },
+    {
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "RabbitMQ"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Docker"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "PostgreSQL"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "React"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "SQLModel"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "React"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "TypeScript"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "Django"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "Spring Boot"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Angular"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Flutter"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Tailwind CSS"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "technology": "Vue.js"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "Figma"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "technology": "Tailwind CSS"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "GitHub Actions"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "RabbitMQ"
+    },
+    {
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "technology": "Redis"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "PostgreSQL"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "Python"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "SQLModel"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Docker"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "PostgreSQL"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Django"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Node.js"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "TypeScript"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Flutter"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Spring Boot"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Vue.js"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "Angular"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "Vue.js"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Figma"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Git"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "GitHub Actions"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Python"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "RabbitMQ"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Redis"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "FastAPI"
+    },
+    {
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "SQLModel"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "Docker"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "React"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "technology": "TypeScript"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Django"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Node.js"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "technology": "Spring Boot"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Flutter"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "technology": "Kotlin"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Angular"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Figma"
+    },
+    {
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "technology": "Tailwind CSS"
     }
   ],
   "student_projects": [
-    { "student": 100004, "section": "3K1", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100003, "section": "3K1", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-    { "student": 100021, "section": "3K1", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
-    { "student": 100005, "section": "3K1", "year": 2025, "group_number": 2, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100006, "section": "3K1", "year": 2025, "group_number": 2, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-
-    { "student": 100008, "section": "3K2", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100009, "section": "3K2", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-    { "student": 100022, "section": "3K2", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
-
-    { "student": 100010, "section": "3K3", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100011, "section": "3K3", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-    { "student": 100012, "section": "3K3", "year": 2025, "group_number": 2, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100013, "section": "3K3", "year": 2025, "group_number": 2, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-
-    { "student": 100014, "section": "3K4", "year": 2025, "group_number": 1, "is_leader": true, "enrolled_at": "2025-03-01T09:00:00+00:00" },
-    { "student": 100015, "section": "3K4", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-02T09:00:00+00:00" },
-    { "student": 100016, "section": "3K4", "year": 2025, "group_number": 1, "enrolled_at": "2025-03-03T09:00:00+00:00" },
-
-    { "student": 100001, "section": "3K1", "year": 2026, "group_number": 2, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
-    { "student": 100017, "section": "3K1", "year": 2026, "group_number": 2, "enrolled_at": "2026-03-02T09:00:00+00:00" },
-    { "student": 100007, "section": "3K2", "year": 2026, "group_number": 1, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
-    { "student": 100018, "section": "3K2", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-02T09:00:00+00:00" },
-    { "student": 100019, "section": "3K2", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-03T09:00:00+00:00" },
-
-    { "student": 100003, "section": "3K3", "year": 2026, "group_number": 1, "is_leader": true, "enrolled_at": "2026-03-01T09:00:00+00:00" },
-    { "student": 100020, "section": "3K3", "year": 2026, "group_number": 1, "enrolled_at": "2026-03-02T09:00:00+00:00" }
-  ]
+    {
+      "student": 100003,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100004,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100005,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100006,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100007,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100008,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100009,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100010,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100011,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100012,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100013,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100014,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100015,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100016,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100017,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100018,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100019,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100020,
+      "section": "3K1",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100021,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100022,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100023,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100024,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100025,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100026,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100027,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100028,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100029,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100030,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100031,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100032,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100033,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100034,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100035,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100036,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100037,
+      "section": "3K2",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100038,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100039,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100040,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100041,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100042,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100043,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100044,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100045,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100046,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100047,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100048,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100049,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100050,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100051,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100052,
+      "section": "3K3",
+      "year": 2024,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100053,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100054,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100055,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100056,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100057,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100058,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2024-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100059,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2024-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100060,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2024-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100061,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2024-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100062,
+      "section": "3K4",
+      "year": 2024,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2024-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100063,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100064,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100065,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100066,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100067,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100068,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100069,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100070,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100071,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100072,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100073,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100074,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100075,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100076,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100077,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100078,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100079,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100080,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100081,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100082,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100083,
+      "section": "3K1",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100084,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100085,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100086,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100087,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100088,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100089,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100090,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 1,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100091,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100092,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100093,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100094,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100095,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100096,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100097,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 2,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100098,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100099,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100100,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100101,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100102,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100103,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100104,
+      "section": "3K2",
+      "year": 2025,
+      "group_number": 3,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2025-03-07T12:00:00+00:00"
+    },
+    {
+      "student": 100105,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100106,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100107,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100108,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100109,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100110,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 1,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100111,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100112,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100113,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100114,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100115,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100116,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100117,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2025-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100118,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100119,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100120,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100121,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100122,
+      "section": "3K3",
+      "year": 2025,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2025-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100001,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100002,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100123,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100124,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100125,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100126,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100127,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100128,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100129,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100130,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100131,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100132,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100133,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100134,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100135,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100136,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100137,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100138,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100139,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100140,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100141,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100142,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100143,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100144,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100145,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100146,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100147,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100148,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100149,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100150,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100151,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100152,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100153,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100154,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100155,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100156,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100157,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100158,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100159,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100160,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100161,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100162,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100163,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100164,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100165,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100166,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100167,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100168,
+      "section": "3K2",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100169,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100170,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100171,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100172,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100173,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100174,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100175,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100176,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100177,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100178,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100179,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100180,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100181,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100182,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100183,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100184,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100185,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100186,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 3,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100187,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 100188,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2026-03-02T12:00:00+00:00"
+    },
+    {
+      "student": 100189,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2026-03-03T12:00:00+00:00"
+    },
+    {
+      "student": 100190,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2026-03-04T12:00:00+00:00"
+    },
+    {
+      "student": 100191,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2026-03-05T12:00:00+00:00"
+    },
+    {
+      "student": 100192,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 4,
+      "status": "finished",
+      "is_leader": false,
+      "enrolled_at": "2026-03-06T12:00:00+00:00"
+    },
+    {
+      "student": 100193,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "pending_approval",
+      "is_leader": false,
+      "enrolled_at": "2026-03-08T12:00:00+00:00"
+    },
+    {
+      "student": 100194,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "pending_approval",
+      "is_leader": false,
+      "enrolled_at": "2026-03-09T12:00:00+00:00"
+    },
+    {
+      "student": 100195,
+      "section": "3K3",
+      "year": 2026,
+      "group_number": 2,
+      "status": "rejected",
+      "is_leader": false,
+      "enrolled_at": "2026-03-10T12:00:00+00:00"
+    },
+    {
+      "student": 100196,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "expelled",
+      "is_leader": false,
+      "enrolled_at": "2026-03-08T12:00:00+00:00"
+    },
+    {
+      "student": 100197,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "abandoned",
+      "is_leader": false,
+      "enrolled_at": "2026-03-08T12:00:00+00:00"
+    }
+  ],
+  "attendance": {
+    "until": "2026-10-30",
+    "class_fraction": 55,
+    "high_rate": 85,
+    "high_min": 60,
+    "high_max": 100,
+    "low_min": 35,
+    "low_max": 60
+  }
 }
