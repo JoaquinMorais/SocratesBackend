@@ -15,6 +15,7 @@ from models import (
     User,
 )
 from schemas.status import StatusPublic
+from schemas.user import ensure_adult_at_year
 from schemas.student import (
     StudentCreate,
     StudentGroupPublic,
@@ -133,6 +134,15 @@ async def update_student(db, id_student: int, data: StudentUpdate) -> StudentPub
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update")
 
     user = student.user
+    if "birth_date" in changes or "enrollment_year" in changes:
+        try:
+            ensure_adult_at_year(
+                changes.get("birth_date", user.birth_date),
+                changes.get("enrollment_year", student.enrollment_year),
+            )
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
     new_legajo = changes.get("legajo")
     if new_legajo is not None and new_legajo != user.legajo:
         taken = (
@@ -331,6 +341,7 @@ async def list_students(
     year: int | None,
     id_section: int | None,
     q: str | None,
+    kind: str | None = None,
     limit: int,
     offset: int,
 ) -> tuple[list[StudentListItem], int]:
@@ -340,20 +351,21 @@ async def list_students(
             "Only a professor of this section year or a super admin can do this",
         )
 
-    # Condiciones sobre el curso lectivo: los filtros pedidos y, para un profesor
-    # común, sus cursos lectivos. Si no hay ninguna, un super admin ve a todos.
-    scope = []
+    # Condiciones sobre el curso lectivo (SectionYear): filtros pedidos y, para un
+    # profesor común, sus cursos lectivos. Si no hay ninguna, un super admin ve a
+    # todos.
+    sy_scope = []
     if id_section_year is not None:
-        scope.append(Project.id_section_year == id_section_year)
+        sy_scope.append(SectionYear.id_section_year == id_section_year)
     if year is not None:
-        scope.append(SectionYear.year == year)
+        sy_scope.append(SectionYear.year == year)
     if id_section is not None:
-        scope.append(SectionYear.id_section == id_section)
+        sy_scope.append(SectionYear.id_section == id_section)
     if not access.is_super_admin:
         if access.section_year_ids:
-            scope.append(SectionYear.id_section_year.in_(access.section_year_ids))
+            sy_scope.append(SectionYear.id_section_year.in_(access.section_year_ids))
         else:
-            scope.append(false())  # profesor sin cursos asignados: no ve a nadie
+            sy_scope.append(false())  # profesor sin cursos asignados: no ve a nadie
 
     conditions = []
     if q:
@@ -364,7 +376,7 @@ async def list_students(
             .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
             .join(Status, Status.id_status == StudentProject.id_status)
             .where(
-                *scope,
+                *sy_scope,
                 col(Project.name).ilike(like),
                 Status.ambito == "student_project",
                 Status.code.in_(statuses),
@@ -379,20 +391,50 @@ async def list_students(
             search.append(User.legajo == int(q.strip()))
         conditions.append(or_(*search))
 
-    if scope:
-        # Solo alumnos con al menos un grupo, en los estados pedidos, dentro del alcance.
+    if kind == "project":
         enrolled = (
             select(StudentProject.id_student)
             .join(Project, Project.id_project == StudentProject.id_project)
             .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
             .join(Status, Status.id_status == StudentProject.id_status)
             .where(
-                *scope,
+                *sy_scope,
                 Status.ambito == "student_project",
                 Status.code.in_(statuses),
             )
         )
         conditions.append(Student.id_student.in_(enrolled))
+    elif kind == "attending":
+        enrolled = (
+            select(StudentSectionYear.id_student)
+            .join(SectionYear, SectionYear.id_section_year == StudentSectionYear.id_section_year)
+            .where(*sy_scope, StudentSectionYear.state == "attending")
+        )
+        conditions.append(Student.id_student.in_(enrolled))
+    elif kind == "registered":
+        enrolled = (
+            select(StudentSectionYear.id_student)
+            .join(SectionYear, SectionYear.id_section_year == StudentSectionYear.id_section_year)
+            .where(*sy_scope, StudentSectionYear.state == "registered")
+        )
+        conditions.append(Student.id_student.in_(enrolled))
+    elif kind is None:
+        # Comportamiento actual: con alcance (filtros o profesor) solo los que
+        # tienen al menos una membresía de proyecto en los estados pedidos; sin
+        # alcance (super admin sin filtros) se ven todos.
+        if sy_scope:
+            enrolled = (
+                select(StudentProject.id_student)
+                .join(Project, Project.id_project == StudentProject.id_project)
+                .join(SectionYear, SectionYear.id_section_year == Project.id_section_year)
+                .join(Status, Status.id_status == StudentProject.id_status)
+                .where(
+                    *sy_scope,
+                    Status.ambito == "student_project",
+                    Status.code.in_(statuses),
+                )
+            )
+            conditions.append(Student.id_student.in_(enrolled))
 
     on_user = User.id_user == Student.id_student
     total = (
@@ -416,6 +458,6 @@ async def list_students(
         )
     ).all()
 
-    groups = await _groups_by_student(db, [s.id_student for s in students], scope, statuses)
+    groups = await _groups_by_student(db, [s.id_student for s in students], sy_scope, statuses)
     items = [to_list_item(s, groups.get(s.id_student, [])) for s in students]
     return items, total

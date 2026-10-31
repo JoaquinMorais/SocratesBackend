@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Query, status
 
@@ -60,6 +60,17 @@ async def get_students(
     ] = None,
     year: Annotated[int | None, Query(description="Filtrar por año")] = None,
     id_section: Annotated[int | None, Query(description="Filtrar por comisión")] = None,
+    kind: Annotated[
+        Literal["project", "attending", "registered"] | None,
+        Query(
+            description=(
+                "Población de alumnos a listar: `project` (con membresía de proyecto "
+                "en los `status` pedidos), `attending` (con cursada `attending`) o "
+                "`registered` (con inscripción `registered`). Sin valor se mantiene "
+                "el comportamiento actual."
+            )
+        ),
+    ] = None,
     q: Annotated[
         str | None,
         Query(
@@ -83,10 +94,17 @@ async def get_students(
       curso lectivo (año, comisión). Nunca expone datos privados del alumno (como
       la fecha de nacimiento) ni el detalle del proyecto.
     - Filtros: `status` (repetible; por defecto `active` y `finished`),
-      `id_section_year`, `year`, `id_section` y `q` (nombre, apellido, legajo
-      exacto o nombre de alguno de sus proyectos en los estados pedidos). Un
-      `status` desconocido responde **422**. Si un profesor pide un
-      `id_section_year` que no dicta, responde **403**.
+      `id_section_year`, `year`, `id_section`, `kind` y `q` (nombre, apellido,
+      legajo exacto o nombre de alguno de sus proyectos en los estados pedidos).
+      Un `status` desconocido responde **422** y un `kind` desconocido también.
+      Si un profesor pide un `id_section_year` que no dicta, responde **403**.
+    - `kind` elige la población de alumnos: `project` (con membresía de proyecto
+      en los `status` pedidos), `attending` (con cursada `attending`) o
+      `registered` (con inscripción `registered`). Sin `kind` se mantiene el
+      comportamiento anterior: un super admin sin filtros de curso ve a todos; con
+      filtros de curso o un profesor común, solo los alumnos con proyecto en el
+      alcance. En `attending`/`registered`, `status` no restringe la población,
+      solo los grupos devueltos.
     - Un alumno sin ninguna membresía sigue apareciendo mientras no se filtre por
       curso/año/comisión; al filtrar por ellos, solo aparecen los alumnos con al
       menos una membresía en los estados pedidos dentro del alcance.
@@ -105,6 +123,7 @@ async def get_students(
         year=year,
         id_section=id_section,
         q=q,
+        kind=kind,
         limit=limit,
         offset=offset,
     )
@@ -121,7 +140,8 @@ async def get_students(
         422: {
             "description": (
                 "Datos inválidos, campos desconocidos, legajo ya existente entre "
-                "alumnos, curso lectivo inexistente o el alumno tiene menos de 18 años"
+                "alumnos, curso lectivo inexistente o el alumno tiene menos de 18 años "
+                "(a la fecha de hoy o al 31/12 del año de ingreso)"
             )
         },
     },
@@ -140,6 +160,8 @@ async def create_student(
       con `POST /auth/password/request` y `POST /auth/password/confirm`.
     - El legajo no puede repetirse entre alumnos.
     - El alumno debe tener **al menos 18 años** a la fecha de alta (422 si no).
+    - Además, el alumno debe tener **al menos 18 años al 31/12 de su año de ingreso**
+      (422 si no).
     - `id_section_year` es opcional: si se envía, se crea la **inscripción**
       (`registered`) del alumno en ese curso lectivo (un id inexistente responde
       422 junto con el resto de errores de la fila). Para sumar otras
@@ -189,8 +211,9 @@ async def create_students_bulk(
     `POST /student-section-years`).
 
     Las reglas por alumno son las mismas que en `POST /students`, incluida la
-    mayoría de edad: si algún alumno tiene menos de 18 años, el lote entero se
-    rechaza con **422** (error de validación de campo).
+    mayoría de edad: si algún alumno tiene menos de 18 años (a la fecha de
+    alta o al 31/12 del año de ingreso), el lote entero se rechaza con **422**
+    (error de validación de campo).
     """
     created = await create_students(db, data.students)
     background.add_task(
@@ -210,7 +233,8 @@ async def create_students_bulk(
         422: {
             "description": (
                 "Datos inválidos, body vacío, campos que no se pueden modificar, "
-                "o una `birth_date` que deje al alumno con menos de 18 años"
+                "o una `birth_date` o un `enrollment_year` que dejen al alumno con "
+                "menos de 18 años (a la fecha de hoy o al 31/12 del año de ingreso)"
             )
         },
     },
@@ -231,6 +255,8 @@ async def update_student_route(
       (`{legajo}@sistemas.frc.utn.edu.ar`); sus sesiones siguen abiertas.
     - El legajo no puede repetirse entre alumnos (409).
     - La `birth_date` no puede dejar al alumno con menos de 18 años (422).
+    - La combinación `birth_date`/`enrollment_year` no puede dejar al alumno con
+      menos de 18 años al 31/12 del año de ingreso (422).
     - Cualquier otro campo responde 422. La contraseña no se puede modificar
       desde acá.
     """

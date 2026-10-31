@@ -89,12 +89,15 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_create_student_unknown_field_rejected`: testear que un campo desconocido en el alta responde 422.
 - `test_create_student_under_18_rejected`: testear que un alumno con menos de 18 años no se puede crear (422).
 - `test_create_student_exactly_18_allowed`: testear que un alumno que cumple 18 años hoy sí se puede crear.
+- `test_create_student_under_18_at_enrollment_rejected`: testear que un alumno mayor de 18 a la fecha de alta pero menor de 18 al 31/12 de su año de ingreso no se puede crear (422).
+- `test_create_student_exactly_18_at_enrollment_allowed`: testear que un alumno que cumple exactamente 18 años al 31/12 de su año de ingreso sí se puede crear.
 
 **Carga masiva**
 - `test_bulk_create`: testear que se pueden crear varios alumnos en una sola request.
 - `test_bulk_is_all_or_nothing`: testear que si una fila falla no se crea ninguna y el error indica el número de fila.
 - `test_bulk_duplicate_inside_request`: testear que un legajo repetido dentro del mismo lote se rechaza.
 - `test_bulk_student_under_18_rejected`: testear que si un alumno del lote tiene menos de 18 años se rechaza todo el lote (422).
+- `test_bulk_student_under_18_at_enrollment_rejected`: testear que si un alumno del lote es mayor de 18 a la fecha de alta pero menor de 18 al 31/12 de su año de ingreso se rechaza todo el lote (422).
 - `test_bulk_with_section_years`: testear que cada fila puede indicar su curso lectivo y que se crean las cursadas.
 - `test_bulk_unknown_section_year_is_all_or_nothing`: testear que un curso lectivo inexistente en una fila rechaza todo el lote (422) con el detalle por fila.
 
@@ -106,6 +109,8 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_patch_duplicate_legajo_rejected`: testear que no se puede usar el legajo de otro alumno (409).
 - `test_patch_same_legajo_is_ok`: testear que reenviar el propio legajo no da error.
 - `test_patch_student_under_18_rejected`: testear que una modificación que deje al alumno con menos de 18 años se rechaza (422).
+- `test_patch_student_enrollment_year_under_18_rejected`: testear que cambiar solo el año de ingreso dejando al alumno con menos de 18 años al 31/12 de ese año se rechaza (422).
+- `test_patch_student_birth_date_invalidates_enrollment_rejected`: testear que cambiar solo la fecha de nacimiento invalidando el año de ingreso actual se rechaza (422).
 - `test_student_legajo_may_match_a_professor`: testear que el legajo de un alumno puede coincidir con el de un profesor.
 - `test_patch_student_not_found`: testear que un alumno inexistente responde 404.
 - `test_patch_student_forbidden_fields`: testear que mail, `is_super_admin` y contraseña no se pueden modificar (422).
@@ -141,6 +146,12 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
 - `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
+- `test_list_kind_invalid`: testear que un `kind` desconocido responde 422.
+- `test_list_kind_project`: testear que `kind=project` lista solo alumnos con membresía de proyecto en los `status` pedidos.
+- `test_list_kind_attending`: testear que `kind=attending` lista solo alumnos con cursada `attending`.
+- `test_list_kind_registered`: testear que `kind=registered` lista solo alumnos con inscripción `registered`.
+- `test_list_kind_professor_scope`: testear que un profesor solo ve alumnos `attending` de sus cursos lectivos.
+- `test_list_kind_filters_apply`: testear que los filtros de curso/año/comisión aplican también a `kind=attending`/`registered`.
 
 **Eliminar un usuario (`DELETE /users/{id}`)**
 - `test_delete_requires_authentication`: testear que eliminar un usuario sin login responde 401.
@@ -1101,6 +1112,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_project_status_history_matches_current_status`: testear que cada proyecto tiene historial, que empieza con `status_from=null` y termina en su estado actual.
 - `test_seed_emails_and_legajos_are_unique`: testear que no se repiten mails de profesores, legajos de profesores ni legajos de alumnos.
 - `test_seed_users_are_adults`: testear que todos los usuarios del seed son mayores de edad.
+- `test_seed_students_are_adults_at_enrollment`: testear que todos los alumnos del seed tienen al menos 18 años al 31/12 de su año de ingreso.
 - `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que Ana, el super admin y Carlos pueden loguearse con su contraseña.

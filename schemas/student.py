@@ -1,10 +1,10 @@
 from datetime import date
 
-from pydantic import ConfigDict, field_validator
+from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.status import StatusPublic
-from schemas.user import UserUpdate, ensure_adult
+from schemas.user import UserUpdate, ensure_adult, ensure_adult_at_year
 
 class StudentCreate(SQLModel):
     model_config = ConfigDict(extra="forbid")  # campos desconocidos -> 422
@@ -22,6 +22,11 @@ class StudentCreate(SQLModel):
     @classmethod
     def is_adult(cls, v: date) -> date:
         return ensure_adult(v)
+
+    @model_validator(mode="after")
+    def is_adult_at_enrollment_year(self):
+        ensure_adult_at_year(self.birth_date, self.enrollment_year)
+        return self
 
 
 class StudentBulkCreate(SQLModel):

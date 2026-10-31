@@ -22,6 +22,15 @@ def ensure_adult(birth_date: date) -> date:
     return birth_date
 
 
+def ensure_adult_at_year(birth_date: date, year: int) -> None:
+    """Valida que el usuario tenga al menos MIN_AGE años al 31/12 del año."""
+    if year - birth_date.year < MIN_AGE:
+        raise ValueError(
+            "enrollment_year must make the student at least 18 years old "
+            "by the end of that year"
+        )
+
+
 class UserPublic(SQLModel):
     id_user: int
     first_name: str

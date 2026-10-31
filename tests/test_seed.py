@@ -28,6 +28,7 @@ from models import (
     User,
 )
 from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN
+from schemas.user import ensure_adult_at_year
 from utils.seed import DATA_DIR, load_seed
 
 FULL_SEED = DATA_DIR / "seed.json"
@@ -257,6 +258,11 @@ async def test_seed_emails_and_legajos_are_unique():
 async def test_seed_users_are_adults():
     users = await _all(User)
     assert all(user.age >= 18 for user in users)
+
+async def test_seed_students_are_adults_at_enrollment():
+    students = await _all(Student)
+    for student in students:
+        ensure_adult_at_year(student.user.birth_date, student.enrollment_year)
 
 
 async def test_seed_students_have_at_most_one_member_group():

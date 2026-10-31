@@ -7,6 +7,7 @@ from tests.helpers import (
     STUDENT,
     SUPER_ADMIN,
     assign_professor,
+    create_cursada,
     refresh_cookie,
     section_year,
     set_password,
@@ -157,7 +158,25 @@ async def test_create_student_under_18_rejected(client, login):
 async def test_create_student_exactly_18_allowed(client, login):
     r = await client.post(
         "/students",
-        json=student(100010, birth_date=_birth_date_for_age(18)),
+        json=student(100010, birth_date=_birth_date_for_age(18), enrollment_year=date.today().year),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 201
+
+
+async def test_create_student_under_18_at_enrollment_rejected(client, login):
+    r = await client.post(
+        "/students",
+        json=student(100010, birth_date=_birth_date_for_age(18), enrollment_year=date.today().year - 1),
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
+
+
+async def test_create_student_exactly_18_at_enrollment_allowed(client, login):
+    r = await client.post(
+        "/students",
+        json=student(100010, birth_date=_birth_date_for_age(19), enrollment_year=date.today().year - 1),
         headers=await login(SUPER_ADMIN),
     )
     assert r.status_code == 201
@@ -168,6 +187,22 @@ async def test_bulk_student_under_18_rejected(client, login):
     r = await client.post(
         "/students/bulk",
         json={"students": [student(100010), student(100011, birth_date=_birth_date_for_age(17))]},
+        headers=headers,
+    )
+    assert r.status_code == 422
+    # todo o nada: la fila válida tampoco se creó
+    assert (await client.post("/students", json=student(100010), headers=headers)).status_code == 201
+
+async def test_bulk_student_under_18_at_enrollment_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    r = await client.post(
+        "/students/bulk",
+        json={
+            "students": [
+                student(100010),
+                student(100011, birth_date=_birth_date_for_age(18), enrollment_year=date.today().year - 1),
+            ]
+        },
         headers=headers,
     )
     assert r.status_code == 422
@@ -441,6 +476,63 @@ async def test_list_does_not_expose_private_data(client, login):
     assert ana["groups"][0]["status"]["code"] == "active"
 
 
+async def test_list_kind_invalid(client, login):
+    admin = await login(SUPER_ADMIN)
+    assert (await client.get(f"{URL}?kind=foo", headers=admin)).status_code == 422
+
+
+async def test_list_kind_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin)
+    project = await _create_project(client, admin, sy, name="G1")
+    await _add_student(project["id_project"], ANA_ID)
+    # Luis solo inscripto (registered) no aparece con kind=project
+    await client.post("/students", json=student(100002, id_section_year=sy), headers=admin)  # ya existe, ignora
+    body = (await client.get(f"{URL}?kind=project", headers=admin)).json()
+    assert [i["id_student"] for i in body["items"]] == [ANA_ID]
+
+
+async def test_list_kind_attending(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin)
+    await create_cursada(ANA_ID, sy, "attending")
+    body = (await client.get(f"{URL}?kind=attending", headers=admin)).json()
+    assert ANA_ID in [i["id_student"] for i in body["items"]]
+    # Luis sin cursada attending no aparece
+    assert LUIS_ID not in [i["id_student"] for i in body["items"]]
+
+
+async def test_list_kind_registered(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin)
+    body = (await client.get(f"{URL}?kind=registered", headers=admin)).json()
+    # Ana y Luis del seed no tienen registered en sy nuevo; pero el filtro no rompe
+    assert isinstance(body["items"], list)
+
+
+async def test_list_kind_professor_scope(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy1 = await section_year(client, admin, "3K1")
+    sy2 = await section_year(client, admin, "3K2")
+    mail = await make_professor("profkind@frc.utn.edu.ar")
+    await assign_professor(client, admin, mail, sy1)
+    await create_cursada(ANA_ID, sy1, "attending")
+    await create_cursada(LUIS_ID, sy2, "attending")
+    headers = await login(mail)
+    body = (await client.get(f"{URL}?kind=attending", headers=headers)).json()
+    assert [i["id_student"] for i in body["items"]] == [ANA_ID]
+
+
+async def test_list_kind_filters_apply(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy1 = await section_year(client, admin, "3K1", 2025)
+    sy2 = await section_year(client, admin, "3K2", 2026)
+    await create_cursada(ANA_ID, sy1, "attending")
+    await create_cursada(LUIS_ID, sy2, "attending")
+    assert (await client.get(f"{URL}?kind=attending&year=2025", headers=admin)).json()["total"] == 1
+    assert (await client.get(f"{URL}?kind=attending&id_section_year={sy2}", headers=admin)).json()["total"] == 1
+
+
 async def test_list_pagination(client, login):
     admin = await login(SUPER_ADMIN)
     page1 = (await client.get(f"{URL}?limit=1", headers=admin)).json()
@@ -498,6 +590,23 @@ async def test_patch_student_under_18_rejected(client, login):
     r = await client.patch(
         "/students/1",
         json={"birth_date": _birth_date_for_age(17)},
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
+
+async def test_patch_student_enrollment_year_under_18_rejected(client, login):
+    r = await client.patch(
+        "/students/1",
+        json={"enrollment_year": 2019},
+        headers=await login(SUPER_ADMIN),
+    )
+    assert r.status_code == 422
+
+
+async def test_patch_student_birth_date_invalidates_enrollment_rejected(client, login):
+    r = await client.patch(
+        "/students/1",
+        json={"birth_date": "2004-01-01"},
         headers=await login(SUPER_ADMIN),
     )
     assert r.status_code == 422
