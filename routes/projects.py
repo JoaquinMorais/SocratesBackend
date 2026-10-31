@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -13,9 +14,12 @@ from schemas.project import (
     ProjectUpdate,
 )
 from schemas.project_status import ProjectStatusList
+from schemas.student_project import StudentProjectAttendanceList
 from schemas.status import MembershipStatus
 from utils.auth import user_dependency
 from utils.permissions import professor_dependency
+from utils.date_ranges import validate_optional_range
+from utils.project_attendance import list_project_attendance
 from utils.project_statuses import list_project_status_history, to_public as status_history_public
 from utils.projects import (
     advance_project,
@@ -284,6 +288,77 @@ async def get_project_overview_route(
         project,
         restricted=not access.can_see_detail(project),
         statuses=statuses,
+    )
+
+
+@projects_router.get(
+    "/{id_project}/attendance",
+    response_model=StudentProjectAttendanceList,
+    summary="Consultar la asistencia de los integrantes de un proyecto",
+    responses={
+        **_READ_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto"},
+        422: {
+            "description": (
+                "Algún `status` no es válido, o el rango `from`/`to` es inválido"
+            )
+        },
+    },
+)
+async def get_project_attendance_route(
+    id_project: int,
+    db: db_dependency,
+    user: user_dependency,
+    status_filter: Annotated[
+        list[MembershipStatus] | None,
+        Query(
+            alias="status",
+            description="Estados de membresía a incluir (repetible; por defecto member)",
+        ),
+    ] = None,
+    from_date: Annotated[
+        date | None, Query(alias="from", description="Primer día (YYYY-MM-DD)")
+    ] = None,
+    to_date: Annotated[
+        date | None, Query(alias="to", description="Último día (YYYY-MM-DD)")
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """
+    Devuelve los **integrantes de un proyecto con su porcentaje de asistencia**
+    en el curso lectivo del proyecto. **Solo el profesor asignado al curso
+    lectivo o un super admin.**
+
+    - Por defecto incluye members (`active`/`finished`). El parámetro repetible
+      `status` permite consultar otros estados; un estado inválido responde 422.
+    - El porcentaje se calcula sobre las clases con toma de asistencia
+      (`AttendanceSession`) del curso lectivo. Si se envían `from`/`to`, se
+      calcula sobre las clases del rango.
+    - `attended_classes` cuenta las asistencias de esa cursada en clases con
+      toma; `total_classes` cuenta las clases con toma del curso lectivo.
+    - Si no hay clases con toma, `attendance_percentage` es `null`.
+    - La asistencia se calcula por cursada: si un alumno cursó dos veces, cada
+      curso lectivo tiene su propio porcentaje.
+    - Orden: jefe primero, luego estado y antigüedad; paginado.
+    """
+    access = await build_access(db, user)
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can see attendance",
+        )
+    validate_optional_range(from_date, to_date)
+    return await list_project_attendance(
+        db,
+        project,
+        statuses=status_filter or list(MEMBER_CODES),
+        from_date=from_date,
+        to_date=to_date,
+        limit=limit,
+        offset=offset,
     )
 
 

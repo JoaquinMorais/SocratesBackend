@@ -15,6 +15,7 @@ from schemas.student_section_year import (
     StudentSectionYearPublic,
     StudentSectionYearUpdate,
 )
+from utils.attendance_stats import attendance_stats_for_cursadas
 from utils.section_years import get_section_year
 
 
@@ -22,6 +23,7 @@ def to_public(
     ssy: StudentSectionYear,
     student: Student | None = None,
     section_year: SectionYear | None = None,
+    attendance=None,
 ) -> StudentSectionYearPublic:
     student = student or ssy.student
     sy = section_year or ssy.section_year
@@ -37,6 +39,7 @@ def to_public(
         year=sy.year,
         id_section=sy.id_section,
         section_name=sy.section.name,
+        attendance=attendance,
     )
 
 
@@ -220,6 +223,25 @@ async def list_enrollments(
         )
     ).all()
     return list(items), total
+
+
+async def list_enrollments_with_attendance(
+    db, **kwargs
+) -> tuple[list[StudentSectionYearPublic], int]:
+    items, total = await list_enrollments(db, **kwargs)
+    cursadas = [row for row in items if row.state != REGISTERED]
+    stats = await attendance_stats_for_cursadas(db, cursadas)
+    return [
+        to_public(row, attendance=stats.get(row.id_student_section_year))
+        for row in items
+    ], total
+
+
+async def enrollment_public_with_attendance(db, row: StudentSectionYear):
+    if row.state == REGISTERED:
+        return to_public(row)
+    stats = await attendance_stats_for_cursadas(db, [row])
+    return to_public(row, attendance=stats.get(row.id_student_section_year))
 
 
 # ----------------------------------------------------------------------

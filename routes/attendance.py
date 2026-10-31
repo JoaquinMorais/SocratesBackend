@@ -151,10 +151,12 @@ async def get_attendance(
 
     Devuelve los alumnos con cursada **`attending`** o **`finished_*`** en el
     curso lectivo, con su `state`, `present` (los no marcados vienen en `false`),
-    el método (`code`, `manual` o `transcript`) y la hora de la marca. Las
-    inscripciones `registered` y las cursadas `abandoned` no aparecen. Incluye
-    el estado de la sesión (abierta/cerrada y vencimiento), **sin exponer el
-    código**. Orden: apellido y nombre.
+    el método (`code`, `manual` o `transcript`) y la hora de la marca. También
+    incluye `attendance` con `attended_classes`, `total_classes` y
+    `attendance_percentage` del curso lectivo completo. Las inscripciones
+    `registered` y las cursadas `abandoned` no aparecen. Incluye el estado de la
+    sesión (abierta/cerrada y vencimiento), **sin exponer el código**. Orden:
+    apellido y nombre.
     """
     return await list_attendance(
         db, await build_access(db, user), id_calendar_class

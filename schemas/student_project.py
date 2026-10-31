@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import ConfigDict
 from sqlmodel import SQLModel
 
+from schemas.attendance import AttendanceStatsPublic
 from schemas.status import StatusPublic
 
 # Decisiones que puede tomar el jefe de un grupo sobre una solicitud.
@@ -44,3 +45,22 @@ class StudentProjectUpdate(SQLModel):
 
     # Solo el jefe acepta (`active`) o rechaza (`rejected`) una solicitud.
     status: MembershipDecision
+
+
+class StudentProjectAttendancePublic(StudentProjectMemberPublic):
+    """Integrante con su porcentaje de asistencia en el curso lectivo."""
+
+    attendance: AttendanceStatsPublic | None = None
+
+
+class StudentProjectAttendanceList(SQLModel):
+    id_project: int
+    id_section_year: int
+    year: int
+    id_section: int
+    section_name: str
+    group_number: int
+    items: list[StudentProjectAttendancePublic]
+    total: int
+    limit: int
+    offset: int

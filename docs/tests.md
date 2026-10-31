@@ -325,6 +325,7 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 
 **Cursadas administradas**
 - `test_managed_cursada_cannot_be_edited_or_deleted`: testear que una cursada no se puede modificar ni borrar por esta vía (409) y sigue existiendo.
+- `test_enrollment_includes_attendance_percentage`: testear que la inscripción trae `attendance: null` y la cursada su porcentaje; la consulta por id devuelve las mismas estadísticas.
 
 ## `tests/test_calendars.py`
 
@@ -517,6 +518,7 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_manual_mark_and_unmark`: testear el marcado y quitado a mano, la idempotencia y que la lista refleje `present`/`method`.
 - `test_manual_foreign_enrollment_rejected`: testear que una cursada de otro curso lectivo responde 422 y una inexistente 404.
 - `test_list_includes_all_enrolled_in_order`: testear que la lista incluye a los alumnos con cursada `attending`/`finished_*` (los no marcados en `false`), ordenados por apellido, que excluye inscripciones/abandonadas y que no expone el código.
+- `test_class_list_includes_attendance_percentage`: testear que cada alumno de la lista trae su porcentaje sobre las clases con toma del curso lectivo.
 - `test_list_excludes_registration_and_includes_finished`: testear que una inscripción no aparece en la lista, que una cursada finalizada sí y que trae su `state`.
 - `test_manual_mark_registration_rejected`: testear que marcar a mano una inscripción (`registered`) responde 422.
 - `test_manual_mark_finished_cursada_rejected`: testear que una cursada `finished_approved` no se puede marcar a mano (422).
@@ -537,7 +539,8 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_bulk_manual_validation`: testear lista vacía, ID no positivo, más de 200 IDs y clase inexistente.
 
 **Historial**
-- `test_my_attendance_filters_and_order`: testear que el alumno ve solo lo suyo, con el más reciente primero, filtros de rango y validaciones (422).
+- `test_my_attendance_filters_and_order`: testear que el alumno ve solo lo suyo, con el más reciente primero, filtros de rango, resumen por curso lectivo y validaciones (422).
+- `test_my_attendance_does_not_mix_section_years`: testear que el resumen separa el porcentaje de cada cursada.
 - `test_my_attendance_is_student_only`: testear que un profesor recibe 403.
 - `test_my_attendance_is_private`: testear que cada alumno ve solo sus propias asistencias y no las de otros.
 
@@ -696,6 +699,20 @@ Proyecto con sus integrantes, sus responsables (los profesores asignados a su cu
 - `test_overview_responsible_are_section_year_professors`: testear que `responsible` lista los profesores asignados al curso lectivo (orden, campos `id_professor`/`first_name`/`last_name`/`legajo` y sin mail ni `is_super_admin`).
 - `test_overview_responsible_visible_to_outsider_in_protected`: testear que en un proyecto protegido el no privilegiado igual recibe los responsables.
 - `test_overview_responsible_empty_after_assignment_removed`: testear que al quitar una asignación el overview refleja los responsables al momento (lista vacía).
+
+## `tests/test_project_attendance.py`
+
+Asistencia de los integrantes de un proyecto (`GET /projects/{id}/attendance`): integrantes con su porcentaje en el curso lectivo, rango opcional y filtro por estado.
+
+**Permisos**
+- `test_project_attendance_permissions`: testear que sin login responde 401; alumno y profesor no asignado 403; profesor asignado y super admin 200; proyecto inexistente 404.
+
+**Estadísticas**
+- `test_project_attendance_counts_and_percentages`: testear `attended_classes`, `total_classes` y porcentaje por integrante, con métodos de asistencia variados.
+- `test_project_attendance_range`: testear que `from`/`to` limitan las clases y recalculan el porcentaje.
+- `test_project_attendance_without_sessions_and_status_filter`: testear que sin tomas el porcentaje es `null`, que por defecto solo se listan members y que `status=abandoned` permite consultar otros estados.
+- `test_project_attendance_does_not_mix_section_years`: testear que la asistencia del curso lectivo del proyecto no mezcla otra cursada del mismo alumno.
+- `test_project_attendance_invalid_filters`: testear `status` inválido, rango incompleto o invertido (422).
 
 ## `tests/test_project_insure.py`
 

@@ -129,6 +129,8 @@ socrates-backend/
 │   ├── calendar_bulk.py
 │   ├── activities.py
 │   ├── attendance.py
+│   ├── attendance_stats.py
+│   ├── project_attendance.py
 │   ├── attendance_transcript.py
 │   ├── professor_section_years.py
 │   ├── student_section_years.py
@@ -166,6 +168,7 @@ socrates-backend/
     ├── test_student_section_years.py
     ├── test_project_statuses.py
     ├── test_project_overview.py
+    ├── test_project_attendance.py
     ├── test_project_insure.py
     ├── test_project_transitions.py
     ├── test_projects.py
@@ -273,10 +276,10 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `calendars.py` | `/section-years/{id}/calendar`, `.../calendar/bulk` y `.../calendar-classes` | Calendario del curso lectivo (clases y actividades), carga masiva desde JSON, alta puntual y operaciones en lote sobre clases. |
 | `calendar_classes.py` | `/calendar-classes` | Consulta, edición y borrado de una clase concreta. |
 | `activities.py` | `/section-years/{id}/activities` y `/activities` | Actividades/entregas del curso lectivo: alta, listado, consulta, edición y baja. |
-| `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase, hacer check-in con código e importar desde el chat/CSV. |
-| `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state` y las cursadas son de solo lectura (409). |
+| `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase con porcentaje por alumno, hacer check-in con código e importar desde el chat/CSV. |
+| `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state` y porcentaje de asistencia; las cursadas son de solo lectura (409). |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
-| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos, asegurarlos, cambiar su estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`), consultar su historial de estados y su overview (integrantes y responsable). |
+| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos, asegurarlos, cambiar su estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`), consultar su historial de estados, su overview (integrantes y responsables) y la asistencia de sus integrantes. |
 | `student_projects.py` | `/projects/{id}/members` | Unirse y abandonar (alumno), aceptar/rechazar y delegar jefatura (jefe), expulsar (profesor del curso lectivo o super admin) y listar integrantes (privilegiados). |
 | `technologies.py` | `/technologies` | Alta, edición, consulta y baja de tecnologías (consulta: cualquier usuario; escritura: profesores y super admin), con la imagen en multipart o `id_image` y `PUT`/`DELETE` de la imagen. |
 | `images.py` | `/images` | Subida (multipart, profesores y super admin), consulta de datos (cualquier usuario logueado) y borrado de imágenes; el archivo se sirve públicamente en `/media`. |
@@ -303,7 +306,9 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 
 | `calendar_classes.py` | Lógica de clases: CRUD puntual, alta en lote por patrón de días, modificación/borrado en lote por ids o filtro, choques y solapamientos (409). |
 | `activities.py` | Lógica de actividades: CRUD, validación de fecha dentro del año, listado con filtros y paginación. |
-| `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase e historial del alumno. |
+| `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno. |
+| `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo, contando solo clases con toma y respetando rangos. |
+| `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango y datos públicos del alumno. |
 | `attendance_transcript.py` | Importación desde el chat: parseo de texto/CSV, matching legajo exacto + nombre tolerante, reporte preview/confirmación y creación con `method=transcript`. |
 | `calendars.py` | Lógica del calendario: `get_calendar_with_classes`, `get_my_calendar` y validación de rangos. |
 | `calendar_bulk.py` | Carga masiva del calendario: validación de fechas/horarios/solapamientos y creación atómica de clases y actividades (con `dry_run`). |
@@ -336,13 +341,14 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_calendars.py` | Calendario y clases: permisos, calendario 1 a 1, alta puntual y en lote, validaciones, solapamientos, edición/borrado en lote, actividades y cascada. |
 | `test_calendar_bulk_load.py` | Carga masiva del calendario: permisos, clases/actividades, dry_run, límites, validaciones, solapamientos internos y contra existentes, y todo o nada. |
 | `test_activities.py` | Actividades: permisos, alta, validaciones, consulta con filtros/paginación, edición, baja y cascada. |
-| `test_attendance.py` | Asistencia: permisos, abrir/rotar/cerrar, check-in, código inválido/vencido, marcado solo `attending`, lista con `state`, historial y cascadas. |
+| `test_attendance.py` | Asistencia: permisos, abrir/rotar/cerrar, check-in, código inválido/vencido, marcado solo `attending`, lista con `state` y porcentaje, historial y cascadas. |
 | `test_attendance_transcript.py` | Importación desde el chat: parseo, tolerancia de nombres, preview/confirmación, CSV/texto, errores, permisos y exclusión de `finished_*`. |
 | `test_me_calendar.py` | Mi calendario (`GET /me/calendar`): año actual del profesor y del alumno (incluye inscripción sola), fallback al grupo, sin cursos, rango y orden. |
-| `test_student_section_years.py` | Inscripciones y cursadas: permisos, alta, duplicados por año, referencias inexistentes, muchos a muchos, consulta/filtro por estado, edición/baja solo de inscripciones y coexistencia de inscripción + cursada. |
+| `test_student_section_years.py` | Inscripciones y cursadas: permisos, alta, duplicados por año, referencias inexistentes, muchos a muchos, consulta/filtro por estado, porcentaje de asistencia, edición/baja solo de inscripciones y coexistencia. |
 | `test_professor_section_years.py` | CRUD de asignaciones de profesores. |
 | `test_project_statuses.py` | Historial de estados de un proyecto: permisos, registro inicial, orden, paginación y 404. |
 | `test_project_overview.py` | Overview de un proyecto: permisos, visibilidad según privacidad, filtro de integrantes por estado, responsables (los profesores del curso lectivo) y jefe (`leader`). |
+| `test_project_attendance.py` | Asistencia de los integrantes de un proyecto: permisos, porcentajes, rango, filtro por estado y separación entre cursos lectivos. |
 | `test_project_insure.py` | Aseguramiento de un proyecto: permisos, reglas (memoria del subestado, rango de integrantes), efectos (historial, rechazo de pendientes, privacidad) y 409/404. |
 | `test_project_transitions.py` | Transiciones de estado del proyecto (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`): permisos, transiciones válidas e inválidas, estados finales, memoria del subestado, efectos en las membresías e historial. |
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación y eliminación. |

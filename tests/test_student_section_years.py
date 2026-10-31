@@ -1,9 +1,16 @@
+from datetime import date, datetime, time, timezone
+
+from sqlmodel import select
+
+from config.database import SessionLocal
+from models import Attendance, AttendanceSession, Calendar, CalendarClass
 from tests.helpers import (
     STUDENT,
     SUPER_ADMIN,
     create_cursada,
     section_year,
 )
+from utils.security import hash_otp
 
 URL = "/student-section-years"
 ANA, LUIS = 1, 2  # ids de los alumnos del seed
@@ -187,6 +194,7 @@ async def test_list_does_not_expose_private_data(client, login):
         "id_section",
         "section_name",
         "state",
+        "attendance",
     }
 
 
@@ -348,3 +356,71 @@ async def test_create_with_state_is_rejected(client, login):
         headers=headers,
     )
     assert r.status_code == 422
+
+
+async def _class_with_session(id_section_year: int, day: date) -> int:
+    async with SessionLocal() as session:
+        calendar = (
+            await session.exec(
+                select(Calendar).where(Calendar.id_section_year == id_section_year)
+            )
+        ).one()
+        calendar_class = CalendarClass(
+            id_calendar=calendar.id_calendar,
+            date=day,
+            start_time=time(18, 30),
+            end_time=time(20, 0),
+            modality="in_person",
+        )
+        session.add(calendar_class)
+        await session.flush()
+        start = datetime.combine(day, time(18, 30)).replace(tzinfo=timezone.utc)
+        session.add(
+            AttendanceSession(
+                id_calendar_class=calendar_class.id_calendar_class,
+                code_hash=hash_otp("000000"),
+                opened_at=start,
+                expires_at=start,
+            )
+        )
+        await session.commit()
+        return calendar_class.id_calendar_class
+
+
+async def _mark(id_student_section_year: int, id_calendar_class: int):
+    async with SessionLocal() as session:
+        session.add(
+            Attendance(
+                id_student_section_year=id_student_section_year,
+                id_calendar_class=id_calendar_class,
+                method="code",
+            )
+        )
+        await session.commit()
+
+
+async def test_enrollment_includes_attendance_percentage(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers, "3K1", 2026)
+    await _enroll(client, headers, ANA, sy)
+    cursada = await create_cursada(ANA, sy)
+    first = await _class_with_session(sy, date(2026, 3, 3))
+    await _class_with_session(sy, date(2026, 3, 10))
+    await _mark(cursada.id_student_section_year, first)
+
+    body = (await client.get(URL, headers=headers)).json()
+    by_state = {item["state"]: item for item in body["items"]}
+    assert by_state["registered"]["attendance"] is None
+    assert by_state["attending"]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 2,
+        "attendance_percentage": 50.0,
+    }
+
+    one = await client.get(f"{URL}/{cursada.id_student_section_year}", headers=headers)
+    assert one.status_code == 200
+    assert one.json()["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 2,
+        "attendance_percentage": 50.0,
+    }

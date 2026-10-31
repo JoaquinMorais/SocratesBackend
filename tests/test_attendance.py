@@ -464,6 +464,11 @@ async def test_my_attendance_filters_and_order(client, login):
         "2026-06-02",
         "2026-03-03",
     ]
+    assert history["section_years"][0]["attendance"] == {
+        "attended_classes": 2,
+        "total_classes": 2,
+        "attendance_percentage": 100.0,
+    }
 
     filtered = (
         await client.get(
@@ -473,6 +478,11 @@ async def test_my_attendance_filters_and_order(client, login):
         )
     ).json()
     assert [item["date"] for item in filtered["items"]] == ["2026-03-03"]
+    assert filtered["section_years"][0]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
 
     assert (
         await client.get("/me/attendance", params={"from": "2026-03-01"}, headers=ana)
@@ -491,6 +501,44 @@ async def test_my_attendance_filters_and_order(client, login):
             headers=ana,
         )
     ).status_code == 422
+
+
+async def test_my_attendance_does_not_mix_section_years(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_old = await _sy(client, admin, "3K1", 2025)
+    sy_new = await _sy(client, admin, "3K2", 2026)
+    old_cursada = await create_cursada(ANA_ID, sy_old, state="finished_approved")
+    new_cursada = await create_cursada(ANA_ID, sy_new)
+    old_class = await _class(client, admin, sy_old, date="2025-03-03")
+    new_class = await _class(client, admin, sy_new, date="2026-03-03")
+    await _open(client, admin, old_class["id_calendar_class"])
+    new_open = await _open(client, admin, new_class["id_calendar_class"])
+    async with SessionLocal() as session:
+        session.add(
+            Attendance(
+                id_student_section_year=old_cursada.id_student_section_year,
+                id_calendar_class=old_class["id_calendar_class"],
+                method="manual",
+            )
+        )
+        await session.commit()
+    r = await _checkin(
+        client, await login(STUDENT), new_class["id_calendar_class"], new_open["code"]
+    )
+    assert r.status_code == 200
+
+    body = (await client.get("/me/attendance", headers=await login(STUDENT))).json()
+    by_section = {item["id_section_year"]: item for item in body["section_years"]}
+    assert by_section[sy_old]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
+    assert by_section[sy_new]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
 
 
 async def test_my_attendance_is_student_only(client, login):
@@ -887,6 +935,30 @@ async def test_bulk_manual_validation(client, login):
         )
     ).status_code == 422
     assert (await _bulk(client, admin, 999, [ANA_ID])).status_code == 404
+
+
+async def test_class_list_includes_attendance_percentage(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    await _enroll(client, admin, ANA_ID, sy)
+    first = await _class(client, admin, sy, date="2026-03-03")
+    second = await _class(client, admin, sy, date="2026-03-10")
+    first_open = await _open(client, admin, first["id_calendar_class"])
+    await _open(client, admin, second["id_calendar_class"])
+    r = await _checkin(
+        client,
+        await login(STUDENT),
+        first["id_calendar_class"],
+        first_open["code"],
+    )
+    assert r.status_code == 200
+
+    body = (await _list(client, admin, first["id_calendar_class"])).json()
+    assert body["items"][0]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 2,
+        "attendance_percentage": 50.0,
+    }
 
 
 # ---------- estados de cursada ----------

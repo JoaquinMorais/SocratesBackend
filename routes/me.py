@@ -263,7 +263,10 @@ async def get_my_attendance_route(
     - Incluye solo las clases a las que asistió, con los datos del curso lectivo
       (año y comisión) y de la clase.
     - `from`/`to` son opcionales (ambos o ninguno, máximo 366 días) y filtran por
-      fecha de la clase.
+      fecha de la clase. El resumen por curso lectivo usa el mismo rango.
+    - `section_years` trae, por cada cursada, `attended_classes`, `total_classes`
+      y `attendance_percentage` (0-100, dos decimales; `null` si no hay clases con
+      toma). Cada curso lectivo se calcula por separado.
     - Orden: clase más reciente primero.
     """
     return await list_my_attendance(

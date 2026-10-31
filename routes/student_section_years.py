@@ -13,8 +13,9 @@ from utils.permissions import professor_dependency, super_admin_dependency
 from utils.student_section_years import (
     create_enrollment,
     delete_enrollment,
+    enrollment_public_with_attendance,
     get_enrollment,
-    list_enrollments,
+    list_enrollments_with_attendance,
     to_public,
     update_enrollment,
 )
@@ -98,11 +99,13 @@ async def get_enrollments(
 
     Cada fila indica su `state`: `registered` (inscripción), `attending`
     (cursada actual), `abandoned` o `finished_approved`/`finished_failed`.
+    Las cursadas incluyen `attendance` (`attended_classes`, `total_classes` y
+    `attendance_percentage`); la inscripción devuelve `attendance: null`.
     Sirve para ver las filas de un alumno (`id_student`) o de un curso lectivo
     (`id_section_year`), y se puede filtrar por `state`. Orden: año más reciente,
     comisión y apellido. Está paginado. No incluye mail ni fecha de nacimiento.
     """
-    items, total = await list_enrollments(
+    items, total = await list_enrollments_with_attendance(
         db,
         id_student=id_student,
         id_section_year=id_section_year,
@@ -113,7 +116,7 @@ async def get_enrollments(
         offset=offset,
     )
     return StudentSectionYearList(
-        items=[to_public(i) for i in items], total=total, limit=limit, offset=offset
+        items=items, total=total, limit=limit, offset=offset
     )
 
 
@@ -126,8 +129,10 @@ async def get_enrollments(
 async def get_enrollment_route(
     id_student_section_year: int, db: db_dependency, _: professor_dependency
 ):
-    """Devuelve una cursada por su id. **Solo profesores** (incluye super admin)."""
-    return to_public(await get_enrollment(db, id_student_section_year))
+    """Devuelve una cursada por su id, con su porcentaje de asistencia. **Solo profesores** (incluye super admin)."""
+    return await enrollment_public_with_attendance(
+        db, await get_enrollment(db, id_student_section_year)
+    )
 
 
 @student_section_years_router.patch(

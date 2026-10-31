@@ -20,6 +20,7 @@ from models.student_section_year import (
     ATTENDING,
     FINISHED_APPROVED,
     FINISHED_FAILED,
+    REGISTERED,
 )
 from schemas.attendance import (
     AttendanceBulkResult,
@@ -30,7 +31,9 @@ from schemas.attendance import (
     ClassAttendancePublic,
     MyAttendanceItemPublic,
     MyAttendanceListPublic,
+    MyAttendanceSectionYearPublic,
 )
+from utils.attendance_stats import attendance_stats_for_cursadas
 from utils.date_ranges import validate_optional_range
 from utils.security import generate_otp, hash_otp
 
@@ -304,6 +307,9 @@ async def list_attendance(db, access, id_calendar_class: int) -> ClassAttendance
     by_enrollment = {
         row.id_student_section_year: row for row in attendance_rows
     }
+    stats = await attendance_stats_for_cursadas(
+        db, [enrollment for enrollment, _ in rows]
+    )
 
     items = []
     for enrollment, user in rows:
@@ -319,6 +325,7 @@ async def list_attendance(db, access, id_calendar_class: int) -> ClassAttendance
                 present=attendance is not None,
                 method=attendance.method if attendance else None,
                 recorded_at=attendance.recorded_at if attendance else None,
+                attendance=stats.get(enrollment.id_student_section_year),
             )
         )
 
@@ -536,7 +543,37 @@ async def list_my_attendance(
         )
     ).all()
 
+    cursadas = (
+        await db.exec(
+            select(StudentSectionYear).where(
+                StudentSectionYear.id_student == student.id_student,
+                StudentSectionYear.state != REGISTERED,
+            )
+        )
+    ).all()
+    stats = await attendance_stats_for_cursadas(
+        db, cursadas, from_date=from_date, to_date=to_date
+    )
+    section_years = []
+    seen_sections: set[int] = set()
+    for cursada in cursadas:
+        if cursada.id_section_year in seen_sections:
+            continue
+        seen_sections.add(cursada.id_section_year)
+        section_year = cursada.section_year
+        section_years.append(
+            MyAttendanceSectionYearPublic(
+                id_section_year=section_year.id_section_year,
+                year=section_year.year,
+                id_section=section_year.section.id_section,
+                section_name=section_year.section.name,
+                attendance=stats[cursada.id_student_section_year],
+            )
+        )
+    section_years.sort(key=lambda row: (-row.year, row.section_name))
+
     return MyAttendanceListPublic(
+        section_years=section_years,
         items=[
             MyAttendanceItemPublic(
                 id_attendance=attendance.id_attendance,

@@ -1,6 +1,8 @@
 from pydantic import ConfigDict
 from sqlmodel import Field, SQLModel
 
+from schemas.attendance import AttendanceStatsPublic
+
 
 class StudentSectionYearCreate(SQLModel):
     model_config = ConfigDict(extra="forbid")  # campos desconocidos -> 422
@@ -27,6 +29,7 @@ class StudentSectionYearPublic(SQLModel):
     year: int
     id_section: int
     section_name: str
+    attendance: AttendanceStatsPublic | None = None
 
 
 class StudentSectionYearList(SQLModel):

@@ -34,6 +34,12 @@ class AttendanceSessionStatusPublic(SQLModel):
     closed_at: datetime | None = None
 
 
+class AttendanceStatsPublic(SQLModel):
+    attended_classes: int
+    total_classes: int
+    attendance_percentage: float | None = None
+
+
 class AttendanceStudentPublic(SQLModel):
     id_student_section_year: int
     id_student: int
@@ -44,6 +50,7 @@ class AttendanceStudentPublic(SQLModel):
     present: bool
     method: str | None = None
     recorded_at: datetime | None = None
+    attendance: AttendanceStatsPublic | None = None
 
 
 class ClassAttendancePublic(SQLModel):
@@ -77,7 +84,16 @@ class MyAttendanceItemPublic(SQLModel):
     recorded_at: datetime
 
 
+class MyAttendanceSectionYearPublic(SQLModel):
+    id_section_year: int
+    year: int
+    id_section: int
+    section_name: str
+    attendance: AttendanceStatsPublic
+
+
 class MyAttendanceListPublic(SQLModel):
+    section_years: list[MyAttendanceSectionYearPublic] = Field(default_factory=list)
     items: list[MyAttendanceItemPublic] = Field(default_factory=list)
 
 
