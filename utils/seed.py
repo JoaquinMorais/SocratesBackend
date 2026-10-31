@@ -12,6 +12,7 @@ from models import (
     AttendanceSession,
     Calendar,
     CalendarClass,
+    Delivery,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -36,13 +37,14 @@ from models.state.state_student_project import (
     PendingApprovalMember,
     RejectedMember,
 )
-from models.student_section_year import (
+from models.state.student_section_year import (
     ABANDONED,
     ATTENDING,
     FINISHED_APPROVED,
     FINISHED_FAILED,
     REGISTERED,
 )
+from utils.deliveries import ensure_deliveries_for_section_year
 from utils.security import hash_otp
 from utils.statuses import (
     ensure_statuses,
@@ -227,6 +229,7 @@ async def _load_student_section_years(
     data: dict,
     students: dict[int, Student],
     section_years: dict[tuple[str, int], SectionYear],
+    statuses: dict[tuple[str, str], Status],
 ) -> None:
     for item in data.get("student_section_years", []):
         student = students.get(item["student"])
@@ -241,6 +244,7 @@ async def _load_student_section_years(
                 id_student=student.id_student,
                 id_section_year=sy.id_section_year,
                 year=sy.year,
+                status=statuses[("student_section_year", REGISTERED)],
                 state=REGISTERED,
             )
         )
@@ -473,7 +477,9 @@ _CURSADA_PRIORITY = {
 }
 
 
-async def _load_student_cursadas(session: AsyncSession) -> None:
+async def _load_student_cursadas(
+    session: AsyncSession, statuses: dict[tuple[str, str], Status]
+) -> None:
     """Deriva las cursadas de las membresías de los proyectos del seed.
 
     Las filas `student_section_years` del JSON son inscripciones; la cursada se
@@ -526,6 +532,7 @@ async def _load_student_cursadas(session: AsyncSession) -> None:
                 id_student=id_student,
                 id_section_year=id_section_year,
                 year=year,
+                status=statuses[("student_section_year", state)],
                 state=state,
             )
         )
@@ -655,6 +662,32 @@ async def _load_attendance(
     await session.flush()
 
 
+async def _fill_seed_deliveries(session: AsyncSession) -> None:
+    """Completa una parte de las entregas pre-creadas para el seed de demo."""
+    cutoff = date(2026, 10, 30)
+    deliveries = (await session.exec(select(Delivery))).all()
+    for delivery in deliveries:
+        activity = delivery.activity
+        if activity.due_date > cutoff:
+            continue
+        bucket = (delivery.id_project * 17 + delivery.id_activity * 31) % 100
+        if bucket >= 75:
+            continue
+        submitted = datetime.combine(
+            activity.due_date, time(12, 0), tzinfo=timezone.utc
+        )
+        delivery.link = (
+            "https://drive.google.com/drive/folders/"
+            f"seed-{delivery.id_project}-{delivery.id_activity}"
+        )
+        delivery.submitted_at = submitted
+        delivery.updated_at = submitted
+        if bucket < 55:
+            delivery.activity_grade = 60 + (bucket * 7) % 41
+            delivery.development_grade = 60 + (bucket * 11) % 41
+        session.add(delivery)
+
+
 async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
     # Los estados son la base de proyectos y membresías: se aseguran siempre,
     # exista o no la seed (más adelante la seed puede sumar los suyos).
@@ -673,7 +706,9 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     sections = await _load_sections(session, data)
     section_years = await _load_section_years(session, data, sections)
     await _load_professor_section_years(session, data, professors, section_years)
-    await _load_student_section_years(session, data, students, section_years)
+    await _load_student_section_years(
+        session, data, students, section_years, statuses
+    )
     technologies = await _load_technologies(session, data)
     calendars = {
         calendar.id_section_year: calendar
@@ -690,9 +725,12 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     await _load_calendar_classes(session, data, section_years, calendars)
     await _load_activities(session, data, section_years, calendars)
     projects = await _load_projects(session, data, section_years, statuses)
+    for sy in section_years.values():
+        await ensure_deliveries_for_section_year(session, sy.id_section_year)
+    await _fill_seed_deliveries(session)
     await _load_project_technologies(session, data, projects, technologies)
     await _load_student_projects(session, data, students, projects, statuses)
-    await _load_student_cursadas(session)
+    await _load_student_cursadas(session, statuses)
     await _load_attendance(session, data, section_years, calendars)
 
     await session.commit()

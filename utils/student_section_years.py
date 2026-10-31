@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 
 from models import Section, SectionYear, Student, StudentSectionYear, User
-from models.student_section_year import (
+from models.state.student_section_year import (
     ABANDONED,
     ATTENDING,
     FINISHED_APPROVED,
@@ -16,6 +16,8 @@ from schemas.student_section_year import (
     StudentSectionYearUpdate,
 )
 from utils.attendance_stats import attendance_stats_for_cursadas
+from utils.state.student_section_year import apply_cursada_transition
+from utils.statuses import get_status, to_public as status_public
 from utils.section_years import get_section_year
 
 
@@ -32,6 +34,7 @@ def to_public(
         id_student_section_year=ssy.id_student_section_year,
         id_student=student.id_student,
         state=ssy.state,
+        status=status_public(ssy.status),
         student_first_name=user.first_name,
         student_last_name=user.last_name,
         student_legajo=user.legajo,
@@ -114,8 +117,13 @@ async def create_enrollment(
     if await _registration_year_taken(db, data.id_student, sy.year):
         raise _duplicate_registration()
 
+    registered_status = await get_status(db, "student_section_year", REGISTERED)
     ssy = StudentSectionYear(
-        student=student, section_year=sy, year=sy.year, state=REGISTERED
+        student=student,
+        section_year=sy,
+        year=sy.year,
+        status=registered_status,
+        state=REGISTERED,
     )
     db.add(ssy)
     try:
@@ -330,31 +338,30 @@ async def ensure_attending(
     current = await _current_attending(db, id_student)
 
     if row is not None:
-        if row.state == FINISHED_APPROVED:
-            raise HTTPException(
-                status.HTTP_409_CONFLICT,
-                "This section year is already finished",
+        if row.state != ATTENDING:
+            await apply_cursada_transition(
+                db,
+                row,
+                ATTENDING,
+                allow_project_joins=allow_project_joins,
             )
-        if row.state == FINISHED_FAILED and not allow_project_joins:
-            raise HTTPException(
-                status.HTTP_409_CONFLICT,
-                "This section year is already finished",
-            )
-        row.state = ATTENDING
         row.year = year
         db.add(row)
     else:
+        attending_status = await get_status(
+            db, "student_section_year", ATTENDING
+        )
         row = StudentSectionYear(
             id_student=id_student,
             id_section_year=id_section_year,
             year=year,
+            status=attending_status,
             state=ATTENDING,
         )
         db.add(row)
 
     if current is not None and current is not row:
-        current.state = ABANDONED
-        db.add(current)
+        await apply_cursada_transition(db, current, ABANDONED)
 
     await db.flush()
     return row
@@ -374,8 +381,7 @@ async def close_attending(
         )
     ).first()
     if row is not None:
-        row.state = new_state
-        db.add(row)
+        await apply_cursada_transition(db, row, new_state)
 
 
 async def finish_attending(

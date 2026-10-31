@@ -34,6 +34,7 @@ from models.state.state_project import (
 from models.state.state_student_project import PendingApprovalMember, RejectedMember
 from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
+from utils.deliveries import ensure_deliveries_for_section_year, has_delivery_data_for_project
 from utils.state import ProjectEffector, apply_transition
 from utils.student_section_years import student_current_row
 from utils.statuses import get_status
@@ -249,6 +250,8 @@ async def create_project(db, access: Access, data: ProjectCreate) -> ProjectPubl
     db.add(project)
     await db.flush()  # obtiene id_project
     await record_status_change(db, project.id_project, None, initial_status.id_status)
+    await db.flush()
+    await ensure_deliveries_for_section_year(db, sy.id_section_year)
     try:
         await db.commit()
     except IntegrityError:  # dos altas simultáneas con el mismo número
@@ -273,6 +276,8 @@ async def create_projects_bulk(
     await db.flush()  # obtiene los id_project
     for project in projects:
         await record_status_change(db, project.id_project, None, initial_status.id_status)
+    await db.flush()
+    await ensure_deliveries_for_section_year(db, sy.id_section_year)
     try:
         await db.commit()
     except IntegrityError:  # otro profesor creó grupos al mismo tiempo
@@ -414,6 +419,9 @@ async def delete_project(db, access: Access, id_project: int) -> None:
     ).first()
     if has_students is not None:
         raise _conflict("Project has students and cannot be deleted")
+
+    if await has_delivery_data_for_project(db, id_project):
+        raise _conflict("Project has delivery data and cannot be deleted")
 
     try:
         await db.delete(project)

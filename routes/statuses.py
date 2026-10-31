@@ -21,7 +21,7 @@ async def get_statuses(
     _: user_dependency,
     ambito: Annotated[
         Ambito | None,
-        Query(description="Filtrar por ámbito (project, student_project)"),
+        Query(description="Filtrar por ámbito (project, student_project, student_section_year)"),
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -29,7 +29,7 @@ async def get_statuses(
     """
     Lista los estados disponibles. **Cualquier usuario logueado.**
 
-    Cada estado pertenece a un `ambito` (por ahora `project` y `student_project`)
+    Cada estado pertenece a un `ambito` (`project`, `student_project` o `student_section_year`)
     y tiene un `code` (identificador), un `name` y una `description` para mostrar.
     `is_final` indica que es un estado terminal (no admite más transiciones) e
     `is_insured` que el estado de proyecto cuenta como "asegurado" (los cuatro

@@ -9,11 +9,12 @@ from models.state.state_student_project import (
     PendingApprovalMember,
     RejectedMember,
 )
-from models.student_section_year import (
+from models.state.student_section_year import (
     ATTENDING,
     FINISHED_APPROVED,
     FINISHED_FAILED,
 )
+from utils.state.student_section_year import apply_cursada_transition
 from utils.statuses import get_status
 
 
@@ -79,5 +80,4 @@ class ProjectEffector:
                 )
             ).all()
             for cursada in cursadas:
-                cursada.state = cursada_state
-                self.db.add(cursada)
+                await apply_cursada_transition(self.db, cursada, cursada_state)

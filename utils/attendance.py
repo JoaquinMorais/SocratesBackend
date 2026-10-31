@@ -16,7 +16,7 @@ from models import (
     StudentSectionYear,
     User,
 )
-from models.student_section_year import (
+from models.state.student_section_year import (
     ATTENDING,
     FINISHED_APPROVED,
     FINISHED_FAILED,

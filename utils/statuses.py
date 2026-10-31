@@ -8,6 +8,7 @@ from models.state import (
     PROJECT_INITIAL,
     PROJECT_INSURED,
     STUDENT_PROJECT_CATALOG,
+    STUDENT_SECTION_YEAR_CATALOG,
     STUDENT_PROJECT_INITIAL,
     STUDENT_PROJECT_PENDING,
     state_for,
@@ -35,7 +36,11 @@ DEFAULT_STATUSES = [
         "description": state.description,
         "is_final": state.is_final,
     }
-    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG)
+    for state in (
+        *PROJECT_CATALOG,
+        *STUDENT_PROJECT_CATALOG,
+        *STUDENT_SECTION_YEAR_CATALOG,
+    )
 ]
 
 

@@ -13,12 +13,13 @@ from models import (
     StudentSectionYear,
 )
 from models.state import MEMBER_CODES
-from models.student_section_year import (
+from models.state.student_section_year import (
     ATTENDING,
     FINISHED_APPROVED,
     FINISHED_FAILED,
     REGISTERED,
 )
+from utils.deliveries import has_delivery_data_for_section_year
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearPublic,
@@ -204,6 +205,11 @@ async def update_section_year_settings(
 
 async def delete_section_year(db, id_section_year: int) -> None:
     sy = await get_section_year(db, id_section_year)
+    if await has_delivery_data_for_section_year(db, id_section_year):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Section year has delivery data and cannot be deleted",
+        )
     try:
         await db.delete(sy)
         await db.commit()

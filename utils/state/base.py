@@ -5,7 +5,10 @@ from utils.statuses import get_status
 
 
 def _subject(ambito: str) -> str:
-    return "project" if ambito == "project" else "membership"
+    return {
+        "project": "project",
+        "student_section_year": "enrollment",
+    }.get(ambito, "membership")
 
 
 async def apply_transition(db, entity, target_code: str, *, effector):

@@ -2,19 +2,10 @@ from sqlalchemy import CheckConstraint, Index, text
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.section_year import SectionYear
+from models.status import Status
 from models.student import Student
 
-# Estados de una fila del vínculo alumno + curso lectivo.
-REGISTERED = "registered"  # anotado/inscripto (fila administrativa)
-ATTENDING = "attending"  # cursada actual
-ABANDONED = "abandoned"  # cursada abandonada/expulsada/cancelada
-FINISHED_APPROVED = "finished_approved"  # finalizada y aprobada
-FINISHED_FAILED = "finished_failed"  # finalizada y desaprobada
-STATES = frozenset(
-    {REGISTERED, ATTENDING, ABANDONED, FINISHED_APPROVED, FINISHED_FAILED}
-)
-CURRENT_CURSADA_STATES = frozenset({ATTENDING})
-HISTORICAL_CURSADA_STATES = frozenset({ABANDONED, FINISHED_APPROVED, FINISHED_FAILED})
+from models.state.student_section_year import REGISTERED
 
 
 class StudentSectionYear(SQLModel, table=True):
@@ -64,8 +55,11 @@ class StudentSectionYear(SQLModel, table=True):
         foreign_key="section_years.id_section_year", index=True
     )
     year: int
+    id_status: int = Field(foreign_key="statuses.id_status", index=True)
+    # Espejo de `status.code`: se mantiene para los índices parciales.
     state: str = Field(default=REGISTERED, max_length=30)
 
+    status: Status = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     student: Student = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     section_year: SectionYear = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"}

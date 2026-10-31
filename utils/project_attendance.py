@@ -3,7 +3,7 @@ from datetime import date
 from sqlmodel import select
 
 from models import StudentSectionYear
-from models.student_section_year import REGISTERED
+from models.state.student_section_year import REGISTERED
 from schemas.student_project import (
     StudentProjectAttendanceList,
     StudentProjectAttendancePublic,

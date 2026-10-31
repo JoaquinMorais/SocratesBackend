@@ -7,6 +7,7 @@ from sqlmodel import select
 
 from models import Activity, CalendarClass
 from schemas.calendar_bulk import CalendarBulkLoad, CalendarBulkLoadReport
+from utils.deliveries import ensure_deliveries_for_section_year
 from utils.section_years import ensure_calendar, get_section_year
 
 
@@ -134,6 +135,8 @@ async def bulk_load_calendar(
         for activity in data.activities
     ]
     db.add_all([*created_classes, *created_activities])
+    await db.flush()
+    await ensure_deliveries_for_section_year(db, id_section_year)
     try:
         await db.commit()
     except IntegrityError:  # el calendario cambió entre la validación y el commit

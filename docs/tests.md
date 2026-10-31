@@ -297,7 +297,7 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 - `test_regular_professor_can_read_but_not_write`: testear que un profesor común puede listar pero no crear (403).
 
 **Crear inscripción**
-- `test_create_enrollment`: testear el alta de la inscripción, que nace `registered` y que la respuesta aplana los datos del alumno y del curso lectivo.
+- `test_create_enrollment`: testear el alta de la inscripción, que nace `registered`, que incluye `status` y que la respuesta aplana los datos del alumno y del curso lectivo.
 - `test_create_duplicate_rejected`: testear que no se puede repetir una inscripción para el mismo alumno y curso lectivo (409).
 - `test_create_unknown_references`: testear que un alumno o un curso lectivo inexistente responde 404.
 - `test_create_invalid_rejected`: testear ids faltantes, ids no positivos y campos desconocidos (422).
@@ -310,7 +310,7 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 - `test_list_filters`: testear los filtros por alumno, curso lectivo, año y comisión, solos y combinados.
 - `test_list_filters_by_state`: testear el filtro por `state` (`registered`, `attending`) y que un estado desconocido responde 422.
 - `test_list_pagination`: testear `limit`/`offset`, `total` y que `limit=0` responde 422.
-- `test_get_by_id_and_not_found`: testear la consulta por id (un alumno recibe 403) y el 404.
+- `test_get_by_id_and_not_found`: testear la consulta por id (un alumno recibe 403) y el 404; la respuesta incluye `state` y `status`.
 - `test_list_does_not_expose_private_data`: testear que no se expone el mail ni la fecha de nacimiento del alumno.
 - `test_registration_and_cursada_coexist`: testear que la inscripción y la cursada conviven como dos filas en la misma comisión.
 
@@ -487,6 +487,28 @@ Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/atten
 **Errores**
 - `test_errors`: testear archivo vacío (422), texto sin pares (422), texto con legajo sin nombre (422) y archivo demasiado grande (413).
 - `test_empty_text_rejected`: testear que el body de texto vacío responde 422.
+
+## `tests/test_deliveries.py`
+
+Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH /deliveries/{id}`, `GET /activities/{id}/deliveries` y `POST /projects/{id}/deliveries`): filas pre-creadas, link, dos notas y fechas.
+
+**Pre-creación**
+- `test_delivery_precreated_on_project_and_activity`: testear que al crear proyecto/actividad se crean las entregas vacías correspondientes.
+- `test_delivery_precreated_when_activity_created_first`: testear que la pre-creación también funciona cuando la actividad existe antes que el proyecto.
+- `test_delivery_precreated_on_bulk_projects`: testear que el alta masiva de proyectos pre-crea una entrega por cada actividad.
+- `test_delivery_precreated_from_calendar_bulk`: testear que las actividades creadas en la carga masiva del calendario pre-crean sus entregas.
+- `test_seed_deliveries_are_precreated`: testear que el seed genera todas las combinaciones proyecto × actividad sin duplicados.
+
+**Permisos**
+- `test_delivery_permissions`: testear 401 sin login; 403 para alumnos ajenos, proyectos no privilegiados y profesor no asignado; 200 para miembros, profesor asignado y super admin. El alumno envía link, pero no notas; el profesor califica.
+- `test_delivery_final_project_student_cannot_update`: testear que un alumno no modifica el link de un proyecto final (409) y que el staff sí puede.
+
+**Campos y fechas**
+- `test_delivery_fields_validation_and_timestamps`: testear notas 1-100, URL inválida, body vacío/campos desconocidos (422), `submitted_at` null antes del link y seteado al enviarlo, `updated_at`, y limpiar el link.
+- `test_delivery_repair_endpoint`: testear que `POST` repara una fila faltante, responde 409 si ya existe y 422 si la actividad es de otro curso lectivo.
+
+**Borrado**
+- `test_delivery_deletion_rules`: testear que actividad/proyecto/curso lectivo se pueden borrar con entregas vacías, pero responden 409 cuando hay link o notas.
 
 ## `tests/test_attendance.py`
 
@@ -1061,7 +1083,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_projects_cover_all_states`: testear que hay al menos un proyecto en cada estado (`uninsured`, `in_idea`, `in_progress`, `pending_approval`, `rejected`, `approved` y `cancelled`).
 - `test_seed_memberships_cover_all_states`: testear que hay membresías en todos los estados (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`).
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los 13 estados base (7 de `project` y 6 de `student_project`) y sus estados finales.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 18 estados base (7 de `project`, 6 de `student_project` y 5 de `student_section_year`) y sus estados finales.
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada proyecto con integrantes tiene exactamente un jefe.
 - `test_seed_membership_statuses_are_valid_and_consistent`: testear que cada membresía tiene un estado de su ámbito y que los jefes no quedan en estados de solicitud.
 - `test_seed_cancelled_projects_have_failed_cursadas`: testear que los integrantes de proyectos cancelados quedan `abandoned`/`rejected` y sus cursadas `finished_failed`.
@@ -1072,22 +1094,23 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_students_have_at_most_one_member_group`: testear que ningún alumno es `member` (`active`/`finished`) de más de un grupo en todo el sistema.
 - `test_seed_all_projects_belong_to_a_section_year`: testear que todos los proyectos referencian un curso lectivo existente.
 - `test_seed_users_can_log_in`: testear que Ana, el super admin y Carlos pueden loguearse con su contraseña.
-- `test_seed_student_section_years_are_consistent`: testear inscripción única por alumno/año, cursada única por comisión, una sola cursada `attending` por alumno, cobertura de todos los estados y relación con las membresías.
+- `test_seed_student_section_years_are_consistent`: testear inscripción única por alumno/año, cursada única por comisión, una sola cursada `attending` por alumno, cobertura de todos los estados, espejo `state == status.code` y relación con las membresías.
 - `test_seed_students_may_have_several_section_years`: testear que hay alumnos con más de una fila en distintos cursos lectivos.
 - `test_seed_calendars_are_consistent`: testear un calendario por curso lectivo, clases dentro del año, horarios válidos, sin solapamientos y con clases en todos los calendarios.
 - `test_seed_activities_are_consistent`: testear actividades dentro del año, con título y calendario válido, y al menos una por curso lectivo.
 - `test_seed_technology_catalog_and_links`: testear nombres únicos sin distinguir mayúsculas y vínculos proyecto-tecnología válidos y sin duplicados.
+- `test_seed_deliveries_are_precreated`: testear que existe una entrega por cada combinación proyecto × actividad del mismo curso lectivo, sin duplicados, con algunas enviadas/calificadas y otras vacías.
 - `test_seed_attendance_is_consistent`: testear asistencias únicas, solo sobre cursadas válidas y clases pasadas, sesiones cerradas, ~50-60% de clases con toma y que al menos el 80% de los alumnos tenga 60-100% de asistencia sobre esas clases.
 
 ## `tests/test_statuses.py`
 
 **Permisos y lectura (`GET /statuses`)**
 - `test_requires_authentication`: testear que listar estados sin login responde 401.
-- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 13 estados (7 de `project` y 6 de `student_project`).
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 18 estados (7 de `project`, 6 de `student_project` y 5 de `student_section_year`).
 - `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description`, `is_final` e `is_insured`.
 
 **Consultar**
-- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae los 7 estados nuevos; `student_project` trae `active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`.
+- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae sus 7 estados, `student_project` sus 6 y `student_section_year` sus 5 (`registered`, `attending`, `abandoned`, `finished_approved`, `finished_failed`).
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
@@ -1098,7 +1121,8 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_initial_and_pending_status`: testear que el estado inicial de proyecto es `uninsured`, el de membresía es `active`, y que una membresía que se une a un grupo con jefe queda `pending_approval`.
 - `test_membership_transitions`: testear que solo se permiten las transiciones de membresía documentadas y que un estado final no admite ninguna.
 - `test_project_transitions`: testear la máquina de estados del proyecto (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`, `rejected → in_progress`, insured → `uninsured`), que `approved` y `cancelled` no salen a ningún lado y que no se puede ir de `approved` a `cancelled`.
-- `test_final_states_have_no_transitions`: testear que toda clase de estado marcada `is_final` no tiene transiciones (coherencia dato/regla).
+- `test_final_states_have_no_transitions`: testear que toda clase de estado marcada `is_final` no tiene transiciones, incluidos los estados de cursada.
+- `test_student_section_year_transitions`: testear las transiciones de `registered`, `attending`, `abandoned`, `finished_approved` y `finished_failed`.
 - `test_catalog_codes_match_states`: testear que los códigos de cada catálogo de la jerarquía coinciden exactamente con los del catálogo persistido de ese ámbito y que los destinos de las transiciones existen.
 - `test_default_statuses_match_state_metadata`: testear que el catálogo base (`name`, `description`, `is_final`) coincide con los metadatos de las clases de estado.
 - `test_registry_maps_catalog_states`: testear que el registro `(ambito, code) → clase` resuelve cada estado del catálogo a su clase de dominio.

@@ -7,6 +7,7 @@ from models.section_year import SectionYear
 from models.calendar import Calendar
 from models.calendar_class import CalendarClass
 from models.activity import Activity
+from models.delivery import Delivery
 from models.attendance_session import AttendanceSession
 from models.attendance import Attendance
 from models.professor_section_year import ProfessorSectionYear
@@ -23,7 +24,7 @@ from models.state import ProjectState, State, StudentProjectState
 
 __all__ = [
     "User", "UserBase", "Student", "Professor", "Section", "SectionYear",
-    "StudentSectionYear", "ProfessorSectionYear", "Calendar", "CalendarClass", "Activity",
+    "StudentSectionYear", "ProfessorSectionYear", "Calendar", "CalendarClass", "Activity", "Delivery",
     "AttendanceSession", "Attendance", "Project", "ProjectStatus",
     "StudentProject", "Status",
     "Technology", "ProjectTechnology", "Image",

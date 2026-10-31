@@ -4,7 +4,8 @@ from sqlmodel import select
 
 import config.database as database
 from models import SectionYear, StudentSectionYear
-from models.student_section_year import ATTENDING
+from models.state.student_section_year import ATTENDING
+from utils.statuses import get_status
 
 PASSWORD = "Test1234!"
 STUDENT = "100001@sistemas.frc.utn.edu.ar"
@@ -82,6 +83,9 @@ async def create_cursada(
         ).first()
         if existing is not None:
             if existing.state != state:
+                existing.status = await get_status(
+                    session, "student_section_year", state
+                )
                 existing.state = state
                 session.add(existing)
                 await session.commit()
@@ -89,10 +93,12 @@ async def create_cursada(
             return existing
 
         sy = await session.get(SectionYear, id_section_year)
+        status = await get_status(session, "student_section_year", state)
         row = StudentSectionYear(
             id_student=id_student,
             id_section_year=id_section_year,
             year=sy.year,
+            status=status,
             state=state,
         )
         session.add(row)

@@ -2,7 +2,7 @@ from typing import Literal
 
 from sqlmodel import SQLModel
 
-Ambito = Literal["project", "student_project"]
+Ambito = Literal["project", "student_project", "student_section_year"]
 
 MembershipStatus = Literal[
     "active",

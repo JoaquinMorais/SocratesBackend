@@ -847,6 +847,7 @@ async def test_join_creates_attending(client, login):
     row = await _cursada(ANA_ID, sy)
     assert row is not None
     assert (row.state, row.year) == ("attending", 2025)
+    assert row.status.code == "attending"
 
 
 async def test_join_rejects_project_of_another_year(client, login):
@@ -914,11 +915,13 @@ async def test_abandon_and_rejoin_reactivates_cursada(client, login):
         await _abandon(client, ana, first["id_project"], membership)
     ).status_code == 204
     assert (await _cursada(ANA_ID, sy)).state == "abandoned"
+    assert (await _cursada(ANA_ID, sy)).status.code == "abandoned"
 
     second = await _create(client, admin, sy)
     assert (await _join(client, ana, second["id_project"])).status_code == 201
     row = await _cursada(ANA_ID, sy)
     assert row.state == "attending"
+    assert row.status.code == "attending"
     async with SessionLocal() as s:
         count = len(
             (
@@ -1031,6 +1034,7 @@ async def test_finished_failed_rejoin_allowed_with_flag(client, login):
     assert r.status_code == 201, r.text
     row = await _cursada(ANA_ID, sy)
     assert row is not None and row.state == "attending"
+    assert row.status.code == "attending"
 
 
 async def test_finished_approved_rejoin_blocked_even_with_flag(client, login):

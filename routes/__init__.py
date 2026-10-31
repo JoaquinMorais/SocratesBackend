@@ -10,6 +10,7 @@ from routes.student_section_years import student_section_years_router
 from routes.calendars import calendars_router
 from routes.calendar_classes import calendar_classes_router
 from routes.activities import activities_router, section_activities_router
+from routes.deliveries import deliveries_router
 from routes.attendance import attendance_router
 from routes.projects import projects_router
 from routes.student_projects import student_projects_router
@@ -32,6 +33,7 @@ __all__ = [
     "calendar_classes_router",
     "activities_router",
     "section_activities_router",
+    "deliveries_router",
     "attendance_router",
     "projects_router",
     "student_projects_router",

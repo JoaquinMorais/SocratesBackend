@@ -23,7 +23,8 @@ from schemas.student import (
     StudentUpdate,
 )
 from models.state import STUDENT_PROJECT_ORDER
-from models.student_section_year import REGISTERED
+from models.state.student_section_year import REGISTERED
+from utils.statuses import get_status
 
 # Membresías que impiden eliminar a un alumno (participación vigente o en espera).
 # Los restos viejos (`abandoned`, `expelled`, `rejected`) se limpian con el alta.
@@ -83,6 +84,9 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
         errors.sort(key=lambda e: e["row"])
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=errors)
 
+    registered_status = await get_status(
+        db, "student_section_year", REGISTERED
+    )
     created: list[StudentPublic] = []
     for item in items:
         user = User(
@@ -100,6 +104,7 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
                     id_student=user.id_user,
                     id_section_year=item.id_section_year,
                     year=section_years[item.id_section_year],
+                    status=registered_status,
                     state=REGISTERED,
                 )
             )

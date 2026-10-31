@@ -1,5 +1,5 @@
 from models.state.base import State, register
-from models.student_section_year import ABANDONED, FINISHED_APPROVED
+from models.state.student_section_year import ABANDONED, FINISHED_APPROVED
 
 
 class StudentProjectState(State):

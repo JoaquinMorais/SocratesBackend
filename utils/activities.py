@@ -10,6 +10,10 @@ from schemas.activity import (
     ActivityUpdate,
 )
 from utils.date_ranges import validate_optional_range
+from utils.deliveries import (
+    ensure_deliveries_for_section_year,
+    has_delivery_data_for_activity,
+)
 from utils.section_years import (
     ensure_calendar,
     get_section_year,
@@ -71,6 +75,8 @@ async def create_activity(
 
     activity = Activity(id_calendar=calendar.id_calendar, **data.model_dump())
     db.add(activity)
+    await db.flush()
+    await ensure_deliveries_for_section_year(db, id_section_year)
     await db.commit()
     return to_public(activity, calendar)
 
@@ -111,6 +117,11 @@ async def delete_activity(db, access, id_activity: int) -> None:
     activity = await get_activity(db, id_activity)
     if not access.can_manage(activity.calendar.id_section_year):
         raise _forbidden()
+    if await has_delivery_data_for_activity(db, id_activity):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Activity has delivery data and cannot be deleted",
+        )
     await db.delete(activity)
     await db.commit()
 

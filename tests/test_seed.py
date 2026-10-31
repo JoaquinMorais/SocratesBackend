@@ -12,6 +12,7 @@ from models import (
     AttendanceSession,
     Calendar,
     CalendarClass,
+    Delivery,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -160,9 +161,22 @@ async def test_seed_statuses_are_loaded():
         ("student_project", "finished"),
         ("student_project", "expelled"),
         ("student_project", "rejected"),
+        ("student_section_year", "registered"),
+        ("student_section_year", "attending"),
+        ("student_section_year", "abandoned"),
+        ("student_section_year", "finished_approved"),
+        ("student_section_year", "finished_failed"),
     }
-    final = {s.code for s in statuses if s.is_final}
-    assert final == {"approved", "cancelled", "abandoned", "finished", "expelled"}
+    final = {(s.ambito, s.code) for s in statuses if s.is_final}
+    assert final == {
+        ("project", "approved"),
+        ("project", "cancelled"),
+        ("student_project", "abandoned"),
+        ("student_project", "finished"),
+        ("student_project", "expelled"),
+        ("student_section_year", "registered"),
+        ("student_section_year", "finished_approved"),
+    }
 
 
 async def test_seed_each_project_with_members_has_exactly_one_leader():
@@ -359,6 +373,37 @@ async def test_seed_activities_are_consistent():
     assert all(activity.title.strip() for activity in activities)
     assert all(activity.id_calendar in calendar_by_id for activity in activities)
     assert {activity.id_calendar for activity in activities} == set(calendar_by_id)
+
+
+async def test_seed_deliveries_are_precreated():
+    projects = await _all(Project)
+    activities = await _all(Activity)
+    deliveries = await _all(Delivery)
+    section_years = await _all(SectionYear)
+    calendars = await _all(Calendar)
+
+    calendar_by_section = {
+        calendar.id_section_year: calendar.id_calendar for calendar in calendars
+    }
+    activities_by_section = Counter()
+    for activity in activities:
+        calendar_id = activity.id_calendar
+        section_year_id = next(
+            key for key, value in calendar_by_section.items() if value == calendar_id
+        )
+        activities_by_section[section_year_id] += 1
+
+    expected = sum(
+        activities_by_section[project.id_section_year] for project in projects
+    )
+    assert len(deliveries) == expected
+    pairs = {(delivery.id_project, delivery.id_activity) for delivery in deliveries}
+    assert len(pairs) == len(deliveries)
+    assert any(delivery.link is not None for delivery in deliveries)
+    assert any(delivery.link is None for delivery in deliveries)
+    assert any(delivery.activity_grade is not None for delivery in deliveries)
+    section_year_ids = {sy.id_section_year for sy in section_years}
+    assert all(project.id_section_year in section_year_ids for project in projects)
 
 
 async def test_seed_technology_catalog_and_links():

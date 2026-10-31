@@ -199,6 +199,7 @@ async def update_activity_route(
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe la actividad"},
+        409: {"description": "La actividad tiene entregas con datos y no se puede eliminar"},
     },
 )
 async def delete_activity_route(
@@ -207,5 +208,10 @@ async def delete_activity_route(
     user: user_dependency,
     _: professor_dependency,
 ):
-    """Elimina una actividad. **Profesor del curso lectivo o super admin.**"""
+    """
+    Elimina una actividad. **Profesor del curso lectivo o super admin.**
+
+    Si alguna entrega de la actividad tiene link o notas responde 409; las
+    entregas vacías se limpian con la actividad.
+    """
     await delete_activity(db, await build_access(db, user), id_activity)

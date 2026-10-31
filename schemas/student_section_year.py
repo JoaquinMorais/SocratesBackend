@@ -2,6 +2,7 @@ from pydantic import ConfigDict
 from sqlmodel import Field, SQLModel
 
 from schemas.attendance import AttendanceStatsPublic
+from schemas.status import StatusPublic
 
 
 class StudentSectionYearCreate(SQLModel):
@@ -22,6 +23,7 @@ class StudentSectionYearPublic(SQLModel):
     id_student_section_year: int
     id_student: int
     state: str
+    status: StatusPublic
     student_first_name: str
     student_last_name: str
     student_legajo: int

@@ -398,6 +398,7 @@ async def test_approve_finishes_cursada(client, login):
     assert r.status_code == 200, r.text
     row = await _cursada(ANA_ID, sy)
     assert row is not None and row.state == "finished_approved"
+    assert row.status.code == "finished_approved"
 
 
 async def test_cancel_marks_cursada_finished_failed(client, login):
@@ -413,3 +414,4 @@ async def test_cancel_marks_cursada_finished_failed(client, login):
     assert r.status_code == 200, r.text
     row = await _cursada(ANA_ID, sy)
     assert row is not None and row.state == "finished_failed"
+    assert row.status.code == "finished_failed"

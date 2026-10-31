@@ -34,7 +34,7 @@ Leer esto primero. Es el backend de **Socrates** (FastAPI + SQLModel async + Pos
 - Código, identificadores y mensajes de error (`detail`): **inglés**, `snake_case`.
 - Documentación para el frontend (`summary`, docstrings, descripciones de `responses`) y los `.md`: **español**.
 - Excepción deliberada: `legajo` queda en español (decisión del proyecto).
-- Equivalencias del dominio: `Section` = comisión (`3K1`), `SectionYear` = curso lectivo (comisión + año; `allow_project_joins` habilita reintentar `finished_failed`), `StudentSectionYear` = inscripción (`registered`) o cursada (`attending`/`abandoned`/`finished_*`) del alumno + curso lectivo, `Calendar` = calendario 1 a 1 del curso lectivo, `CalendarClass` = clase concreta del calendario, `Activity` = actividad/entrega del curso lectivo, `AttendanceSession` = toma de asistencia de una clase, `Attendance` = asistencia de un alumno a una clase (`code`/`manual`/`transcript`), `Project` = proyecto/grupo.
+- Equivalencias del dominio: `Section` = comisión (`3K1`), `SectionYear` = curso lectivo (comisión + año; `allow_project_joins` habilita reintentar `finished_failed`), `StudentSectionYear` = inscripción (`registered`) o cursada (`attending`/`abandoned`/`finished_*`) del alumno + curso lectivo, con estados en `models/state/student_section_year.py` y `status` canónico, `Calendar` = calendario 1 a 1 del curso lectivo, `CalendarClass` = clase concreta del calendario, `Activity` = actividad/entrega del curso lectivo, `Delivery` = entrega de un proyecto para una actividad (link, dos notas y fechas), `AttendanceSession` = toma de asistencia de una clase, `Attendance` = asistencia de un alumno a una clase (`code`/`manual`/`transcript`), `Project` = proyecto/grupo.
 - Tablas en plural (`section_years`), claves primarias `id_<entidad>` (`id_section_year`), rutas en plural con guiones (`/section-years`).
 
 ## Convenciones de código
@@ -103,7 +103,7 @@ docker compose down -v                # borra la BD (necesario si cambian column
 
 ## Datos del seed (útiles para los tests)
 
-Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed realista `data/seed.json` (200 alumnos, 10 cursos lectivos 2024-2026, proyectos con estados e historial, tecnologías, calendarios con feriados, inscripciones, cursadas y asistencias). Los ids de abajo corresponden a `seed_test.json`.
+Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed realista `data/seed.json` (200 alumnos, 10 cursos lectivos 2024-2026, proyectos con estados e historial, entregas, tecnologías, calendarios con feriados, inscripciones, cursadas y asistencias). Los ids de abajo corresponden a `seed_test.json`.
 
 | Quién | Mail | Contraseña | id |
 |---|---|---|---|

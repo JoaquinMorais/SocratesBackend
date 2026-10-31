@@ -502,8 +502,8 @@ async def insure_project_route(id_project: int, db: db_dependency, user: user_de
         404: {"description": "No existe el proyecto"},
         409: {
             "description": (
-                "El proyecto tiene alumnos, o no está en estado `uninsured` "
-                "(Desasegurado)"
+                "El proyecto tiene alumnos, no está en estado `uninsured` "
+                "(Desasegurado) o tiene entregas con datos"
             )
         },
     },
@@ -521,7 +521,9 @@ async def delete_project_route(
     Solo se puede si el proyecto está **completamente vacío** (sin alumnos) y
     en estado **`uninsured`** (Desasegurado); si no, responde 409. Una vez
     asegurado (`in_idea`, `in_progress`, `pending_approval` o `rejected`) o
-    final (`approved` o `cancelled`) ya no se puede eliminar.
+    final (`approved` o `cancelled`) ya no se puede eliminar. Si alguna de sus
+    entregas tiene link o notas, también responde 409; las entregas vacías se
+    limpian con el proyecto.
 
     El número de grupo eliminado no se reutiliza automáticamente, pero puede
     volver a crearse enviándolo en `group_number`.

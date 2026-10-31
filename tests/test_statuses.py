@@ -9,6 +9,8 @@ from models.state import (
     STUDENT_PROJECT_CATALOG,
     STUDENT_PROJECT_INITIAL,
     STUDENT_PROJECT_ORDER,
+    STUDENT_SECTION_YEAR_CATALOG,
+    STUDENT_SECTION_YEAR_ORDER,
     State,
     state_class,
     state_for,
@@ -46,7 +48,7 @@ async def test_any_user_can_list_statuses(client, login, make_professor):
     for headers in headers_list:
         r = await client.get(URL, headers=headers)
         assert r.status_code == 200
-        assert r.json()["total"] == 13
+        assert r.json()["total"] == 18
 
 
 async def test_list_returns_public_fields(client, login):
@@ -71,6 +73,14 @@ async def test_filter_by_ambito(client, login):
     assert {i["code"] for i in body["items"]} == {
         "active", "pending_approval", "abandoned", "finished", "expelled", "rejected",
     }
+    body = (
+        await client.get(
+            URL, params={"ambito": "student_section_year"}, headers=headers
+        )
+    ).json()
+    assert {i["code"] for i in body["items"]} == {
+        "registered", "attending", "abandoned", "finished_approved", "finished_failed",
+    }
 
 
 async def test_invalid_ambito_rejected(client, login):
@@ -81,7 +91,7 @@ async def test_invalid_ambito_rejected(client, login):
 async def test_list_pagination(client, login):
     headers = await login(STUDENT)
     page1 = (await client.get(f"{URL}?limit=2", headers=headers)).json()
-    assert len(page1["items"]) == 2 and page1["total"] == 13
+    assert len(page1["items"]) == 2 and page1["total"] == 18
     page2 = (await client.get(f"{URL}?limit=2&offset=2", headers=headers)).json()
     assert len(page2["items"]) == 2
     assert (await client.get(f"{URL}?limit=0", headers=headers)).status_code == 422
@@ -157,7 +167,11 @@ async def test_project_transitions():
 
 
 async def test_final_states_have_no_transitions():
-    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG):
+    for state in (
+        *PROJECT_CATALOG,
+        *STUDENT_PROJECT_CATALOG,
+        *STUDENT_SECTION_YEAR_CATALOG,
+    ):
         if state.is_final:
             assert state.next_codes == frozenset(), state.code
 
@@ -166,6 +180,7 @@ async def test_catalog_codes_match_states():
     for ambito, catalog in (
         ("project", PROJECT_CATALOG),
         ("student_project", STUDENT_PROJECT_CATALOG),
+        ("student_section_year", STUDENT_SECTION_YEAR_CATALOG),
     ):
         assert {state.code for state in catalog} == _catalog_codes(ambito)
         codes = {state.code for state in catalog}
@@ -182,7 +197,11 @@ async def test_default_statuses_match_state_metadata():
 
 
 async def test_registry_maps_catalog_states():
-    for state in (*PROJECT_CATALOG, *STUDENT_PROJECT_CATALOG):
+    for state in (
+        *PROJECT_CATALOG,
+        *STUDENT_PROJECT_CATALOG,
+        *STUDENT_SECTION_YEAR_CATALOG,
+    ):
         row = Status(ambito=state.ambito, code=state.code, name=state.name)
         assert state_for(row) is state
 
@@ -191,6 +210,25 @@ async def test_unknown_state_falls_back_to_base():
     row = Status(ambito="project", code="custom", name="Custom")
     assert state_for(row) is State
     assert not State.can_transition_to("anything")
+
+
+async def test_student_section_year_transitions():
+    registered = _state("student_section_year", "registered")
+    attending = _state("student_section_year", "attending")
+    abandoned = _state("student_section_year", "abandoned")
+    approved = _state("student_section_year", "finished_approved")
+    failed = _state("student_section_year", "finished_failed")
+
+    assert registered.next_codes == frozenset()
+    assert attending.can_transition_to("abandoned")
+    assert attending.can_transition_to("finished_approved")
+    assert attending.can_transition_to("finished_failed")
+    assert abandoned.can_transition_to("attending")
+    assert failed.can_transition_to("attending")
+    assert approved.next_codes == frozenset()
+    assert {state.code for state in STUDENT_SECTION_YEAR_CATALOG} == set(
+        STUDENT_SECTION_YEAR_ORDER
+    )
 
 
 async def test_membership_status_literal_matches_order():

@@ -11,7 +11,7 @@ from sqlmodel import select
 
 from config.settings import settings
 from models import Attendance, CalendarClass, StudentSectionYear, User
-from models.student_section_year import ATTENDING
+from models.state.student_section_year import ATTENDING
 from schemas.attendance_transcript import (
     AttendanceTranscriptReport,
     TranscriptItemPublic,

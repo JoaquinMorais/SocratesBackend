@@ -76,6 +76,8 @@ async def test_create_enrollment(client, login):
     assert body["section_name"] == "3K1"
     assert body["id_section"] == await _section_id(client, headers, sy)
     assert body["state"] == "registered"
+    assert body["status"]["code"] == "registered"
+    assert body["status"]["ambito"] == "student_section_year"
 
 
 async def test_create_duplicate_rejected(client, login):
@@ -194,6 +196,7 @@ async def test_list_does_not_expose_private_data(client, login):
         "id_section",
         "section_name",
         "state",
+        "status",
         "attendance",
     }
 
