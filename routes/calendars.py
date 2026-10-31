@@ -1,10 +1,11 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, Response, status
 
 from config.database import db_dependency
 from schemas.calendar import CalendarWithClassesPublic
+from schemas.calendar_bulk import CalendarBulkLoad, CalendarBulkLoadReport
 from schemas.calendar_class import (
     CalendarClassBulkCreate,
     CalendarClassBulkUpdate,
@@ -13,6 +14,7 @@ from schemas.calendar_class import (
     CalendarClassSelector,
 )
 from utils.auth import user_dependency
+from utils.calendar_bulk import bulk_load_calendar
 from utils.calendar_classes import (
     bulk_create_calendar_classes,
     bulk_delete_calendar_classes,
@@ -256,4 +258,66 @@ async def bulk_delete_calendar_classes_route(
     """
     await bulk_delete_calendar_classes(
         db, await build_access(db, user), id_section_year, data
+    )
+
+
+@calendars_router.post(
+    "/{id_section_year}/calendar/bulk",
+    response_model=CalendarBulkLoadReport,
+    status_code=status.HTTP_201_CREATED,
+    summary="Cargar el calendario en lote",
+    responses={
+        **_WRITE_ERRORS,
+        409: {
+            "description": (
+                "Alguna clase del payload se superpone con una ya existente en el "
+                "calendario. No se crea nada; `detail` lista `[{kind, row, detail}]`"
+            )
+        },
+        422: {
+            "description": (
+                "Payload vacío, más de 1.000 clases o 200 actividades, fechas fuera "
+                "del año, datos inválidos o clases que se superponen entre sí"
+            )
+        },
+    },
+)
+async def bulk_load_calendar_route(
+    id_section_year: int,
+    data: CalendarBulkLoad,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+    response: Response,
+    dry_run: Annotated[
+        bool,
+        Query(description="true: valida y devuelve los conteos sin escribir"),
+    ] = False,
+):
+    """
+    Carga el **calendario completo de un curso lectivo** desde un JSON (por
+    ejemplo, el que el frontend arma al procesar un Excel). **Profesor del curso
+    lectivo o super admin.**
+
+    - `classes` y `activities` son opcionales por separado, pero tiene que haber
+      al menos una fila. Límites: **1.000 clases** y **200 actividades**.
+    - Es un **append**: agrega al calendario existente y no borra nada.
+    - Es **todo o nada**: valida el payload completo (fechas dentro del año,
+      horarios, solapamientos internos y contra las clases ya cargadas) y, si
+      algo falla, no crea ninguna fila.
+    - Un solapamiento dentro del payload responde **422**; uno contra una clase
+      existente responde **409**. En ambos casos `detail` lista
+      `[{kind, row, detail}]` con la fila (empieza en 1) del arreglo
+      correspondiente.
+    - Las actividades comparten fecha con las clases sin problema; no se
+      validan choques entre actividades.
+    - `dry_run=true` valida y devuelve los conteos **sin escribir** (200). Sin
+      `dry_run`, crea y responde 201.
+    - No reemplaza el calendario: para vaciarlo hay que borrar las clases con
+      los endpoints actuales.
+    """
+    if dry_run:
+        response.status_code = status.HTTP_200_OK
+    return await bulk_load_calendar(
+        db, await build_access(db, user), id_section_year, data, dry_run=dry_run
     )

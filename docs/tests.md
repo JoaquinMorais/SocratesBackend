@@ -362,6 +362,29 @@ Calendario del curso lectivo (1 a 1) y sus clases concretas: consulta (`GET /sec
 - `test_bulk_delete_by_ids`: testear que se pueden borrar clases puntuales por id.
 - `test_bulk_delete_validation`: testear sin selector, con ambos selectores o sin coincidencias (422).
 
+## `tests/test_calendar_bulk_load.py`
+
+Carga masiva del calendario (`POST /section-years/{id}/calendar/bulk`): JSON con `classes` y `activities`, append todo o nada y validación previa con `dry_run`.
+
+**Permisos**
+- `test_requires_authentication`: testear que cargar sin login responde 401.
+- `test_permissions`: testear que alumno y profesor ajeno reciben 403, que el profesor asignado y el super admin cargan, y que un curso inexistente responde 404.
+
+**Carga**
+- `test_load_classes_and_activities`: testear la carga de clases y actividades, los conteos de la respuesta y que aparecen en el calendario.
+- `test_classes_only_and_activities_only`: testear que se puede enviar solo uno de los arreglos, y que un payload vacío responde 422.
+- `test_dry_run_does_not_write`: testear que `dry_run=true` responde 200 con los conteos pero no escribe; confirmar después sí escribe.
+- `test_resend_same_load_conflicts`: testear que reenviar la misma carga en append responde 409 y no duplica.
+- `test_activities_may_share_hour_with_classes`: testear que una actividad puede compartir fecha/hora con una clase.
+
+**Validaciones**
+- `test_dates_and_invalid_data`: testear fechas fuera del año (clase y actividad) con detalle por fila, fin no posterior al inicio, link inválido, campos desconocidos y título de actividad en blanco (422).
+- `test_limits`: testear más de 1.000 clases o 200 actividades (422).
+- `test_overlaps_within_payload`: testear solapamientos y duplicados exactos dentro del payload (422 con `kind`/`row`) y que no se escribe nada.
+- `test_touching_and_same_day_different_times_allowed`: testear clases contiguas y varios horarios no superpuestos el mismo día.
+- `test_all_or_nothing_with_invalid_row`: testear que una fila inválida impide crear el resto (clases y actividades).
+- `test_conflict_with_existing_is_all_or_nothing`: testear que un choque con una clase existente responde 409 y no crea ni la clase ni la actividad.
+
 ## `tests/test_activities.py`
 
 Actividades/entregas del curso lectivo (`GET/POST /section-years/{id}/activities`, `GET/PATCH/DELETE /activities/{id}`): son de todo el curso, con fecha y hora de entrega opcional.
