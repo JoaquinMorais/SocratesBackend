@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import case, false
+from sqlalchemy import String, case, cast, false
 from sqlmodel import col, delete, func, or_, select
 
 from models import (
@@ -388,7 +388,7 @@ async def list_students(
             Student.id_student.in_(named_projects),
         ]
         if q.strip().isdigit():
-            search.append(User.legajo == int(q.strip()))
+            search.append(cast(User.legajo, String).ilike(f"{q.strip()}%"))
         conditions.append(or_(*search))
 
     if kind == "project":

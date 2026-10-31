@@ -76,7 +76,7 @@ async def get_students(
         Query(
             min_length=1,
             max_length=100,
-            description="Busca en nombre, apellido, legajo (exacto) o nombre de proyecto",
+            description="Busca en nombre, apellido, legajo (prefijo) o nombre de proyecto",
         ),
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
@@ -95,7 +95,7 @@ async def get_students(
       la fecha de nacimiento) ni el detalle del proyecto.
     - Filtros: `status` (repetible; por defecto `active` y `finished`),
       `id_section_year`, `year`, `id_section`, `kind` y `q` (nombre, apellido,
-      legajo exacto o nombre de alguno de sus proyectos en los estados pedidos).
+      legajo (prefijo) o nombre de alguno de sus proyectos en los estados pedidos).
       Un `status` desconocido responde **422** y un `kind` desconocido también.
       Si un profesor pide un `id_section_year` que no dicta, responde **403**.
     - `kind` elige la población de alumnos: `project` (con membresía de proyecto

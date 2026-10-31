@@ -29,7 +29,7 @@ async def get_users(
         Query(
             min_length=1,
             max_length=100,
-            description="Busca en nombre, apellido, legajo (exacto) y mail de profesores",
+            description="Busca en nombre, apellido, legajo (prefijo) y mail de profesores",
         ),
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,

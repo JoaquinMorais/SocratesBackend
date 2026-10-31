@@ -125,6 +125,9 @@ async def test_list_search(client, login):
     assert [u["first_name"] for u in by_name["items"]] == ["Ana"]
     by_legajo = (await client.get("/users?q=100002", headers=headers)).json()
     assert [u["first_name"] for u in by_legajo["items"]] == ["Luis"]
+    by_prefix = (await client.get("/users?q=10000", headers=headers)).json()
+    assert {u["legajo"] for u in by_prefix["items"]} == {100001, 100002}
+    assert (await client.get("/users?q=00001", headers=headers)).json()["total"] == 0
     by_mail = (await client.get("/users?q=marta.rod", headers=headers)).json()
     assert [u["first_name"] for u in by_mail["items"]] == ["Marta"]
     assert (await client.get("/users?q=zzzz", headers=headers)).json()["total"] == 0

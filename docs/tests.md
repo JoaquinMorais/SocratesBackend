@@ -142,7 +142,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_list_rejects_unknown_status`: testear que un `status` que no es un estado de membresía válido responde 422.
 - `test_scope_filter_respects_membership_status`: testear que al filtrar por curso lectivo solo cuentan las membresías en los estados pedidos.
 - `test_list_filters`: testear los filtros `id_section_year`, `year` e `id_section`, solos y combinados.
-- `test_list_search`: testear la búsqueda por nombre, apellido, legajo (exacto) y nombre de proyecto (sin distinguir mayúsculas), y que al buscar por proyecto solo cuentan las membresías en los estados pedidos y el alcance.
+- `test_list_search`: testear la búsqueda por nombre, apellido, legajo (prefijo) y nombre de proyecto (sin distinguir mayúsculas), y que al buscar por proyecto solo cuentan las membresías en los estados pedidos y el alcance.
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
 - `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.

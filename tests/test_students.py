@@ -439,6 +439,8 @@ async def test_list_search(client, login):
     assert await total({"q": "Ana"}) == 1
     assert await total({"q": "Gómez"}) == 1
     assert await total({"q": "100002"}) == 1
+    assert await total({"q": "10000"}) == 2
+    assert await total({"q": "00001"}) == 0
     assert await total({"q": "Nadie"}) == 0
     # También se busca por el nombre del proyecto del alumno.
     assert await total({"q": "centauro"}) == 1

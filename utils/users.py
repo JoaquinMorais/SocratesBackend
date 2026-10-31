@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status
+from sqlalchemy import String, cast
 from sqlmodel import col, delete, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -68,7 +69,7 @@ async def list_users(
             User.professor.has(col(Professor.mail).ilike(like)),
         ]
         if q.strip().isdigit():
-            search.append(User.legajo == int(q.strip()))
+            search.append(cast(User.legajo, String).ilike(f"{q.strip()}%"))
         conditions.append(or_(*search))
 
     total = (
