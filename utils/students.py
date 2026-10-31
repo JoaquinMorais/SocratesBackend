@@ -23,6 +23,7 @@ from schemas.student import (
     StudentUpdate,
 )
 from models.state import STUDENT_PROJECT_ORDER
+from models.student_section_year import REGISTERED
 
 # Membresías que impiden eliminar a un alumno (participación vigente o en espera).
 # Los restos viejos (`abandoned`, `expelled`, `rejected`) se limpian con el alta.
@@ -99,6 +100,7 @@ async def create_students(db, items: list[StudentCreate]) -> list[StudentPublic]
                     id_student=user.id_user,
                     id_section_year=item.id_section_year,
                     year=section_years[item.id_section_year],
+                    state=REGISTERED,
                 )
             )
         created.append(

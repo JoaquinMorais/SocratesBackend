@@ -1,7 +1,7 @@
 from datetime import date as date_type
 from datetime import datetime, time
 
-from pydantic import ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic import Field as PField
 from sqlmodel import Field, SQLModel
 
@@ -40,6 +40,7 @@ class AttendanceStudentPublic(SQLModel):
     first_name: str
     last_name: str
     legajo: int
+    state: str
     present: bool
     method: str | None = None
     recorded_at: datetime | None = None
@@ -78,3 +79,28 @@ class MyAttendanceItemPublic(SQLModel):
 
 class MyAttendanceListPublic(SQLModel):
     items: list[MyAttendanceItemPublic] = Field(default_factory=list)
+
+
+MAX_ATTENDANCE_BULK = 200
+
+
+class AttendanceBulkCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id_students: list[int] = PField(
+        min_length=1, max_length=MAX_ATTENDANCE_BULK
+    )
+
+    @field_validator("id_students")
+    @classmethod
+    def positive_ids(cls, value: list[int]) -> list[int]:
+        if any(id_student <= 0 for id_student in value):
+            raise ValueError("id_students must be positive")
+        return value
+
+
+class AttendanceBulkResult(SQLModel):
+    requested: int
+    created: int
+    already_present: int
+    items: list[AttendancePublic] = Field(default_factory=list)

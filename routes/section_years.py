@@ -1,16 +1,18 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearList,
     SectionYearPublic,
+    SectionYearSettingsUpdate,
     SectionYearUpdate,
 )
 from utils.auth import user_dependency
-from utils.permissions import super_admin_dependency
+from utils.permissions import professor_dependency, super_admin_dependency
+from utils.projects import build_access
 from utils.section_years import (
     create_section_year,
     delete_section_year,
@@ -18,6 +20,7 @@ from utils.section_years import (
     list_section_years,
     to_public,
     update_section_year,
+    update_section_year_settings,
 )
 
 section_years_router = APIRouter(prefix="/section-years", tags=["section-years"])
@@ -55,6 +58,8 @@ async def create_section_year_route(
       `min_students`). Se usarán más adelante para validar el estado del grupo.
     - La combinación año + comisión no puede repetirse. Una misma comisión sí
       puede existir en distintos años, y un mismo año en distintas comisiones.
+    - `allow_project_joins` (por defecto `false`) permite que un alumno con
+      cursada `finished_failed` vuelva a unirse a un grupo de este curso.
     """
     return await create_section_year(db, data)
 
@@ -102,6 +107,45 @@ async def get_section_year_route(
 
 
 @section_years_router.patch(
+    "/{id_section_year}/settings",
+    response_model=SectionYearPublic,
+    summary="Configurar el curso lectivo",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        **_NOT_FOUND,
+        422: {"description": "Body vacío, falta `allow_project_joins` o hay campos desconocidos"},
+    },
+)
+async def update_section_year_settings_route(
+    id_section_year: int,
+    data: SectionYearSettingsUpdate,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+):
+    """
+    Cambia la configuración del curso lectivo. **Profesor asignado al curso o
+    super admin.**
+
+    - `allow_project_joins`: si es `true`, un alumno con cursada
+      `finished_failed` en ese curso puede volver a unirse a un grupo de la misma
+      comisión/año y su cursada se reactiva como `attending`. Si es `false`
+      (valor por defecto), el intento responde 409.
+    - Las cursadas `finished_approved` no se pueden reintentar con esta opción.
+    - El resto de los datos del curso lectivo se siguen modificando con
+      `PATCH /section-years/{id}` (solo super admin).
+    """
+    access = await build_access(db, user)
+    if not access.can_manage(id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can change it",
+        )
+    return await update_section_year_settings(db, id_section_year, data)
+
+
+@section_years_router.patch(
     "/{id_section_year}",
     response_model=SectionYearPublic,
     summary="Modificar un curso lectivo",
@@ -127,6 +171,7 @@ async def update_section_year_route(
     (entre 1 y 100 y `max_students >= min_students`), por lo que si se envía solo
     uno se compara con el valor actual del otro. Aplica la misma regla de
     unicidad que al crear: reenviar los valores actuales no da error.
+    También puede incluir `allow_project_joins`.
     """
     return await update_section_year(db, id_section_year, data)
 
@@ -138,7 +183,7 @@ async def update_section_year_route(
     responses={
         **_AUTH_ERRORS,
         **_NOT_FOUND,
-        409: {"description": "El curso lectivo tiene profesores asignados, cursadas de alumnos, proyectos u otros datos y no se puede eliminar"},
+        409: {"description": "El curso lectivo tiene profesores asignados, inscripciones/cursadas de alumnos, proyectos u otros datos y no se puede eliminar"},
     },
 )
 async def delete_section_year_route(
@@ -148,8 +193,9 @@ async def delete_section_year_route(
     Elimina un curso lectivo. **Solo super admin.** La acción es irreversible; la
     combinación año + comisión queda libre para volver a crearse.
 
-    Si tiene profesores asignados (`/professor-section-years`), cursadas de
-    alumnos (`/student-section-years`), proyectos (`/projects`) u otros datos
-    asociados responde 409: hay que quitarlos primero.
+    Si tiene profesores asignados (`/professor-section-years`),
+    inscripciones/cursadas de alumnos (`/student-section-years`), proyectos
+    (`/projects`) u otros datos asociados responde 409: hay que quitarlos
+    primero.
     """
     await delete_section_year(db, id_section_year)

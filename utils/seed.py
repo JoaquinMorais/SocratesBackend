@@ -22,6 +22,21 @@ from models import (
     User,
 )
 from models.state import PROJECT_INITIAL
+from models.state.state_project import Approved, Cancelled
+from models.state.state_student_project import (
+    Abandoned,
+    Expelled,
+    Finished,
+    PendingApprovalMember,
+    RejectedMember,
+)
+from models.student_section_year import (
+    ABANDONED,
+    ATTENDING,
+    FINISHED_APPROVED,
+    FINISHED_FAILED,
+    REGISTERED,
+)
 from utils.statuses import (
     ensure_statuses,
     membership_initial_status,
@@ -212,6 +227,7 @@ async def _load_student_section_years(
                 id_student=student.id_student,
                 id_section_year=sy.id_section_year,
                 year=sy.year,
+                state=REGISTERED,
             )
         )
     await session.flush()
@@ -308,6 +324,76 @@ async def _load_student_projects(
     await session.flush()
 
 
+_CURSADA_PRIORITY = {
+    ATTENDING: 4,
+    FINISHED_APPROVED: 3,
+    FINISHED_FAILED: 2,
+    ABANDONED: 1,
+}
+
+
+async def _load_student_cursadas(session: AsyncSession) -> None:
+    """Deriva las cursadas de las membresías de los proyectos del seed.
+
+    Las filas `student_section_years` del JSON son inscripciones; la cursada se
+    crea solo al integrar un proyecto. Si el alumno tuvo más de una membresía en
+    la misma comisión, se conserva el estado más relevante (la cursada actual
+    gana sobre una abandonada o finalizada).
+    """
+    rows = (
+        await session.exec(
+            select(StudentProject, Project).join(
+                Project, Project.id_project == StudentProject.id_project
+            )
+        )
+    ).all()
+
+    chosen: dict[tuple[int, int], tuple[str, int]] = {}
+    for membership, project in rows:
+        membership_code = membership.status.code
+        if membership_code in (
+            PendingApprovalMember.code,
+            RejectedMember.code,
+        ):
+            continue
+        project_code = project.status.code
+        if membership_code in (Abandoned.code, Expelled.code):
+            state = ABANDONED
+        elif project_code == Approved.code:
+            state = FINISHED_APPROVED
+        elif project_code == Cancelled.code:
+            state = FINISHED_FAILED
+        elif membership_code == Finished.code:
+            state = FINISHED_APPROVED
+        else:
+            state = ATTENDING
+
+        key = (membership.id_student, project.id_section_year)
+        current = chosen.get(key)
+        if current is None or _CURSADA_PRIORITY[state] > _CURSADA_PRIORITY[current[0]]:
+            chosen[key] = (state, project.section_year.year)
+
+    attending_by_student: dict[int, int] = {}
+    for (id_student, id_section_year), (state, year) in chosen.items():
+        session.add(
+            StudentSectionYear(
+                id_student=id_student,
+                id_section_year=id_section_year,
+                year=year,
+                state=state,
+            )
+        )
+        if state == ATTENDING:
+            previous = attending_by_student.get(id_student)
+            if previous is not None and previous != id_section_year:
+                raise ValueError(
+                    "Seed: el alumno "
+                    f"{id_student} tiene más de una cursada actual"
+                )
+            attending_by_student[id_student] = id_section_year
+    await session.flush()
+
+
 async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
     # Los estados son la base de proyectos y membresías: se aseguran siempre,
     # exista o no la seed (más adelante la seed puede sumar los suyos).
@@ -343,5 +429,6 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     await _load_activities(session, data, section_years, calendars)
     projects = await _load_projects(session, data, section_years, statuses)
     await _load_student_projects(session, data, students, projects, statuses)
+    await _load_student_cursadas(session)
 
     await session.commit()

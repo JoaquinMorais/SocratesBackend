@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
 
@@ -42,7 +42,7 @@ _NOT_FOUND = {404: {"description": "No existe la cursada"}}
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe el alumno o el curso lectivo"},
-        409: {"description": "El alumno ya está inscripto en ese curso lectivo"},
+        409: {"description": "El alumno ya tiene una inscripción para ese año"},
         422: {"description": "Ids inválidos, campos faltantes o desconocidos"},
     },
 )
@@ -50,14 +50,15 @@ async def create_enrollment_route(
     data: StudentSectionYearCreate, db: db_dependency, _: super_admin_dependency
 ):
     """
-    Inscribe a un alumno en un curso lectivo (su **cursada**). **Solo super admin.**
+    Registra la **inscripción** de un alumno en un curso lectivo. **Solo super admin.**
 
     - `id_student` debe ser el id de un **alumno** (`GET /students`); el id de un
       profesor responde 404.
     - `id_section_year` es el id de un curso lectivo (`/section-years`).
-    - La relación es muchos a muchos: un alumno puede cursar varios años
-      lectivos a lo largo del tiempo y un curso lectivo tiene muchos alumnos,
-      pero el mismo par no puede repetirse (409).
+    - Un alumno tiene **una sola inscripción por año** (409 si ya tiene otra en
+      ese año). Puede tener además una **cursada** en otra comisión del mismo año,
+      que se crea automáticamente al unirse a un proyecto.
+    - La fila nace en estado `registered`.
     """
     return await create_enrollment(db, data)
 
@@ -77,16 +78,29 @@ async def get_enrollments(
     ] = None,
     year: Annotated[int | None, Query(description="Filtrar por año")] = None,
     id_section: Annotated[int | None, Query(description="Filtrar por comisión")] = None,
+    state: Annotated[
+        Literal[
+            "registered",
+            "attending",
+            "abandoned",
+            "finished_approved",
+            "finished_failed",
+        ]
+        | None,
+        Query(description="Filtrar por estado"),
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
     """
-    Lista qué alumno cursó qué curso lectivo. **Solo profesores** (incluye super admin).
+    Lista las inscripciones y cursadas de los alumnos. **Solo profesores**
+    (incluye super admin).
 
-    Sirve para ver las cursadas de un alumno (`id_student`) o los alumnos de un
-    curso lectivo (`id_section_year`). Orden: año más reciente primero, luego
-    comisión y apellido del alumno. Está paginado: `total` es la cantidad total
-    que cumple los filtros. No incluye el mail ni la fecha de nacimiento del alumno.
+    Cada fila indica su `state`: `registered` (inscripción), `attending`
+    (cursada actual), `abandoned` o `finished_approved`/`finished_failed`.
+    Sirve para ver las filas de un alumno (`id_student`) o de un curso lectivo
+    (`id_section_year`), y se puede filtrar por `state`. Orden: año más reciente,
+    comisión y apellido. Está paginado. No incluye mail ni fecha de nacimiento.
     """
     items, total = await list_enrollments(
         db,
@@ -94,6 +108,7 @@ async def get_enrollments(
         id_section_year=id_section_year,
         year=year,
         id_section=id_section,
+        state=state,
         limit=limit,
         offset=offset,
     )
@@ -124,7 +139,12 @@ async def get_enrollment_route(
         404: {
             "description": "No existe la cursada, el alumno o el curso lectivo"
         },
-        409: {"description": "El par alumno + curso lectivo ya existe en otra cursada"},
+        409: {
+            "description": (
+                "El alumno ya tiene una inscripción para ese año, o la fila es una "
+                "cursada administrada automáticamente"
+            )
+        },
         422: {"description": "Ids inválidos, body vacío o campos desconocidos"},
     },
 )
@@ -135,11 +155,13 @@ async def update_enrollment_route(
     _: super_admin_dependency,
 ):
     """
-    Corrige la cursada (cambia el alumno o el curso lectivo). **Solo super admin.**
+    Corrige una **inscripción** (cambia el alumno o el curso lectivo). **Solo super admin.**
 
     Se envían solo los campos que cambian (`id_student`, `id_section_year`); un
-    body vacío responde 422. Reenviar los mismos valores no da error. Si el par
-    resultante ya existe en otra cursada, responde 409.
+    body vacío responde 422. Reenviar los mismos valores no da error. Si el
+    alumno ya tiene otra inscripción en el año resultante, responde 409. Las
+    cursadas son administradas automáticamente por la membresía al proyecto y no
+    se editan desde acá (409).
     """
     return await update_enrollment(db, id_student_section_year, data)
 
@@ -148,15 +170,20 @@ async def update_enrollment_route(
     "/{id_student_section_year}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Eliminar una cursada",
-    responses={**_WRITE_ERRORS, **_NOT_FOUND},
+    responses={
+        **_WRITE_ERRORS,
+        **_NOT_FOUND,
+        409: {"description": "La fila es una cursada administrada automáticamente"},
+    },
 )
 async def delete_enrollment_route(
     id_student_section_year: int, db: db_dependency, _: super_admin_dependency
 ):
     """
-    Elimina la cursada (solo el vínculo). **Solo super admin.**
+    Elimina una **inscripción**. **Solo super admin.**
 
-    Ni el alumno ni el curso lectivo se borran; un curso lectivo con cursadas no
-    se puede eliminar hasta quitarlas.
+    Las cursadas son administradas automáticamente y no se eliminan desde acá
+    (409). Ni el alumno ni el curso lectivo se borran; un curso lectivo con
+    inscripciones/cursadas no se puede eliminar.
     """
     await delete_enrollment(db, id_student_section_year)

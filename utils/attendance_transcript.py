@@ -11,6 +11,7 @@ from sqlmodel import select
 
 from config.settings import settings
 from models import Attendance, CalendarClass, StudentSectionYear, User
+from models.student_section_year import ATTENDING
 from schemas.attendance_transcript import (
     AttendanceTranscriptReport,
     TranscriptItemPublic,
@@ -323,7 +324,8 @@ async def _import(
             .join(User, User.id_user == StudentSectionYear.id_student)
             .where(
                 StudentSectionYear.id_section_year
-                == calendar_class.calendar.id_section_year
+                == calendar_class.calendar.id_section_year,
+                StudentSectionYear.state == ATTENDING,
             )
         )
     ).all()

@@ -71,8 +71,9 @@ async def get_calendar(
 ):
     """
     Devuelve el **calendario del curso lectivo** con sus clases concretas y actividades.
-    **Super admin, profesores del curso y alumnos del curso** (con cursada o con
-    un grupo en ese curso lectivo).
+    **Super admin, profesores del curso y alumnos del curso** (con cursada
+    `attending`/`finished_*` o con un grupo en ese curso lectivo). La inscripción
+    `registered` sola no alcanza.
 
     - `from` y `to` son opcionales; si se envían, filtran las clases del rango
       (máximo 366 días) y deben venir juntos.

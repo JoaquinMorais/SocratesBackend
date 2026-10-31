@@ -1,4 +1,5 @@
 from models.state.base import State, register
+from models.student_section_year import ABANDONED, FINISHED_APPROVED
 
 
 class StudentProjectState(State):
@@ -18,6 +19,7 @@ class Active(StudentProjectState):
     @classmethod
     async def on_enter(cls, effector, membership, previous) -> None:
         await effector.reject_other_pending(membership)
+        await effector.enter_cursada(membership)
 
 
 @register
@@ -37,6 +39,7 @@ class Abandoned(StudentProjectState):
 
     @classmethod
     async def on_enter(cls, effector, membership, previous) -> None:
+        await effector.close_cursada(membership, ABANDONED)
         await effector.promote_successor(membership)
 
 
@@ -48,6 +51,10 @@ class Finished(StudentProjectState):
     is_final = True
     is_member = True
 
+    @classmethod
+    async def on_enter(cls, effector, membership, previous) -> None:
+        await effector.close_cursada(membership, FINISHED_APPROVED)
+
 
 @register
 class Expelled(StudentProjectState):
@@ -58,6 +65,7 @@ class Expelled(StudentProjectState):
 
     @classmethod
     async def on_enter(cls, effector, membership, previous) -> None:
+        await effector.close_cursada(membership, ABANDONED)
         await effector.promote_successor(membership)
 
 

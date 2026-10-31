@@ -4,10 +4,11 @@ from sqlmodel import select
 
 from config.database import SessionLocal
 from models import Attendance, AttendanceSession
-from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor, section_year
+from tests.helpers import create_cursada, STUDENT, SUPER_ADMIN, assign_professor, section_year
 
 URL = "/calendar-classes"
 ANA_ID = 1
+LUIS_ID = 2
 LUIS = "100002@sistemas.frc.utn.edu.ar"
 
 
@@ -35,6 +36,30 @@ async def _class(client, headers, id_section_year: int, **overrides) -> dict:
     return r.json()
 
 
+async def _new_student(client, headers, legajo: int) -> dict:
+    r = await client.post(
+        "/students",
+        json={
+            "first_name": "Sofía",
+            "last_name": "Díaz",
+            "legajo": legajo,
+            "birth_date": "2003-05-10",
+            "enrollment_year": 2023,
+        },
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+async def _bulk(client, headers, id_calendar_class: int, id_students: list[int]):
+    return await client.post(
+        f"{URL}/{id_calendar_class}/attendance/bulk",
+        json={"id_students": id_students},
+        headers=headers,
+    )
+
+
 async def _enroll(client, headers, id_student: int, id_section_year: int) -> dict:
     r = await client.post(
         "/student-section-years",
@@ -42,7 +67,11 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> dic
         headers=headers,
     )
     assert r.status_code == 201, r.text
-    return r.json()
+    body = r.json()
+    cursada = await create_cursada(id_student, id_section_year)
+    body["id_student_section_year"] = cursada.id_student_section_year
+    body["state"] = cursada.state
+    return body
 
 
 async def _open(client, headers, id_calendar_class: int) -> dict:
@@ -500,7 +529,7 @@ async def test_delete_class_removes_session_and_attendance(client, login):
     assert history["items"] == []
 
 
-async def test_delete_enrollment_removes_attendance(client, login):
+async def test_managed_cursada_cannot_be_deleted(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await _sy(client, admin)
     calendar_class = await _class(client, admin, sy)
@@ -515,9 +544,9 @@ async def test_delete_enrollment_removes_attendance(client, login):
             f"/student-section-years/{enrollment['id_student_section_year']}",
             headers=admin,
         )
-    ).status_code == 204
+    ).status_code == 409
     history = (await client.get("/me/attendance", headers=await login(STUDENT))).json()
-    assert history["items"] == []
+    assert len(history["items"]) == 1
 
 
 async def test_enrolled_student_cannot_manage_attendance(client, login):
@@ -649,3 +678,303 @@ async def test_check_in_requires_cursada_in_class_course(client, login):
         client, await login(STUDENT), calendar_class["id_calendar_class"], opened["code"]
     )
     assert r.status_code == 403
+
+
+# ---------- marcado manual en lote ----------
+async def test_bulk_manual_requires_authentication(client):
+    assert (
+        await client.post(
+            f"{URL}/1/attendance/bulk", json={"id_students": [1]}
+        )
+    ).status_code == 401
+
+
+async def test_bulk_manual_permissions(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    assigned = await make_professor("prof-bulk-att@frc.utn.edu.ar")
+    other = await make_professor("prof-bulk-att-otro@frc.utn.edu.ar", legajo=300001)
+    await assign_professor(client, admin, assigned, sy)
+
+    assert (
+        await _bulk(client, await login(STUDENT), calendar_class["id_calendar_class"], [ANA_ID])
+    ).status_code == 403
+    assert (
+        await _bulk(client, await login(other), calendar_class["id_calendar_class"], [ANA_ID])
+    ).status_code == 403
+    assert (
+        await _bulk(client, await login(assigned), calendar_class["id_calendar_class"], [ANA_ID])
+    ).status_code == 200
+    assert (
+        await _bulk(client, admin, calendar_class["id_calendar_class"], [ANA_ID])
+    ).status_code == 200
+
+
+async def test_bulk_manual_marks_students(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+
+    r = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [LUIS_ID, ANA_ID]
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["requested"] == 2
+    assert body["created"] == 2
+    assert body["already_present"] == 0
+    assert [item["id_student"] for item in body["items"]] == [LUIS_ID, ANA_ID]
+    assert all(item["method"] == "manual" for item in body["items"])
+
+    listed = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    assert all(item["present"] for item in listed["items"])
+    assert all(item["method"] == "manual" for item in listed["items"])
+
+
+async def test_bulk_manual_is_idempotent(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+
+    first = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID, LUIS_ID]
+    )
+    assert first.status_code == 200
+    second = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID, LUIS_ID]
+    )
+    assert second.status_code == 200
+    body = second.json()
+    assert body["created"] == 0
+    assert body["already_present"] == 2
+    assert len(body["items"]) == 2
+    listed = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    assert len(listed["items"]) == 2
+
+
+async def test_bulk_manual_keeps_existing_method(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+    opened = await _open(client, admin, calendar_class["id_calendar_class"])
+    checked = await _checkin(
+        client, await login(STUDENT), calendar_class["id_calendar_class"], opened["code"]
+    )
+    assert checked.status_code == 200
+
+    r = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID, LUIS_ID]
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["already_present"] == 1
+    assert body["created"] == 1
+    ana = next(item for item in body["items"] if item["id_student"] == ANA_ID)
+    assert ana["method"] == "code"
+
+
+async def test_bulk_manual_dedupes(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _enroll(client, admin, LUIS_ID, sy)
+
+    r = await _bulk(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        [ANA_ID, ANA_ID, LUIS_ID],
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["requested"] == 2
+    assert body["created"] == 2
+    assert len(body["items"]) == 2
+
+
+async def test_bulk_manual_all_or_nothing(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+
+    r = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID, 999]
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"] == [
+        {"row": 2, "id_student": 999, "detail": "Student not found"}
+    ]
+    listed = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    assert all(item["present"] is False for item in listed["items"])
+
+    student = await _new_student(client, admin, 100010)  # sin cursada
+    r = await _bulk(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        [student["id_student"]],
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["detail"] == (
+        "Student is not attending this section year"
+    )
+
+
+async def test_bulk_manual_student_from_another_course_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_a = await _sy(client, admin, "3K1", 2026)
+    sy_b = await _sy(client, admin, "3K2", 2026)
+    calendar_class = await _class(client, admin, sy_a)
+    await _enroll(client, admin, ANA_ID, sy_b)
+
+    r = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID]
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["detail"] == (
+        "Student is not attending this section year"
+    )
+
+
+async def test_bulk_manual_works_with_closed_session(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+    await _open(client, admin, calendar_class["id_calendar_class"])
+    assert (
+        await client.post(
+            f"{URL}/{calendar_class['id_calendar_class']}/attendance/close",
+            headers=admin,
+        )
+    ).status_code == 204
+
+    r = await _bulk(
+        client, admin, calendar_class["id_calendar_class"], [ANA_ID]
+    )
+    assert r.status_code == 200
+    assert r.json()["created"] == 1
+
+
+async def test_bulk_manual_validation(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await _enroll(client, admin, ANA_ID, sy)
+
+    assert (
+        await _bulk(client, admin, calendar_class["id_calendar_class"], [])
+    ).status_code == 422
+    assert (
+        await _bulk(client, admin, calendar_class["id_calendar_class"], [0])
+    ).status_code == 422
+    assert (
+        await _bulk(
+            client,
+            admin,
+            calendar_class["id_calendar_class"],
+            list(range(1, 202)),
+        )
+    ).status_code == 422
+    assert (await _bulk(client, admin, 999, [ANA_ID])).status_code == 404
+
+
+# ---------- estados de cursada ----------
+async def test_registration_only_cannot_check_in(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    opened = await _open(client, admin, calendar_class["id_calendar_class"])
+
+    r = await _checkin(
+        client,
+        await login(STUDENT),
+        calendar_class["id_calendar_class"],
+        opened["code"],
+    )
+    assert r.status_code == 403
+
+
+async def test_list_excludes_registration_and_includes_finished(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    body = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    assert body["items"] == []
+
+    await create_cursada(ANA_ID, sy, state="finished_approved")
+    body = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    assert [item["id_student"] for item in body["items"]] == [ANA_ID]
+    assert body["items"][0]["present"] is False
+    assert body["items"][0]["state"] == "finished_approved"
+
+
+async def test_manual_mark_registration_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    enrollment = r.json()
+
+    r = await client.post(
+        f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/"
+        f"{enrollment['id_student_section_year']}",
+        headers=admin,
+    )
+    assert r.status_code == 422
+    assert "attending" in r.json()["detail"]
+
+
+async def test_manual_mark_finished_cursada_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    cursada = await create_cursada(ANA_ID, sy, state="finished_approved")
+
+    r = await client.post(
+        f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/"
+        f"{cursada.id_student_section_year}",
+        headers=admin,
+    )
+    assert r.status_code == 422
+    assert "attending" in r.json()["detail"]
+
+
+async def test_bulk_manual_finished_cursada_rejected(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await create_cursada(ANA_ID, sy, state="finished_failed")
+
+    r = await _bulk(client, admin, calendar_class["id_calendar_class"], [ANA_ID])
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["detail"] == (
+        "Student is not attending this section year"
+    )

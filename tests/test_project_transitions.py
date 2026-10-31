@@ -1,5 +1,7 @@
+from sqlmodel import select
+
 from config.database import SessionLocal
-from models import Project, StudentProject
+from models import Project, StudentProject, StudentSectionYear
 from tests.helpers import STUDENT, SUPER_ADMIN
 from utils.statuses import get_status
 
@@ -366,3 +368,48 @@ async def test_full_rejection_cycle(client, login):
     assert r.json()["status"]["code"] == "in_progress"
     # el grupo sigue asegurado, se puede enviar de nuevo
     assert (await _transition(client, admin, p["id_project"], "submit")).status_code == 200
+
+
+# ---------- efectos en la cursada ----------
+async def _cursada(id_student: int, id_section_year: int):
+    async with SessionLocal() as s:
+        return (
+            await s.exec(
+                select(StudentSectionYear).where(
+                    StudentSectionYear.id_student == id_student,
+                    StudentSectionYear.id_section_year == id_section_year,
+                    StudentSectionYear.state != "registered",
+                )
+            )
+        ).first()
+
+
+async def test_approve_finishes_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    r = await client.post(
+        f"{URL}/{project['id_project']}/members", headers=await login(STUDENT)
+    )
+    assert r.status_code == 201, r.text
+    await _set_project_status(project["id_project"], "pending_approval")
+
+    r = await _transition(client, admin, project["id_project"], "approve")
+    assert r.status_code == 200, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "finished_approved"
+
+
+async def test_cancel_marks_cursada_finished_failed(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    r = await client.post(
+        f"{URL}/{project['id_project']}/members", headers=await login(STUDENT)
+    )
+    assert r.status_code == 201, r.text
+
+    r = await _transition(client, admin, project["id_project"], "cancel")
+    assert r.status_code == 200, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "finished_failed"

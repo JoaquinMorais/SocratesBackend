@@ -1,12 +1,18 @@
 from sqlmodel import col, select
 
-from models import Status, StudentProject
+from models import Project, Status, StudentProject
+from models.student_section_year import ABANDONED, FINISHED_APPROVED
 from models.state.state_student_project import (
     Active,
     PendingApprovalMember,
     RejectedMember,
 )
 from utils.statuses import get_status
+from utils.student_section_years import (
+    close_attending,
+    ensure_attending,
+    validate_project_year,
+)
 
 
 class MembershipEffector:
@@ -14,6 +20,27 @@ class MembershipEffector:
 
     def __init__(self, db):
         self.db = db
+
+    async def enter_cursada(self, membership) -> None:
+        """El alumno pasa a cursar el curso lectivo del proyecto."""
+        project = await self.db.get(Project, membership.id_project)
+        await validate_project_year(
+            self.db, membership.id_student, project.section_year.year
+        )
+        await ensure_attending(
+            self.db,
+            membership.id_student,
+            project.id_section_year,
+            project.section_year.year,
+            allow_project_joins=project.section_year.allow_project_joins,
+        )
+
+    async def close_cursada(self, membership, state: str) -> None:
+        """Cierra la cursada del alumno en el curso lectivo del proyecto."""
+        project = await self.db.get(Project, membership.id_project)
+        await close_attending(
+            self.db, membership.id_student, project.id_section_year, state
+        )
 
     async def reject_other_pending(self, membership) -> None:
         """Al ser `member`, las otras solicitudes pendientes del alumno se rechazan."""

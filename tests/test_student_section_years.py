@@ -1,4 +1,9 @@
-from tests.helpers import STUDENT, SUPER_ADMIN, section_year
+from tests.helpers import (
+    STUDENT,
+    SUPER_ADMIN,
+    create_cursada,
+    section_year,
+)
 
 URL = "/student-section-years"
 ANA, LUIS = 1, 2  # ids de los alumnos del seed
@@ -63,6 +68,7 @@ async def test_create_enrollment(client, login):
     assert body["year"] == 2025
     assert body["section_name"] == "3K1"
     assert body["id_section"] == await _section_id(client, headers, sy)
+    assert body["state"] == "registered"
 
 
 async def test_create_duplicate_rejected(client, login):
@@ -180,6 +186,7 @@ async def test_list_does_not_expose_private_data(client, login):
         "year",
         "id_section",
         "section_name",
+        "state",
     }
 
 
@@ -249,7 +256,7 @@ async def test_delete_not_found(client, login):
     assert (await client.delete(f"{URL}/999", headers=await login(SUPER_ADMIN))).status_code == 404
 
 
-async def test_one_section_year_per_year(client, login):
+async def test_one_registration_per_year(client, login):
     headers = await login(SUPER_ADMIN)
     sy_2026_a = await section_year(client, headers, "3K1", 2026)
     sy_2026_b = await section_year(client, headers, "3K2", 2026)
@@ -276,3 +283,68 @@ async def test_patch_to_existing_year_rejected(client, login):
     # moverla a otro año -> ok
     r = await client.patch(url, json={"id_section_year": sy_2025}, headers=headers)
     assert r.status_code == 200, r.text
+
+
+# ---------- cursadas administradas ----------
+async def test_registration_and_cursada_coexist(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers, "3K1", 2026)
+    await _enroll(client, headers, ANA, sy)
+    await create_cursada(ANA, sy)
+
+    body = (
+        await client.get(
+            URL,
+            params={"id_student": ANA, "id_section_year": sy},
+            headers=headers,
+        )
+    ).json()
+    assert body["total"] == 2
+    assert {item["state"] for item in body["items"]} == {"registered", "attending"}
+
+
+async def test_list_filters_by_state(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_a = await section_year(client, headers, "3K1", 2026)
+    sy_b = await section_year(client, headers, "3K2", 2026)
+    await _enroll(client, headers, ANA, sy_a)
+    await create_cursada(ANA, sy_b)
+
+    registered = (
+        await client.get(URL, params={"state": "registered"}, headers=headers)
+    ).json()
+    assert registered["total"] == 1
+    assert registered["items"][0]["id_section_year"] == sy_a
+    attending = (
+        await client.get(URL, params={"state": "attending"}, headers=headers)
+    ).json()
+    assert attending["total"] == 1
+    assert attending["items"][0]["id_section_year"] == sy_b
+    assert (
+        await client.get(URL, params={"state": "unknown"}, headers=headers)
+    ).status_code == 422
+
+
+async def test_managed_cursada_cannot_be_edited_or_deleted(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers, "3K1", 2026)
+    cursada = await create_cursada(ANA, sy)
+    url = f"{URL}/{cursada.id_student_section_year}"
+
+    r = await client.patch(url, json={"id_student": LUIS}, headers=headers)
+    assert r.status_code == 409
+    r = await client.delete(url, headers=headers)
+    assert r.status_code == 409
+    # la fila sigue existiendo
+    assert (await client.get(url, headers=headers)).status_code == 200
+
+
+async def test_create_with_state_is_rejected(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers, "3K1", 2026)
+    r = await client.post(
+        URL,
+        json={**_pair(ANA, sy), "state": "attending"},
+        headers=headers,
+    )
+    assert r.status_code == 422

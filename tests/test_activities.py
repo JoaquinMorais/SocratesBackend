@@ -1,4 +1,10 @@
-from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor, section_year
+from tests.helpers import (
+    STUDENT,
+    SUPER_ADMIN,
+    assign_professor,
+    create_cursada,
+    section_year,
+)
 
 URL = "/section-years"
 ITEM = "/activities"
@@ -37,6 +43,7 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> Non
         headers=headers,
     )
     assert r.status_code == 201, r.text
+    await create_cursada(id_student, id_section_year)
 
 
 async def _join_project(client, admin, student_headers, id_section_year: int) -> dict:
@@ -86,6 +93,44 @@ async def test_enrolled_student_can_read_but_not_write(client, login):
     assert (await client.get(f"{URL}/{sy}/activities", headers=headers)).status_code == 200
     assert (
         await client.post(f"{URL}/{sy}/activities", json=_body(), headers=headers)
+    ).status_code == 403
+
+
+async def test_registration_only_cannot_read(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    activity = await _create(client, admin, sy)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    headers = await login(STUDENT)
+
+    assert (await client.get(f"{URL}/{sy}/activities", headers=headers)).status_code == 403
+    assert (await client.get(f"{ITEM}/{activity['id_activity']}", headers=headers)).status_code == 403
+
+
+async def test_finished_cursada_can_read(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    activity = await _create(client, admin, sy)
+    await create_cursada(ANA_ID, sy, state="finished_failed")
+
+    headers = await login(STUDENT)
+    assert (await client.get(f"{URL}/{sy}/activities", headers=headers)).status_code == 200
+    assert (await client.get(f"{ITEM}/{activity['id_activity']}", headers=headers)).status_code == 200
+
+
+async def test_abandoned_cursada_cannot_read(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    await _create(client, admin, sy)
+    await create_cursada(ANA_ID, sy, state="abandoned")
+
+    assert (
+        await client.get(f"{URL}/{sy}/activities", headers=await login(STUDENT))
     ).status_code == 403
 
 

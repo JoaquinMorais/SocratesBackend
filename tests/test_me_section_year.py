@@ -4,6 +4,7 @@ from tests.helpers import (
     STUDENT,
     SUPER_ADMIN,
     assign_professor,
+    create_cursada,
     section_year,
 )
 from utils.statuses import get_status
@@ -21,6 +22,7 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> Non
         headers=headers,
     )
     assert r.status_code == 201, r.text
+    await create_cursada(id_student, id_section_year)
 
 
 async def _project(client, headers, id_section_year: int) -> dict:
@@ -100,11 +102,12 @@ async def test_professor_with_two_commissions_in_latest_year(
 
 
 # ---------- alumnos ----------
-async def test_student_gets_latest_cursada_year(client, login):
+async def test_student_gets_latest_enrolled_year(client, login):
     admin = await login(SUPER_ADMIN)
     sy_2025 = await section_year(client, admin, "3K1", 2025)
     sy_2026 = await section_year(client, admin, "3K2", 2026)
     await _enroll(client, admin, ANA_ID, sy_2025)
+    await create_cursada(ANA_ID, sy_2025, state="finished_approved")
     await _enroll(client, admin, ANA_ID, sy_2026)
     p_2025 = await _project(client, admin, sy_2025)
     p_2026 = await _project(client, admin, sy_2026)
@@ -220,22 +223,91 @@ async def test_super_admin_with_assignments_gets_courses(client, login, make_pro
     assert project["id_project"] in [item["id_project"] for item in listing["items"]]
 
 
-async def test_student_prefers_cursada_over_group(client, login):
-    admin = await login(SUPER_ADMIN)
-    sy_old = await section_year(client, admin, "3K1", 2025)
-    sy_new = await section_year(client, admin, "3K2", 2026)
-    await _enroll(client, admin, ANA_ID, sy_old)
-    project_new = await _project(client, admin, sy_new)
-    joined = await client.post(
-        f"/projects/{project_new['id_project']}/members",
-        headers=await login(STUDENT),
+async def _register(client, headers, id_student: int, id_section_year: int) -> None:
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": id_student, "id_section_year": id_section_year},
+        headers=headers,
     )
-    assert joined.status_code == 201, joined.text
+    assert r.status_code == 201, r.text
+
+
+async def test_student_prefers_attending_over_registered(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2026_a = await section_year(client, admin, "3K1", 2026)
+    sy_2026_b = await section_year(client, admin, "3K2", 2026)
+    await _register(client, admin, ANA_ID, sy_2026_a)
+    await create_cursada(ANA_ID, sy_2026_b)
+    project_a = await _project(client, admin, sy_2026_a)
+    project_b = await _project(client, admin, sy_2026_b)
 
     headers = await login(STUDENT)
     body = (await client.get(URL, headers=headers)).json()
-    assert [section["id_section_year"] for section in body["section_years"]] == [sy_old]
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2026_b]
     listing = (await client.get(PROJECTS, headers=headers)).json()
-    assert project_new["id_project"] not in [
-        item["id_project"] for item in listing["items"]
-    ]
+    ids = [item["id_project"] for item in listing["items"]]
+    assert project_b["id_project"] in ids
+    assert project_a["id_project"] not in ids
+
+
+async def test_student_attending_wins_over_newer_registration(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, admin, "3K1", 2025)
+    sy_2026 = await section_year(client, admin, "3K2", 2026)
+    await _enroll(client, admin, ANA_ID, sy_2025)
+    await _register(client, admin, ANA_ID, sy_2026)
+
+    headers = await login(STUDENT)
+    body = (await client.get(URL, headers=headers)).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2025]
+
+
+async def test_student_finished_wins_over_newer_registration(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, admin, "3K1", 2025)
+    sy_2026 = await section_year(client, admin, "3K2", 2026)
+    await _enroll(client, admin, ANA_ID, sy_2025)
+    await create_cursada(ANA_ID, sy_2025, state="finished_approved")
+    await _register(client, admin, ANA_ID, sy_2026)
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2025]
+
+
+async def test_student_uses_registration_when_no_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    await _register(client, admin, ANA_ID, sy)
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy]
+
+
+async def test_student_uses_finished_when_no_newer(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2025)
+    await _enroll(client, admin, ANA_ID, sy)
+    await create_cursada(ANA_ID, sy, state="finished_approved")
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy]
+
+
+async def test_student_ignores_abandoned_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2025)
+    await create_cursada(ANA_ID, sy, state="abandoned")
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert body == {"section_years": []}
+
+
+async def test_student_ignores_newer_abandoned_year(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, admin, "3K1", 2025)
+    sy_2026 = await section_year(client, admin, "3K2", 2026)
+    await _enroll(client, admin, ANA_ID, sy_2025)
+    await create_cursada(ANA_ID, sy_2026, state="abandoned")
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2025]

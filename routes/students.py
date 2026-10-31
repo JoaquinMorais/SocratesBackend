@@ -140,10 +140,10 @@ async def create_student(
       con `POST /auth/password/request` y `POST /auth/password/confirm`.
     - El legajo no puede repetirse entre alumnos.
     - El alumno debe tener **al menos 18 años** a la fecha de alta (422 si no).
-    - `id_section_year` es opcional: si se envía, se crea la **cursada** del
-      alumno en ese curso lectivo (un id inexistente responde 422 junto con el
-      resto de errores de la fila). Para sumar más cursadas después, usar
-      `POST /student-section-years`.
+    - `id_section_year` es opcional: si se envía, se crea la **inscripción**
+      (`registered`) del alumno en ese curso lectivo (un id inexistente responde
+      422 junto con el resto de errores de la fila). Para sumar otras
+      inscripciones después, usar `POST /student-section-years`.
     - Cualquier otro campo responde 422.
     - Se envía un mail de bienvenida al alumno.
     """
@@ -183,9 +183,10 @@ async def create_students_bulk(
     del lote o ya existente, o un curso lectivo inexistente) no se crea ninguna y
     la respuesta indica qué filas corregir para volver a enviar el lote completo.
 
-    Cada fila puede incluir `id_section_year` para crear la **cursada** del
-    alumno en ese curso lectivo; un alumno puede tener varias cursadas a lo largo
-    del tiempo (las adicionales se agregan con `POST /student-section-years`).
+    Cada fila puede incluir `id_section_year` para crear la **inscripción**
+    (`registered`) del alumno en ese curso lectivo; un alumno puede tener varias
+    inscripciones a lo largo del tiempo (las adicionales se agregan con
+    `POST /student-section-years`).
 
     Las reglas por alumno son las mismas que en `POST /students`, incluida la
     mayoría de edad: si algún alumno tiene menos de 18 años, el lote entero se
@@ -265,8 +266,8 @@ async def delete_student_route(id_student: int, db: db_dependency, _: super_admi
       tiene restos viejos (`abandoned`, `expelled`, `rejected`), que se eliminan
       junto con él sin afectar a los proyectos.
     - Al eliminarlo se borran sus datos personales, el registro de alumno, sus
-      cursadas (alumno + curso lectivo), sus sesiones (refresh tokens) y sus
-      códigos de contraseña pendientes; su legajo queda libre para volver a
-      cargarlo.
+      inscripciones y cursadas (alumno + curso lectivo), sus sesiones (refresh
+      tokens) y sus códigos de contraseña pendientes; su legajo queda libre para
+      volver a cargarlo.
     """
     await delete_student(db, id_student)

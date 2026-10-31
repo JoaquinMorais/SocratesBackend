@@ -2,7 +2,7 @@ from datetime import date
 from pathlib import Path
 
 from config.settings import settings
-from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor, section_year
+from tests.helpers import create_cursada, STUDENT, SUPER_ADMIN, assign_professor, section_year
 
 URL = "/calendar-classes"
 ANA_ID, LUIS_ID = 1, 2
@@ -49,7 +49,11 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> dic
         headers=headers,
     )
     assert r.status_code == 201, r.text
-    return r.json()
+    body = r.json()
+    cursada = await create_cursada(id_student, id_section_year)
+    body["id_student_section_year"] = cursada.id_student_section_year
+    body["state"] = cursada.state
+    return body
 
 
 async def _new_student(client, headers, legajo: int, first: str, last: str) -> dict:
@@ -557,3 +561,22 @@ async def test_empty_text_rejected(client, login):
     calendar_class = await _class(client, admin, sy)
     r = await _import_text(client, admin, calendar_class["id_calendar_class"], "")
     assert r.status_code == 422
+
+
+async def test_finished_cursada_is_not_imported(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    await create_cursada(ANA_ID, sy, state="finished_approved")
+
+    r = await _import_file(
+        client,
+        admin,
+        calendar_class["id_calendar_class"],
+        "100001-GomezAna",
+        dry_run="false",
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["summary"]["created"] == 0
+    assert _statuses(body)[100001] == "not_enrolled"

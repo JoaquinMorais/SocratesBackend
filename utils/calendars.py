@@ -64,7 +64,7 @@ async def get_my_calendar(
     from_date: date | None = None,
     to_date: date | None = None,
 ) -> MyCalendarPublic:
-    """Clases y actividades de los cursos actuales del usuario (año máximo)."""
+    """Clases y actividades de los cursos actuales del usuario (año actual)."""
     validate_optional_range(from_date, to_date)
 
     years = await current_section_years(db, user, access)

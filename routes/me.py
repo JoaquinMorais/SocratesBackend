@@ -117,13 +117,13 @@ async def get_my_section_year_route(db: db_dependency, user: user_dependency):
     Devuelve el/los **cursos lectivos actuales** del usuario logueado. **Cualquier
     usuario logueado.**
 
-    Se toma el **año más reciente** del usuario:
+    Se toma el **año actual** del usuario:
 
     - **Profesor**: sus cursos lectivos asignados (`/professor-section-years`).
       Puede haber más de uno si dicta varias comisiones de ese año.
-    - **Alumno**: si es miembro (`active` o `finished`) de un proyecto, el curso
-      lectivo de ese proyecto (tiene prioridad sobre la cursada); si no, todas
-      las comisiones del año más reciente de sus cursadas.
+    - **Alumno**: su cursada `attending`; si no tiene, la última `finished_*`; si
+      no, la última inscripción `registered`. Si no tiene filas, usa el curso
+      lectivo de su grupo actual (`active`/`finished`).
 
     Sin cursos (por ejemplo, un profesor sin asignaciones o un super admin que no
     dicta) devuelve `{"section_years": []}`. Cada curso incluye año, comisión y
@@ -150,7 +150,7 @@ async def get_my_section_year_projects_route(
 ):
     """
     Lista **todos los proyectos** de los cursos lectivos actuales del usuario
-    (los del año más reciente, ver `GET /me/section-year`). **Cualquier usuario
+    (los del año actual, ver `GET /me/section-year`). **Cualquier usuario
     logueado.**
 
     - Se aplican las mismas reglas de **privacidad** que `GET /projects`: los
@@ -209,9 +209,13 @@ async def get_my_calendar_route(
     Devuelve **mi calendario**: las clases y actividades de mis cursos lectivos
     actuales. **Cualquier usuario logueado.**
 
-    - Los cursos actuales son los del **año más reciente** del usuario, igual que
+    - Los cursos actuales son los del **año actual** del usuario, igual que
       `GET /me/section-year`: un profesor puede tener varias comisiones de ese año;
-      un alumno tiene una (o la de su grupo si no tiene cursadas).
+      un alumno usa su cursada `attending`, luego la última `finished_*`, luego la
+      última inscripción `registered` y, si no tiene filas, el curso de su grupo
+      actual. Si el alumno solo está inscripto, este endpoint muestra el
+      calendario de esa inscripción; los endpoints directos de calendario y
+      actividades no lo permiten.
     - Sin cursos actuales devuelve `section_years`, `classes` y `activities` vacíos.
     - `from`/`to` son opcionales (ambos o ninguno, máximo 366 días) y filtran por
       fecha de clase o de entrega.

@@ -13,9 +13,16 @@ from models import (
     StudentSectionYear,
 )
 from models.state import MEMBER_CODES
+from models.student_section_year import (
+    ATTENDING,
+    FINISHED_APPROVED,
+    FINISHED_FAILED,
+    REGISTERED,
+)
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearPublic,
+    SectionYearSettingsUpdate,
     SectionYearUpdate,
 )
 
@@ -29,6 +36,7 @@ def to_public(sy: SectionYear, section: Section | None = None) -> SectionYearPub
         section_name=section.name,
         min_students=sy.min_students,
         max_students=sy.max_students,
+        allow_project_joins=sy.allow_project_joins,
     )
 
 
@@ -82,9 +90,10 @@ async def get_section_year(db, id_section_year: int) -> SectionYear:
 async def _students_with_other_year(
     db, id_section_year: int, new_year: int
 ) -> bool:
-    """Si algún alumno inscripto en este curso ya tiene otra cursada del año nuevo."""
+    """Si algún alumno inscripto acá ya tiene otra inscripción en el año nuevo."""
     enrolled = select(StudentSectionYear.id_student).where(
-        StudentSectionYear.id_section_year == id_section_year
+        StudentSectionYear.id_section_year == id_section_year,
+        StudentSectionYear.state == REGISTERED,
     )
     found = (
         await db.exec(
@@ -93,6 +102,7 @@ async def _students_with_other_year(
                 StudentSectionYear.year == new_year,
                 StudentSectionYear.id_section_year != id_section_year,
                 StudentSectionYear.id_student.in_(enrolled),
+                StudentSectionYear.state == REGISTERED,
             )
             .limit(1)
         )
@@ -122,6 +132,7 @@ async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
         id_section=data.id_section,
         min_students=data.min_students,
         max_students=data.max_students,
+        allow_project_joins=data.allow_project_joins,
     )
     db.add(sy)
     try:
@@ -162,6 +173,7 @@ async def update_section_year(
     sy.section = section
     sy.min_students = min_students
     sy.max_students = max_students
+    sy.allow_project_joins = changes.get("allow_project_joins", sy.allow_project_joins)
     db.add(sy)
     if year_changed:
         # mantener sincronizada la copia del año que usa la restricción única
@@ -174,10 +186,20 @@ async def update_section_year(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        if "student_section_year_year" in _constraint_name(exc):
+        if "student_section_year_registered" in _constraint_name(exc):
             raise _duplicate_student_year()
         raise _duplicate()
     return to_public(sy, section)
+
+
+async def update_section_year_settings(
+    db, id_section_year: int, data: SectionYearSettingsUpdate
+) -> SectionYearPublic:
+    sy = await get_section_year(db, id_section_year)
+    sy.allow_project_joins = data.allow_project_joins
+    db.add(sy)
+    await db.commit()
+    return to_public(sy)
 
 
 async def delete_section_year(db, id_section_year: int) -> None:
@@ -224,8 +246,9 @@ async def can_view_section_year(db, user, access, id_section_year: int) -> bool:
     """Si el usuario puede ver el calendario de ese curso lectivo.
 
     Pueden verlo el super admin, un profesor asignado a ese curso lectivo y los
-    alumnos del curso: los que tienen una cursada (`student_section_years`) o son
-    miembros (`active`/`finished`) de alguno de sus proyectos.
+    alumnos del curso: los que tienen una cursada (`attending` o `finished_*`) o
+    son miembros (`active`/`finished`) de alguno de sus proyectos. La inscripción
+    (`registered`) y las cursadas abandonadas no alcanzan.
     """
     if access.can_manage(id_section_year):
         return True
@@ -238,6 +261,9 @@ async def can_view_section_year(db, user, access, id_section_year: int) -> bool:
             .where(
                 StudentSectionYear.id_student == user.id_user,
                 StudentSectionYear.id_section_year == id_section_year,
+                StudentSectionYear.state.in_(
+                    (ATTENDING, FINISHED_APPROVED, FINISHED_FAILED)
+                ),
             )
             .limit(1)
         )

@@ -2,6 +2,7 @@ from tests.helpers import (
     STUDENT,
     SUPER_ADMIN,
     assign_professor,
+    create_cursada,
     section_year,
 )
 
@@ -60,6 +61,7 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> Non
         headers=headers,
     )
     assert r.status_code == 201, r.text
+    await create_cursada(id_student, id_section_year)
 
 
 async def _join_project(client, admin, student_headers, id_section_year: int) -> dict:
@@ -118,6 +120,7 @@ async def test_student_gets_current_cursada_year(client, login):
     sy_old = await _sy(client, admin, "3K1", 2025)
     sy_now = await _sy(client, admin, "3K2", 2026)
     await _enroll(client, admin, ANA_ID, sy_old)
+    await create_cursada(ANA_ID, sy_old, state="finished_approved")
     await _enroll(client, admin, ANA_ID, sy_now)
     class_old = await _class(client, admin, sy_old, date="2025-03-04")
     class_now = await _class(client, admin, sy_now)
@@ -149,6 +152,28 @@ async def test_student_falls_back_to_current_group(client, login):
         class_["id_calendar_class"]
     ]
     assert [a["id_activity"] for a in body["activities"]] == [activity["id_activity"]]
+
+
+async def test_registered_student_sees_inscribed_calendar(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin, "3K1", 2026)
+    class_ = await _class(client, admin, sy)
+    activity = await _activity(client, admin, sy)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+
+    body = (await _calendar(client, await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy]
+    assert [item["id_calendar_class"] for item in body["classes"]] == [
+        class_["id_calendar_class"]
+    ]
+    assert [item["id_activity"] for item in body["activities"]] == [
+        activity["id_activity"]
+    ]
 
 
 async def test_no_current_section_year(client, login, make_professor):
@@ -232,30 +257,36 @@ async def test_super_admin_with_assignments_gets_calendar(
     ]
 
 
-async def test_student_prefers_cursada_over_group_for_calendar(client, login):
+async def test_student_prefers_attending_over_registered_for_calendar(client, login):
     admin = await login(SUPER_ADMIN)
-    sy_old = await _sy(client, admin, "3K1", 2025)
-    sy_new = await _sy(client, admin, "3K2", 2026)
-    await _enroll(client, admin, ANA_ID, sy_old)
-    old_class = await _class(client, admin, sy_old, date="2025-03-04")
-    old_activity = await _activity(
-        client, admin, sy_old, due_date="2025-05-15"
+    sy_a = await _sy(client, admin, "3K1", 2026)
+    sy_b = await _sy(client, admin, "3K2", 2026)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy_a},
+        headers=admin,
     )
-    new_class = await _class(client, admin, sy_new)
-    new_activity = await _activity(client, admin, sy_new)
-    await _join_project(client, admin, await login(STUDENT), sy_new)
+    assert r.status_code == 201, r.text
+    await create_cursada(ANA_ID, sy_b)
+
+    class_a = await _class(client, admin, sy_a)
+    activity_a = await _activity(client, admin, sy_a)
+    class_b = await _class(client, admin, sy_b, date="2026-04-07")
+    activity_b = await _activity(
+        client, admin, sy_b, due_date="2026-06-10"
+    )
 
     body = (await _calendar(client, await login(STUDENT))).json()
-    assert [section["id_section_year"] for section in body["section_years"]] == [sy_old]
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_b]
     assert [item["id_calendar_class"] for item in body["classes"]] == [
-        old_class["id_calendar_class"]
+        class_b["id_calendar_class"]
     ]
     assert [item["id_activity"] for item in body["activities"]] == [
-        old_activity["id_activity"]
+        activity_b["id_activity"]
     ]
-    assert new_class["id_calendar_class"] not in {
+    assert class_a["id_calendar_class"] not in {
         item["id_calendar_class"] for item in body["classes"]
     }
-    assert new_activity["id_activity"] not in {
+    assert activity_a["id_activity"] not in {
         item["id_activity"] for item in body["activities"]
     }

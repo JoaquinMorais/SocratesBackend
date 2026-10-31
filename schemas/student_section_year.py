@@ -19,6 +19,7 @@ class StudentSectionYearUpdate(SQLModel):
 class StudentSectionYearPublic(SQLModel):
     id_student_section_year: int
     id_student: int
+    state: str
     student_first_name: str
     student_last_name: str
     student_legajo: int

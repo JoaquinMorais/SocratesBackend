@@ -18,5 +18,7 @@ class SectionYear(SQLModel, table=True):
     id_section: int = Field(foreign_key="sections.id_section", index=True)
     min_students: int
     max_students: int
+    # Habilita reintentar un curso lectivo cuya cursada quedó `finished_failed`.
+    allow_project_joins: bool = Field(default=False)
 
     section: Section = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

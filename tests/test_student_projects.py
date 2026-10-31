@@ -3,8 +3,8 @@ from datetime import date, datetime, timezone
 from sqlmodel import select
 
 from config.database import SessionLocal
-from models import Project, Student, StudentProject, User
-from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN
+from models import Project, Student, StudentProject, StudentSectionYear, User
+from tests.helpers import PASSWORD, STUDENT, SUPER_ADMIN, create_cursada
 from utils.statuses import get_status
 
 LUIS = "100002@sistemas.frc.utn.edu.ar"
@@ -821,3 +821,234 @@ async def test_list_filter_and_pagination(client, login):
     assert len(page["items"]) == 1 and page["total"] == 2
     assert (await _members(client, ana, project["id_project"], limit=0)).status_code == 422
     assert pending["status"]["code"] == "pending_approval"
+
+
+# ---------- cursadas automáticas ----------
+async def _cursada(id_student: int, id_section_year: int):
+    async with SessionLocal() as s:
+        return (
+            await s.exec(
+                select(StudentSectionYear).where(
+                    StudentSectionYear.id_student == id_student,
+                    StudentSectionYear.id_section_year == id_section_year,
+                    StudentSectionYear.state != "registered",
+                )
+            )
+        ).first()
+
+
+async def test_join_creates_attending(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+
+    r = await _join(client, await login(STUDENT), project["id_project"])
+    assert r.status_code == 201, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None
+    assert (row.state, row.year) == ("attending", 2025)
+
+
+async def test_join_rejects_project_of_another_year(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await _section_year(client, admin, "3K1", 2025)
+    sy_2026 = await _section_year(client, admin, "3K2", 2026)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy_2025},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    project = await _create(client, admin, sy_2026)
+
+    r = await _join(client, await login(STUDENT), project["id_project"])
+    assert r.status_code == 409
+    assert "year" in r.json()["detail"]
+
+
+async def test_pending_request_does_not_create_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    assert (await _join(client, await login(LUIS), project["id_project"])).status_code == 201
+
+    r = await _join(client, await login(STUDENT), project["id_project"])
+    assert r.status_code == 201, r.text
+    assert r.json()["status"]["code"] == "pending_approval"
+    assert await _cursada(ANA_ID, sy) is None
+
+
+async def test_accepting_request_creates_attending(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    luis = await login(LUIS)
+    await _join(client, luis, project["id_project"])
+    await _join(client, await login(STUDENT), project["id_project"])
+    membership = await _find_membership(project["id_project"], ANA_ID)
+
+    r = await _decide(client, luis, project["id_project"], membership, "active")
+    assert r.status_code == 200, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "attending"
+
+
+async def test_add_member_creates_attending(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    r = await _add(client, admin, project["id_project"], ANA_ID)
+    assert r.status_code == 201, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "attending"
+
+
+async def test_abandon_and_rejoin_reactivates_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    first = await _create(client, admin, sy)
+    ana = await login(STUDENT)
+    await _join(client, ana, first["id_project"])
+    membership = await _find_membership(first["id_project"], ANA_ID)
+    assert (
+        await _abandon(client, ana, first["id_project"], membership)
+    ).status_code == 204
+    assert (await _cursada(ANA_ID, sy)).state == "abandoned"
+
+    second = await _create(client, admin, sy)
+    assert (await _join(client, ana, second["id_project"])).status_code == 201
+    row = await _cursada(ANA_ID, sy)
+    assert row.state == "attending"
+    async with SessionLocal() as s:
+        count = len(
+            (
+                await s.exec(
+                    select(StudentSectionYear).where(
+                        StudentSectionYear.id_student == ANA_ID,
+                        StudentSectionYear.id_section_year == sy,
+                        StudentSectionYear.state != "registered",
+                    )
+                )
+            ).all()
+        )
+    assert count == 1
+
+
+async def test_changing_section_year_abandons_previous_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_a = await _section_year(client, admin, "3K1", 2025)
+    sy_b = await _section_year(client, admin, "3K2", 2025)
+    first = await _create(client, admin, sy_a)
+    ana = await login(STUDENT)
+    await _join(client, ana, first["id_project"])
+    membership = await _find_membership(first["id_project"], ANA_ID)
+    await _abandon(client, ana, first["id_project"], membership)
+
+    second = await _create(client, admin, sy_b)
+    assert (await _join(client, ana, second["id_project"])).status_code == 201
+    assert (await _cursada(ANA_ID, sy_a)).state == "abandoned"
+    row = await _cursada(ANA_ID, sy_b)
+    assert row is not None and row.state == "attending"
+
+
+async def test_expel_abandons_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _join(client, await login(STUDENT), project["id_project"])
+    membership = await _find_membership(project["id_project"], ANA_ID)
+
+    r = await _expel(client, admin, project["id_project"], membership)
+    assert r.status_code == 204, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "abandoned"
+
+
+# ---------- año actual y reintentos ----------
+async def test_join_uses_attending_year_over_newer_registration(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await _section_year(client, admin, "3K1", 2025)
+    sy_2026 = await _section_year(client, admin, "3K2", 2026)
+    await create_cursada(ANA_ID, sy_2025)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy_2026},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    project = await _create(client, admin, sy_2025)
+
+    r = await _join(client, await login(STUDENT), project["id_project"])
+    assert r.status_code == 201, r.text
+
+
+async def test_join_ignores_newer_abandoned_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await _section_year(client, admin, "3K1", 2025)
+    sy_2026 = await _section_year(client, admin, "3K2", 2026)
+    await create_cursada(ANA_ID, sy_2025)
+    await create_cursada(ANA_ID, sy_2026, state="abandoned")
+    project = await _create(client, admin, sy_2025)
+
+    r = await _join(client, await login(STUDENT), project["id_project"])
+    assert r.status_code == 201, r.text
+
+
+async def test_finished_failed_rejoin_blocked_by_default(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    first = await _create(client, admin, sy)
+    ana = await login(STUDENT)
+    await _join(client, ana, first["id_project"])
+    assert (
+        await client.post(f"{URL}/{first['id_project']}/cancel", headers=admin)
+    ).status_code == 200
+
+    second = await _create(client, admin, sy)
+    r = await _join(client, ana, second["id_project"])
+    assert r.status_code == 409
+    assert "finished" in r.json()["detail"]
+
+
+async def test_finished_failed_rejoin_allowed_with_flag(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    first = await _create(client, admin, sy)
+    ana = await login(STUDENT)
+    await _join(client, ana, first["id_project"])
+    assert (
+        await client.post(f"{URL}/{first['id_project']}/cancel", headers=admin)
+    ).status_code == 200
+
+    r = await client.patch(
+        f"/section-years/{sy}/settings",
+        json={"allow_project_joins": True},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    second = await _create(client, admin, sy)
+    r = await _join(client, ana, second["id_project"])
+    assert r.status_code == 201, r.text
+    row = await _cursada(ANA_ID, sy)
+    assert row is not None and row.state == "attending"
+
+
+async def test_finished_approved_rejoin_blocked_even_with_flag(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    first = await _create(client, admin, sy)
+    await _join(client, await login(STUDENT), first["id_project"])
+    await _set_status(first["id_project"], "pending_approval")
+    assert (
+        await client.post(f"{URL}/{first['id_project']}/approve", headers=admin)
+    ).status_code == 200
+
+    r = await client.patch(
+        f"/section-years/{sy}/settings",
+        json={"allow_project_joins": True},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    second = await _create(client, admin, sy)
+    r = await _join(client, await login(STUDENT), second["id_project"])
+    assert r.status_code == 409

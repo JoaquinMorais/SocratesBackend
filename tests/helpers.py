@@ -1,5 +1,11 @@
 import re
 
+from sqlmodel import select
+
+import config.database as database
+from models import SectionYear, StudentSectionYear
+from models.student_section_year import ATTENDING
+
 PASSWORD = "Test1234!"
 STUDENT = "100001@sistemas.frc.utn.edu.ar"
 SUPER_ADMIN = "marta.rodriguez@frc.utn.edu.ar"
@@ -58,3 +64,38 @@ async def assign_professor(
         headers=admin_headers,
     )
     assert r.status_code == 201, r.text
+
+
+async def create_cursada(
+    id_student: int, id_section_year: int, state: str = ATTENDING
+) -> StudentSectionYear:
+    """Prepara una cursada directo en la BD (atajo de tests, sin pasar por grupos)."""
+    async with database.SessionLocal() as session:
+        existing = (
+            await session.exec(
+                select(StudentSectionYear).where(
+                    StudentSectionYear.id_student == id_student,
+                    StudentSectionYear.id_section_year == id_section_year,
+                    StudentSectionYear.state != "registered",
+                )
+            )
+        ).first()
+        if existing is not None:
+            if existing.state != state:
+                existing.state = state
+                session.add(existing)
+                await session.commit()
+                await session.refresh(existing)
+            return existing
+
+        sy = await session.get(SectionYear, id_section_year)
+        row = StudentSectionYear(
+            id_student=id_student,
+            id_section_year=id_section_year,
+            year=sy.year,
+            state=state,
+        )
+        session.add(row)
+        await session.commit()
+        await session.refresh(row)
+        return row

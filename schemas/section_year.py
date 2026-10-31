@@ -9,6 +9,7 @@ class SectionYearCreate(SQLModel):
     id_section: int = Field(gt=0)
     min_students: int = Field(ge=1, le=100)
     max_students: int = Field(ge=1, le=100)
+    allow_project_joins: bool = False
 
 
 class SectionYearUpdate(SQLModel):
@@ -18,6 +19,7 @@ class SectionYearUpdate(SQLModel):
     id_section: int | None = Field(default=None, gt=0)
     min_students: int | None = Field(default=None, ge=1, le=100)
     max_students: int | None = Field(default=None, ge=1, le=100)
+    allow_project_joins: bool | None = None
 
 
 class SectionYearPublic(SQLModel):
@@ -27,6 +29,7 @@ class SectionYearPublic(SQLModel):
     section_name: str
     min_students: int
     max_students: int
+    allow_project_joins: bool
 
 
 class SectionYearList(SQLModel):
@@ -34,3 +37,8 @@ class SectionYearList(SQLModel):
     total: int
     limit: int
     offset: int
+
+class SectionYearSettingsUpdate(SQLModel):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_project_joins: bool

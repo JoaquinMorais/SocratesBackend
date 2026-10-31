@@ -4,6 +4,8 @@ from fastapi import APIRouter, File, Query, UploadFile, status
 
 from config.database import db_dependency
 from schemas.attendance import (
+    AttendanceBulkCreate,
+    AttendanceBulkResult,
     AttendanceCheckIn,
     AttendancePublic,
     AttendanceSessionOpenedPublic,
@@ -22,6 +24,7 @@ from utils.attendance import (
     close_attendance,
     list_attendance,
     mark_manual,
+    mark_manual_bulk,
     open_attendance,
     unmark_manual,
 )
@@ -104,7 +107,7 @@ async def close_attendance_route(
         401: {"description": "Token ausente, inválido o vencido"},
         403: {
             "description": (
-                "El usuario no es alumno, o no tiene cursada en ese curso lectivo"
+                "El usuario no es alumno, o no tiene una cursada `attending` en ese curso lectivo"
             )
         },
         404: {"description": "No existe la clase"},
@@ -122,7 +125,8 @@ async def check_in_route(
     El **alumno logueado** marca su asistencia a una clase con el código que dio
     el profesor.
 
-    - Requiere tener **cursada** en el curso lectivo de la clase.
+    - Requiere tener una cursada **`attending`** en el curso lectivo de la clase.
+      Una inscripción `registered` o una cursada `finished_*` no alcanza.
     - La toma debe estar abierta y el código vigente (**409** si está cerrada o
       vencida; **422** si el código no es válido).
     - Es **idempotente**: si ya estaba marcado, devuelve la asistencia existente.
@@ -145,13 +149,63 @@ async def get_attendance(
     """
     Lista la asistencia de una clase. **Profesor del curso lectivo o super admin.**
 
-    Devuelve **todos los alumnos con cursada en el curso lectivo**, con
-    `present` (los no marcados vienen en `false`), el método (`code` o `manual`)
-    y la hora de la marca. Incluye el estado de la sesión (abierta/cerrada y
-    vencimiento), **sin exponer el código**. Orden: apellido y nombre.
+    Devuelve los alumnos con cursada **`attending`** o **`finished_*`** en el
+    curso lectivo, con su `state`, `present` (los no marcados vienen en `false`),
+    el método (`code`, `manual` o `transcript`) y la hora de la marca. Las
+    inscripciones `registered` y las cursadas `abandoned` no aparecen. Incluye
+    el estado de la sesión (abierta/cerrada y vencimiento), **sin exponer el
+    código**. Orden: apellido y nombre.
     """
     return await list_attendance(
         db, await build_access(db, user), id_calendar_class
+    )
+
+
+@attendance_router.post(
+    "/{id_calendar_class}/attendance/bulk",
+    response_model=AttendanceBulkResult,
+    summary="Marcar la asistencia de varios alumnos a mano",
+    responses={
+        **_WRITE_ERRORS,
+        409: {
+            "description": (
+                "La asistencia cambió mientras se guardaba; reintentar la operación"
+            )
+        },
+        422: {
+            "description": (
+                "Lista vacía, más de 200 alumnos, IDs inválidos o alumnos "
+                "inexistentes/no cursando (`attending`) en el curso lectivo. "
+                "`detail` lista `[{row, id_student, detail}]`"
+            )
+        },
+    },
+)
+async def mark_manual_bulk_route(
+    id_calendar_class: int,
+    data: AttendanceBulkCreate,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+):
+    """
+    Marca presentes a **varios alumnos a mano**. **Profesor del curso lectivo o
+    super admin.**
+
+    - Recibe `id_students` (1 a 200). El backend resuelve la cursada
+      **`attending`** de cada alumno en el curso lectivo de la clase; no recibe
+      el proyecto, el frontend arma la selección.
+    - Es **todo o nada**: si algún alumno no existe o no tiene una cursada
+      `attending` en ese curso lectivo, responde 422 con
+      `{row, id_student, detail}` y no marca a ninguno.
+    - Los IDs repetidos se deduplican; `requested` cuenta los alumnos únicos.
+    - Es **idempotente**: los que ya estaban presentes se reportan en
+      `already_present` y conservan su `method` original (`code`, `manual` o
+      `transcript`).
+    - Funciona con la toma de asistencia abierta o cerrada.
+    """
+    return await mark_manual_bulk(
+        db, await build_access(db, user), id_calendar_class, data.id_students
     )
 
 
@@ -162,7 +216,12 @@ async def get_attendance(
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe la clase o la cursada"},
-        422: {"description": "La cursada no pertenece al curso lectivo de la clase"},
+        422: {
+            "description": (
+                "La cursada no pertenece al curso lectivo de la clase o no está "
+                "en estado `attending`"
+            )
+        },
     },
 )
 async def mark_manual_route(
@@ -176,7 +235,8 @@ async def mark_manual_route(
     Marca presente a un alumno a mano. **Profesor del curso lectivo o super
     admin.**
 
-    - La cursada debe pertenecer al mismo curso lectivo que la clase (**422**).
+    - La cursada debe pertenecer al mismo curso lectivo que la clase y estar en
+      estado **`attending`** (**422** si no).
     - Funciona aunque la toma esté cerrada y es **idempotente**.
     """
     return await mark_manual(
@@ -269,6 +329,7 @@ async def import_transcript_file_route(
       asistencias, repetir con `?dry_run=false`.
     - Los asistentes se marcan con `method: "transcript"`; una asistencia
       existente (`code`/`manual`) no se pisa y se reporta `already_present`.
+      Solo se consideran alumnos con cursada `attending` en ese curso lectivo.
     - El archivo no se guarda. Límite `ATTENDANCE_TRANSCRIPT_MAX_BYTES` (2 MB).
     - Funciona para cualquier modalidad de clase.
     """

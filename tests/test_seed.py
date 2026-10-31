@@ -47,10 +47,17 @@ async def test_seed_loads_expected_counts():
     assert await _count(ProfessorSectionYear) == 21
     assert await _count(Project) == 14
     assert await _count(StudentProject) == 22
-    assert await _count(StudentSectionYear) == 32
+    assert await _count(StudentSectionYear) == 41
     assert await _count(Calendar) == 7
     assert await _count(CalendarClass) == 548
     assert await _count(Activity) == 14
+
+
+async def test_seed_section_years_disallow_project_joins_by_default():
+    await _load_full_seed()
+    async with SessionLocal() as session:
+        section_years = (await session.exec(select(SectionYear))).all()
+    assert all(sy.allow_project_joins is False for sy in section_years)
 
 
 async def test_seed_group_size_ranges():
@@ -219,28 +226,43 @@ async def test_seed_student_section_years_are_consistent():
     await _load_full_seed()
     async with SessionLocal() as session:
         rows = (await session.exec(select(StudentSectionYear))).all()
-        pairs = [(r.id_student, r.id_section_year) for r in rows]
-        assert len(pairs) == len(set(pairs)), "hay cursadas repetidas"
-        per_year = [(r.id_student, r.year) for r in rows]
-        assert len(per_year) == len(set(per_year)), "hay un alumno con dos cursadas del mismo año"
+
+        registrations = [r for r in rows if r.state == "registered"]
+        registrations_per_year = [(r.id_student, r.year) for r in registrations]
+        assert len(registrations_per_year) == len(set(registrations_per_year)), (
+            "hay un alumno con dos inscripciones del mismo año"
+        )
+
+        cursadas = [r for r in rows if r.state != "registered"]
+        cursadas_per_section = [(r.id_student, r.id_section_year) for r in cursadas]
+        assert len(cursadas_per_section) == len(set(cursadas_per_section)), (
+            "hay cursadas repetidas"
+        )
+        attending = [r for r in rows if r.state == "attending"]
+        assert len({r.id_student for r in attending}) == len(attending), (
+            "hay un alumno con dos cursadas actuales"
+        )
 
         student_ids = set((await session.exec(select(Student.id_student))).all())
         section_year_ids = set(
             (await session.exec(select(SectionYear.id_section_year))).all()
         )
         assert all(
-            s in student_ids and sy in section_year_ids for s, sy in pairs
-        ), "alguna cursada apunta a un alumno o curso lectivo inexistente"
+            r.id_student in student_ids and r.id_section_year in section_year_ids
+            for r in rows
+        ), "alguna fila apunta a un alumno o curso lectivo inexistente"
 
-        # todo alumno con grupo está inscripto en el curso lectivo de ese proyecto
+        # las membresías que no son solicitudes tienen su cursada en ese proyecto
         memberships = (
             await session.exec(
-                select(StudentProject.id_student, Project.id_section_year).join(
-                    Project, Project.id_project == StudentProject.id_project
-                )
+                select(StudentProject.id_student, Project.id_section_year)
+                .join(Project, Project.id_project == StudentProject.id_project)
+                .join(Status, Status.id_status == StudentProject.id_status)
+                .where(Status.code.notin_(("pending_approval", "rejected")))
             )
         ).all()
-        assert all((s, sy) in set(pairs) for s, sy in memberships)
+        pairs = {(r.id_student, r.id_section_year) for r in cursadas}
+        assert all((s, sy) in pairs for s, sy in memberships)
 
 
 async def test_seed_students_may_have_several_section_years():

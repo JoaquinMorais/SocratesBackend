@@ -76,7 +76,7 @@ class Cancelled(ProjectState):
 
     @classmethod
     async def on_enter(cls, effector, project, previous) -> None:
-        await effector.abandon_memberships(project)
+        await effector.cancel_memberships(project)
 
 
 PROJECT_CATALOG = (

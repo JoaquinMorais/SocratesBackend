@@ -12,7 +12,6 @@ from models import (
     SectionYear,
     Status,
     StudentProject,
-    StudentSectionYear,
     User,
 )
 from schemas.project import (
@@ -36,6 +35,7 @@ from models.state.state_student_project import PendingApprovalMember, RejectedMe
 from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
 from utils.state import ProjectEffector, apply_transition
+from utils.student_section_years import student_current_row
 from utils.statuses import get_status
 from utils.statuses import to_public as status_public
 
@@ -499,11 +499,12 @@ async def list_projects(
     return list(items), total
 
 async def current_section_years(db, user: User, access: Access) -> list[SectionYear]:
-    """Los cursos lectivos "actuales" del usuario: los del año máximo.
+    """Los cursos lectivos "actuales" del usuario: los de su año actual.
 
     - Profesor: sus cursos asignados; puede haber varias comisiones del mismo año.
-    - Alumno: el curso de sus cursadas y, si no tiene ninguna, el de su grupo
-      actual (membresía `active`/`finished`).
+    - Alumno: su cursada `attending`; si no tiene, la última `finished_*`; si no,
+      la última inscripción `registered`. Si no tiene filas, usa el curso lectivo
+      de su grupo actual (membresía `active`/`finished`).
     - Sin cursos (incluido un super admin que no dicta) devuelve `[]`.
 
     Orden: comisión (nombre) y luego id.
@@ -512,16 +513,11 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     if user.professor:
         ids = set(access.section_year_ids)
     elif user.student:
-        cursadas = (
-            await db.exec(
-                select(StudentSectionYear.id_section_year).where(
-                    StudentSectionYear.id_student == user.id_user
-                )
-            )
-        ).all()
-        ids = set(cursadas)
-        if not ids and access.project_ids:
-            # Sin cursadas, se usa el curso lectivo de su grupo actual.
+        current = await student_current_row(db, user.id_user)
+        if current is not None:
+            ids = {current.id_section_year}
+        elif access.project_ids:
+            # Sin filas propias, se usa el curso lectivo de su grupo actual.
             fallback = (
                 await db.exec(
                     select(Project.id_section_year).where(

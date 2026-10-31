@@ -1,6 +1,6 @@
 from sqlmodel import select
 
-from models import Status, StudentProject
+from models import Status, StudentProject, StudentSectionYear
 from models.state import PROJECT_INSURED
 from models.state.state_student_project import (
     Abandoned,
@@ -8,6 +8,11 @@ from models.state.state_student_project import (
     Finished,
     PendingApprovalMember,
     RejectedMember,
+)
+from models.student_section_year import (
+    ATTENDING,
+    FINISHED_APPROVED,
+    FINISHED_FAILED,
 )
 from utils.statuses import get_status
 
@@ -25,12 +30,14 @@ class ProjectEffector:
             self.db.add(project)
 
     async def finish_memberships(self, project) -> None:
-        await self._close_memberships(project, Finished.code)
+        await self._close_memberships(project, Finished.code, FINISHED_APPROVED)
 
-    async def abandon_memberships(self, project) -> None:
-        await self._close_memberships(project, Abandoned.code)
+    async def cancel_memberships(self, project) -> None:
+        await self._close_memberships(project, Abandoned.code, FINISHED_FAILED)
 
-    async def _close_memberships(self, project, active_code: str) -> None:
+    async def _close_memberships(
+        self, project, active_code: str, cursada_state: str
+    ) -> None:
         rows = (
             await self.db.exec(
                 select(StudentProject)
@@ -47,6 +54,11 @@ class ProjectEffector:
 
         rejected = await get_status(self.db, "student_project", RejectedMember.code)
         target = await get_status(self.db, "student_project", active_code)
+        active_students = [
+            membership.id_student
+            for membership in rows
+            if membership.status.code == Active.code
+        ]
         for membership in rows:
             if membership.status.code == PendingApprovalMember.code:
                 membership.status = rejected
@@ -54,3 +66,18 @@ class ProjectEffector:
             else:
                 membership.status = target
             self.db.add(membership)
+
+        if active_students:
+            cursadas = (
+                await self.db.exec(
+                    select(StudentSectionYear).where(
+                        StudentSectionYear.id_student.in_(active_students),
+                        StudentSectionYear.id_section_year
+                        == project.id_section_year,
+                        StudentSectionYear.state == ATTENDING,
+                    )
+                )
+            ).all()
+            for cursada in cursadas:
+                cursada.state = cursada_state
+                self.db.add(cursada)

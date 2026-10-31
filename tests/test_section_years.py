@@ -1,4 +1,4 @@
-from tests.helpers import STUDENT, SUPER_ADMIN
+from tests.helpers import STUDENT, SUPER_ADMIN, assign_professor
 
 READ = [
     ("GET", "/section-years", None),
@@ -7,6 +7,7 @@ READ = [
 WRITE = [
     ("POST", "/section-years", {"year": 2025, "id_section": 1, "min_students": 1, "max_students": 10}),
     ("PATCH", "/section-years/1", {"year": 2024}),
+    ("PATCH", "/section-years/1/settings", {"allow_project_joins": True}),
     ("DELETE", "/section-years/1", None),
 ]
 ENDPOINTS = READ + WRITE
@@ -305,6 +306,68 @@ async def test_patch_invalid_rejected(client, login):
         assert r.status_code == 422, body
 
 
+# ---------- configuración ----------
+async def test_allow_project_joins_defaults_to_false(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    assert created["allow_project_joins"] is False
+    got = await client.get(f"/section-years/{created['id_section_year']}", headers=admin)
+    assert got.json()["allow_project_joins"] is False
+
+
+async def test_settings_permissions(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}/settings"
+
+    assert (
+        await client.patch(url, json={"allow_project_joins": True})
+    ).status_code == 401
+    assert (
+        await client.patch(
+            url, json={"allow_project_joins": True}, headers=await login(STUDENT)
+        )
+    ).status_code == 403
+
+    other = await make_professor("prof-settings-otro@frc.utn.edu.ar")
+    assert (
+        await client.patch(
+            url, json={"allow_project_joins": True}, headers=await login(other)
+        )
+    ).status_code == 403
+
+    assigned = await make_professor("prof-settings@frc.utn.edu.ar", legajo=300003)
+    await assign_professor(
+        client, admin, assigned, created["id_section_year"]
+    )
+    headers = await login(assigned)
+    r = await client.patch(url, json={"allow_project_joins": True}, headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["allow_project_joins"] is True
+
+    r = await client.patch(
+        url, json={"allow_project_joins": False}, headers=admin
+    )
+    assert r.status_code == 200 and r.json()["allow_project_joins"] is False
+
+
+async def test_patch_settings_invalid_body(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}/settings"
+    for body in ({}, {"allow_project_joins": "not-a-bool"}, {"allow_project_joins": True, "extra": 1}):
+        r = await client.patch(url, json=body, headers=admin)
+        assert r.status_code == 422, body
+
+
+async def test_super_admin_can_set_flag_with_general_patch(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}"
+    r = await client.patch(url, json={"allow_project_joins": True}, headers=admin)
+    assert r.status_code == 200 and r.json()["allow_project_joins"] is True
+
+
 # ---------- eliminar ----------
 async def test_delete_section_year(client, login):
     headers = await login(SUPER_ADMIN)
@@ -337,7 +400,7 @@ async def test_deleted_combination_can_be_reused(client, login):
     await client.delete(f"/section-years/{created['id_section_year']}", headers=headers)
     await _create(client, headers, id_section, 2025)
 
-async def test_delete_with_student_enrollments_rejected(client, login):
+async def test_delete_with_student_registrations_rejected(client, login):
     headers = await login(SUPER_ADMIN)
     id_section = await _section(client, headers, "3K1")
     sy = await _create(client, headers, id_section, 2025)
@@ -349,7 +412,7 @@ async def test_delete_with_student_enrollments_rejected(client, login):
     assert r.status_code == 201, r.text
     url = f"/section-years/{sy['id_section_year']}"
     assert (await client.delete(url, headers=headers)).status_code == 409
-    # tras quitar la cursada, se puede eliminar
+    # tras quitar la inscripción, se puede eliminar
     assert (
         await client.delete(f"/student-section-years/{r.json()['id_student_section_year']}", headers=headers)
     ).status_code == 204
@@ -366,7 +429,7 @@ async def _enroll(client, headers, id_student: int, id_section_year: int) -> dic
     return r.json()
 
 
-async def test_patch_year_conflict_with_student_cursadas(client, login):
+async def test_patch_year_conflict_with_student_registrations(client, login):
     headers = await login(SUPER_ADMIN)
     sy_2026 = await _create(client, headers, await _section(client, headers, "3K1"), 2026)
     sy_2025 = await _create(client, headers, await _section(client, headers, "3K2"), 2025)
@@ -379,7 +442,7 @@ async def test_patch_year_conflict_with_student_cursadas(client, login):
     assert "students" in r.json()["detail"]
 
 
-async def test_patch_year_moves_student_cursadas(client, login):
+async def test_patch_year_moves_student_registrations(client, login):
     headers = await login(SUPER_ADMIN)
     sy_a = await _create(client, headers, await _section(client, headers, "3K1"), 2026)
     sy_b = await _create(client, headers, await _section(client, headers, "3K3"), 2025)
@@ -389,7 +452,7 @@ async def test_patch_year_moves_student_cursadas(client, login):
         f"/section-years/{sy_a['id_section_year']}", json={"year": 2025}, headers=headers
     )
     assert r.status_code == 200, r.text
-    # la copia del año se movió: ya no puede cursar otro curso de 2025...
+    # la copia del año se movió: ya no puede inscribirse en otro curso de 2025...
     r = await client.post(
         "/student-section-years",
         json={"id_student": 2, "id_section_year": sy_b["id_section_year"]},

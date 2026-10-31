@@ -21,6 +21,7 @@ from schemas.student_project import StudentProjectMemberPublic, StudentProjectPu
 from utils.professor_section_years import list_section_year_professors
 from utils.projects import get_project, is_uninsured, to_public as project_public
 from utils.state import MembershipEffector, apply_transition
+from utils.student_section_years import validate_project_year
 from utils.statuses import get_status, membership_initial_status
 from utils.statuses import to_public as status_public
 
@@ -94,6 +95,7 @@ async def join_project(
     project = await get_project(db, id_project)
     if not is_uninsured(project):  # solo se puede entrar mientras se forma
         raise _conflict("Only an uninsured project can be joined")
+    await validate_project_year(db, id_student, project.section_year.year)
 
     existing = (
         await db.exec(
@@ -122,12 +124,15 @@ async def join_project(
     has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
     code = membership_initial_status(has_leader)
 
+    effector = MembershipEffector(db)
     if code == Active.code:
-        await MembershipEffector(db).reject_other_pending(membership)
+        await effector.reject_other_pending(membership)
 
     membership.is_leader = code == Active.code
     membership.status = await get_status(db, "student_project", code)
     db.add(membership)
+    if code == Active.code:
+        await effector.enter_cursada(membership)
     try:
         await db.commit()
     except IntegrityError:  # dos uniones simultáneas (par único o jefe único)
@@ -152,6 +157,7 @@ async def add_member(
         )
     if not is_uninsured(project):
         raise _conflict("Only an uninsured project allows members to be added")
+    await validate_project_year(db, id_student, project.section_year.year)
 
     student = await db.get(Student, id_student)
     if not student:
@@ -184,11 +190,13 @@ async def add_member(
 
     has_leader = await _leader_exists(db, id_project, exclude_id=membership.id_student_project)
 
-    await MembershipEffector(db).reject_other_pending(membership)
+    effector = MembershipEffector(db)
+    await effector.reject_other_pending(membership)
 
     membership.is_leader = not has_leader
     membership.status = await get_status(db, "student_project", Active.code)
     db.add(membership)
+    await effector.enter_cursada(membership)
     try:
         await db.commit()
     except IntegrityError:  # dos altas simultáneas
@@ -201,7 +209,7 @@ async def decide_membership(
     db, id_user: int, id_project: int, id_student_project: int, target: str
 ) -> StudentProjectPublic:
     """El jefe acepta (`active`) o rechaza (`rejected`) una solicitud."""
-    await get_project(db, id_project)  # 404 si el proyecto no existe
+    project = await get_project(db, id_project)  # 404 si el proyecto no existe
     membership = await _get_membership(db, id_project, id_student_project)
 
     leader = (
@@ -221,6 +229,9 @@ async def decide_membership(
             db, membership.id_student, exclude_id=membership.id_student_project
         ):
             raise _conflict("This student already belongs to another project")
+        await validate_project_year(
+            db, membership.id_student, project.section_year.year
+        )
 
     await apply_transition(db, membership, target, effector=MembershipEffector(db))
     await db.commit()
