@@ -188,6 +188,7 @@ async def test_create_activity(client, login):
     assert created["description"] == "Documento con el avance."
     assert created["due_date"] == "2026-05-15"
     assert created["due_time"] == "23:59:00"
+    assert created["link_required"] is False
     assert set(created) == {
         "id_activity",
         "id_calendar",
@@ -196,6 +197,7 @@ async def test_create_activity(client, login):
         "description",
         "due_date",
         "due_time",
+        "link_required",
     }
 
 
@@ -204,6 +206,13 @@ async def test_create_without_optional_fields(client, login):
     sy = await _sy(client, admin)
     created = await _create(client, admin, sy, description=None, due_time=None)
     assert created["description"] is None and created["due_time"] is None
+
+
+async def test_create_with_link_required(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    created = await _create(client, admin, sy, link_required=True)
+    assert created["link_required"] is True
 
 
 async def test_create_validation(client, login):
@@ -290,6 +299,7 @@ async def test_patch_activity(client, login):
             "description": "Nueva descripción",
             "due_date": "2026-06-20",
             "due_time": "18:30",
+            "link_required": True,
         },
         headers=admin,
     )
@@ -299,6 +309,7 @@ async def test_patch_activity(client, login):
     assert body["description"] == "Nueva descripción"
     assert body["due_date"] == "2026-06-20"
     assert body["due_time"] == "18:30:00"
+    assert body["link_required"] is True
 
     r = await client.patch(url, json={"description": None, "due_time": None}, headers=admin)
     assert r.status_code == 200
@@ -307,6 +318,9 @@ async def test_patch_activity(client, login):
     assert (await client.patch(url, json={}, headers=admin)).status_code == 422
     assert (await client.patch(url, json={"title": None}, headers=admin)).status_code == 422
     assert (await client.patch(url, json={"title": "   "}, headers=admin)).status_code == 422
+    assert (
+        await client.patch(url, json={"link_required": None}, headers=admin)
+    ).status_code == 422
     assert (await client.patch(url, json={"otro": 1}, headers=admin)).status_code == 422
     assert (
         await client.patch(url, json={"due_date": "2027-01-01"}, headers=admin)

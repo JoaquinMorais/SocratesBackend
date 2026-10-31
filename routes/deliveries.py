@@ -11,12 +11,16 @@ from schemas.delivery import (
 )
 from utils.auth import user_dependency
 from utils.deliveries import (
+    approve_delivery,
     create_delivery,
     get_delivery,
     list_activity_deliveries,
     list_project_deliveries,
+    reject_delivery,
+    submit_delivery,
     to_public,
     update_delivery,
+    withdraw_delivery,
 )
 from utils.projects import build_access
 
@@ -119,6 +123,101 @@ async def update_delivery_route(
     """
     access = await build_access(db, user)
     return await update_delivery(db, access, id_delivery, data)
+
+
+async def _delivery_action(
+    db, user, id_delivery: int, action
+):
+    access = await build_access(db, user)
+    return await action(db, access, id_delivery)
+
+
+@deliveries_router.post(
+    "/deliveries/{id_delivery}/submit",
+    response_model=DeliveryPublic,
+    summary="Entregar una entrega de proyecto",
+    responses={
+        **_DELIVERY_ERRORS,
+        409: {
+            "description": (
+                "La entrega no está en `requested`/`pending_modification`, o la "
+                "actividad requiere link y no hay uno cargado"
+            )
+        },
+    },
+)
+async def submit_delivery_route(
+    id_delivery: int, db: db_dependency, user: user_dependency
+):
+    """
+    El grupo marca la entrega como terminada. **Integrantes `active`/`finished`
+    o staff del curso.**
+
+    - Solo desde `requested` o `pending_modification`; pasa a
+      `pending_approval`.
+    - Si `Activity.link_required` es `true`, debe existir un link (**409**).
+    - Mientras está `pending_approval`, los integrantes no pueden modificar la
+      entrega: deben usar `/withdraw` para volver a `requested`.
+    """
+    return await _delivery_action(db, user, id_delivery, submit_delivery)
+
+
+@deliveries_router.post(
+    "/deliveries/{id_delivery}/withdraw",
+    response_model=DeliveryPublic,
+    summary="Retirar una entrega para modificarla",
+    responses={
+        **_DELIVERY_ERRORS,
+        409: {"description": "La entrega no está `pending_approval`"},
+    },
+)
+async def withdraw_delivery_route(
+    id_delivery: int, db: db_dependency, user: user_dependency
+):
+    """
+    Vuelve una entrega de `pending_approval` a `requested` para que el grupo
+    pueda seguir modificándola. **Integrantes `active`/`finished` o staff.**
+    """
+    return await _delivery_action(db, user, id_delivery, withdraw_delivery)
+
+
+@deliveries_router.post(
+    "/deliveries/{id_delivery}/approve",
+    response_model=DeliveryPublic,
+    summary="Aprobar una entrega",
+    responses={
+        **_DELIVERY_ERRORS,
+        409: {"description": "La entrega no está `pending_approval`"},
+    },
+)
+async def approve_delivery_route(
+    id_delivery: int, db: db_dependency, user: user_dependency
+):
+    """
+    Aprueba una entrega en `pending_approval`. **Solo profesor del curso o
+    super admin.** Pasa a `approved` (final).
+    """
+    return await _delivery_action(db, user, id_delivery, approve_delivery)
+
+
+@deliveries_router.post(
+    "/deliveries/{id_delivery}/reject",
+    response_model=DeliveryPublic,
+    summary="Rechazar una entrega",
+    responses={
+        **_DELIVERY_ERRORS,
+        409: {"description": "La entrega no está `pending_approval`"},
+    },
+)
+async def reject_delivery_route(
+    id_delivery: int, db: db_dependency, user: user_dependency
+):
+    """
+    Rechaza una entrega en `pending_approval`. **Solo profesor del curso o
+    super admin.** Pasa a `pending_modification`; los comentarios se agregarán
+    más adelante.
+    """
+    return await _delivery_action(db, user, id_delivery, reject_delivery)
 
 
 @deliveries_router.post(

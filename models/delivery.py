@@ -5,6 +5,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from models.activity import Activity
 from models.project import Project
+from models.status import Status
 
 
 class Delivery(SQLModel, table=True):
@@ -40,6 +41,7 @@ class Delivery(SQLModel, table=True):
         index=True,
         ondelete="CASCADE",
     )
+    id_status: int = Field(foreign_key="statuses.id_status", index=True)
     link: str | None = Field(default=None, max_length=1000)
     activity_grade: int | None = Field(default=None)
     development_grade: int | None = Field(default=None)
@@ -50,5 +52,6 @@ class Delivery(SQLModel, table=True):
         default=None, sa_type=DateTime(timezone=True)
     )
 
+    status: Status = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     project: Project = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     activity: Activity = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

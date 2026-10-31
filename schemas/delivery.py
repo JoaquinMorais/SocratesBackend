@@ -6,6 +6,7 @@ from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.activity import ActivityPublic
+from schemas.status import StatusPublic
 
 
 def _validate_link(value: str | None) -> str | None:
@@ -66,6 +67,7 @@ class DeliveryPublic(SQLModel):
     id_section_year: int
     activity: ActivityPublic
     project: DeliveryProjectSummary
+    status: StatusPublic
     link: str | None = None
     activity_grade: int | None = None
     development_grade: int | None = None

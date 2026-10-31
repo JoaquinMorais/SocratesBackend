@@ -128,6 +128,8 @@ async def create_activity_route(
     - `due_date` es obligatoria y debe caer en el año del curso lectivo;
       `due_time` es opcional.
     - `description` es opcional.
+    - `link_required` (por defecto `false`) indica si los proyectos deben cargar
+      un link antes de entregar.
     """
     return await create_activity(
         db, await build_access(db, user), id_section_year, data
@@ -181,10 +183,11 @@ async def update_activity_route(
     Modifica una actividad. **Profesor del curso lectivo o super admin.**
 
     Se envían solo los campos que cambian: `title`, `description`, `due_date`,
-    `due_time`. Un body vacío responde 422.
+    `due_time` y `link_required`. Un body vacío responde 422.
 
     - `title` no admite `null`.
     - `description` y `due_time` se **limpian** enviando `null`.
+    - `link_required` no admite `null`.
     - La fecha debe seguir dentro del año del curso lectivo.
     """
     return await update_activity(

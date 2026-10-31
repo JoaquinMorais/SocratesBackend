@@ -1,12 +1,20 @@
 from datetime import datetime, time, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
 from models import Activity, Calendar, Delivery, Project
+from models.state.delivery import (
+    APPROVED,
+    PENDING_APPROVAL,
+    PENDING_MODIFICATION,
+    REQUESTED,
+)
 from schemas.activity import ActivityPublic
+from utils.state.delivery import apply_delivery_transition
+from utils.statuses import get_status, to_public as status_public
 from schemas.delivery import (
     DeliveryList,
     DeliveryProjectSummary,
@@ -68,11 +76,16 @@ def _now() -> datetime:
 
 async def ensure_deliveries_for_section_year(db, id_section_year: int) -> None:
     """Pre-crea las entregas de todas las combinaciones proyecto × actividad."""
+    initial_status = await get_status(db, "delivery", REQUESTED)
     statement = (
         insert(Delivery)
         .from_select(
-            ["id_project", "id_activity"],
-            select(Project.id_project, Activity.id_activity)
+            ["id_project", "id_activity", "id_status"],
+            select(
+                Project.id_project,
+                Activity.id_activity,
+                literal(initial_status.id_status),
+            )
             .select_from(Project)
             .join(Calendar, Calendar.id_section_year == Project.id_section_year)
             .join(Activity, Activity.id_calendar == Calendar.id_calendar)
@@ -127,6 +140,7 @@ def _activity_public(activity: Activity) -> ActivityPublic:
         description=activity.description,
         due_date=activity.due_date,
         due_time=activity.due_time,
+        link_required=activity.link_required,
     )
 
 
@@ -138,6 +152,7 @@ def to_public(delivery: Delivery) -> DeliveryPublic:
         id_activity=delivery.id_activity,
         id_section_year=delivery.activity.calendar.id_section_year,
         activity=_activity_public(delivery.activity),
+        status=status_public(delivery.status),
         project=DeliveryProjectSummary(
             id_project=project.id_project,
             group_number=project.group_number,
@@ -234,7 +249,10 @@ async def list_activity_deliveries(
 
 
 def _validate_update_permissions(
-    access, project: Project, data: DeliveryUpdate | DeliveryRepairCreate
+    access,
+    project: Project,
+    delivery: Delivery | None,
+    data: DeliveryUpdate | DeliveryRepairCreate,
 ) -> bool:
     staff = _is_staff(access, project)
     if not _can_edit(access, project):
@@ -247,6 +265,14 @@ def _validate_update_permissions(
         raise _grades_forbidden()
     if project.status.is_final:
         raise _final_for_student()
+    if delivery is not None and delivery.status.code not in (
+        REQUESTED,
+        PENDING_MODIFICATION,
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The delivery is pending approval and cannot be modified",
+        )
     return False
 
 
@@ -276,7 +302,7 @@ async def update_delivery(
     project = delivery.project
     if not data.model_fields_set:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update")
-    _validate_update_permissions(access, project, data)
+    _validate_update_permissions(access, project, delivery, data)
 
     _apply_values(delivery, data)
     db.add(delivery)
@@ -288,7 +314,7 @@ async def create_delivery(
     db, access, id_project: int, data: DeliveryRepairCreate
 ) -> DeliveryPublic:
     project = await _get_project(db, id_project)
-    _validate_update_permissions(access, project, data)
+    _validate_update_permissions(access, project, None, data)
     activity = await _get_activity(db, data.id_activity)
     if activity.calendar.id_section_year != project.id_section_year:
         raise _mismatch()
@@ -304,9 +330,11 @@ async def create_delivery(
     if existing is not None:
         raise _duplicate()
 
+    requested_status = await get_status(db, "delivery", REQUESTED)
     delivery = Delivery(
         id_project=id_project,
         id_activity=data.id_activity,
+        status=requested_status,
         project=project,
         activity=activity,
     )
@@ -317,6 +345,58 @@ async def create_delivery(
     except IntegrityError:
         await db.rollback()
         raise _duplicate()
+    return to_public(delivery)
+
+
+def _require_action_access(access, project: Project) -> bool:
+    if not _can_edit(access, project):
+        raise _forbidden()
+    staff = _is_staff(access, project)
+    if not staff and project.status.is_final:
+        raise _final_for_student()
+    return staff
+
+
+async def submit_delivery(db, access, id_delivery: int) -> DeliveryPublic:
+    delivery = await get_delivery(db, id_delivery)
+    _require_action_access(access, delivery.project)
+    if delivery.activity.link_required and not delivery.link:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The activity requires a link before submitting",
+        )
+    await apply_delivery_transition(db, delivery, PENDING_APPROVAL)
+    db.add(delivery)
+    await db.commit()
+    return to_public(delivery)
+
+
+async def withdraw_delivery(db, access, id_delivery: int) -> DeliveryPublic:
+    delivery = await get_delivery(db, id_delivery)
+    _require_action_access(access, delivery.project)
+    await apply_delivery_transition(db, delivery, REQUESTED)
+    db.add(delivery)
+    await db.commit()
+    return to_public(delivery)
+
+
+async def approve_delivery(db, access, id_delivery: int) -> DeliveryPublic:
+    delivery = await get_delivery(db, id_delivery)
+    if not _is_staff(access, delivery.project):
+        raise _forbidden()
+    await apply_delivery_transition(db, delivery, APPROVED)
+    db.add(delivery)
+    await db.commit()
+    return to_public(delivery)
+
+
+async def reject_delivery(db, access, id_delivery: int) -> DeliveryPublic:
+    delivery = await get_delivery(db, id_delivery)
+    if not _is_staff(access, delivery.project):
+        raise _forbidden()
+    await apply_delivery_transition(db, delivery, PENDING_MODIFICATION)
+    db.add(delivery)
+    await db.commit()
     return to_public(delivery)
 
 

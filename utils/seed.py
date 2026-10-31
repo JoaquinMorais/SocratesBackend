@@ -28,6 +28,12 @@ from models import (
     User,
 )
 from models.state import PROJECT_INITIAL
+from models.state.delivery import (
+    APPROVED as DELIVERY_APPROVED,
+    PENDING_APPROVAL as DELIVERY_PENDING_APPROVAL,
+    PENDING_MODIFICATION as DELIVERY_PENDING_MODIFICATION,
+    REQUESTED as DELIVERY_REQUESTED,
+)
 from models.state.state_project import Approved, Cancelled
 from models.state.state_student_project import (
     Abandoned,
@@ -157,6 +163,7 @@ async def _load_activities(
                 description=item.get("description"),
                 due_date=date.fromisoformat(item["due_date"]),
                 due_time=due_time,
+                link_required=item.get("link_required", False),
             )
         )
     await session.flush()
@@ -662,7 +669,9 @@ async def _load_attendance(
     await session.flush()
 
 
-async def _fill_seed_deliveries(session: AsyncSession) -> None:
+async def _fill_seed_deliveries(
+    session: AsyncSession, statuses: dict[tuple[str, str], Status]
+) -> None:
     """Completa una parte de las entregas pre-creadas para el seed de demo."""
     cutoff = date(2026, 10, 30)
     deliveries = (await session.exec(select(Delivery))).all()
@@ -682,9 +691,18 @@ async def _fill_seed_deliveries(session: AsyncSession) -> None:
         )
         delivery.submitted_at = submitted
         delivery.updated_at = submitted
-        if bucket < 55:
+        if bucket < 35:
+            delivery.status = statuses[("delivery", DELIVERY_APPROVED)]
             delivery.activity_grade = 60 + (bucket * 7) % 41
             delivery.development_grade = 60 + (bucket * 11) % 41
+        elif bucket < 55:
+            delivery.status = statuses[("delivery", DELIVERY_PENDING_APPROVAL)]
+        elif bucket < 68:
+            delivery.status = statuses[
+                ("delivery", DELIVERY_PENDING_MODIFICATION)
+            ]
+        else:
+            delivery.status = statuses[("delivery", DELIVERY_REQUESTED)]
         session.add(delivery)
 
 
@@ -727,7 +745,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     projects = await _load_projects(session, data, section_years, statuses)
     for sy in section_years.values():
         await ensure_deliveries_for_section_year(session, sy.id_section_year)
-    await _fill_seed_deliveries(session)
+    await _fill_seed_deliveries(session, statuses)
     await _load_project_technologies(session, data, projects, technologies)
     await _load_student_projects(session, data, students, projects, statuses)
     await _load_student_cursadas(session, statuses)

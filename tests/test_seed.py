@@ -166,6 +166,10 @@ async def test_seed_statuses_are_loaded():
         ("student_section_year", "abandoned"),
         ("student_section_year", "finished_approved"),
         ("student_section_year", "finished_failed"),
+        ("delivery", "requested"),
+        ("delivery", "pending_approval"),
+        ("delivery", "pending_modification"),
+        ("delivery", "approved"),
     }
     final = {(s.ambito, s.code) for s in statuses if s.is_final}
     assert final == {
@@ -176,6 +180,7 @@ async def test_seed_statuses_are_loaded():
         ("student_project", "expelled"),
         ("student_section_year", "registered"),
         ("student_section_year", "finished_approved"),
+        ("delivery", "approved"),
     }
 
 
@@ -373,6 +378,9 @@ async def test_seed_activities_are_consistent():
     assert all(activity.title.strip() for activity in activities)
     assert all(activity.id_calendar in calendar_by_id for activity in activities)
     assert {activity.id_calendar for activity in activities} == set(calendar_by_id)
+    assert all(isinstance(activity.link_required, bool) for activity in activities)
+    assert any(activity.link_required for activity in activities)
+    assert any(not activity.link_required for activity in activities)
 
 
 async def test_seed_deliveries_are_precreated():
@@ -402,6 +410,12 @@ async def test_seed_deliveries_are_precreated():
     assert any(delivery.link is not None for delivery in deliveries)
     assert any(delivery.link is None for delivery in deliveries)
     assert any(delivery.activity_grade is not None for delivery in deliveries)
+    assert {delivery.status.code for delivery in deliveries} == {
+        "requested",
+        "pending_approval",
+        "pending_modification",
+        "approved",
+    }
     section_year_ids = {sy.id_section_year for sy in section_years}
     assert all(project.id_section_year in section_year_ids for project in projects)
 

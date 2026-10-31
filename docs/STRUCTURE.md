@@ -88,6 +88,7 @@ socrates-backend/
 │   └── state/                    # Jerarquía de dominio de estados (sin tabla)
 │       ├── __init__.py
 │       ├── base.py
+│       ├── delivery.py
 │       ├── state_project.py
 │       ├── state_student_project.py
 │       └── student_section_year.py
@@ -150,6 +151,7 @@ socrates-backend/
 │   └── state/                    # Motor de transiciones y efectos por ámbito
 │       ├── __init__.py
 │       ├── base.py
+│       ├── delivery.py
 │       ├── state_project.py
 │       ├── state_student_project.py
 │       └── student_section_year.py
@@ -247,8 +249,8 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo y `allow_project_joins` para reintentar `finished_failed`. |
 | `calendar.py` | `calendars` | Calendario del curso lectivo (1 a 1): `id_section_year` único y zona horaria informativa. |
 | `calendar_class.py` | `calendar_classes` | Clase concreta del calendario: fecha, hora de inicio/fin, modalidad, aula y link; sin solapamientos. |
-| `activity.py` | `activities` | Actividad/entrega del curso lectivo: título, descripción, fecha y hora de entrega. |
-| `delivery.py` | `deliveries` | Entrega de un proyecto por actividad: link y dos notas opcionales, fechas de envío/modificación y par único proyecto + actividad. |
+| `activity.py` | `activities` | Actividad/entrega del curso lectivo: título, descripción, fecha y hora de entrega y `link_required`. |
+| `delivery.py` | `deliveries` | Entrega de un proyecto por actividad: link y dos notas opcionales, fechas de envío/modificación, estado canónico y par único proyecto + actividad. |
 | `attendance_session.py` | `attendance_sessions` | Toma de asistencia de una clase: código hasheado, apertura, vencimiento y cierre. |
 | `attendance.py` | `attendances` | Asistencia de un alumno (cursada) a una clase: método (`code`/`manual`/`transcript`) y fecha; solo presentes, con el par único. |
 | `student_section_year.py` | `student_section_years` | Inscripción (`registered`) y cursada (`attending`/`abandoned`/`finished_approved`/`finished_failed`) de un alumno en un curso lectivo; `id_status`/`status` es canónico y `state` un espejo para índices. Una inscripción por alumno y año, una cursada actual por alumno y una fila de cursada por comisión (índices parciales); `year` copiado del curso lectivo. |
@@ -259,10 +261,11 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `technology.py` | `technologies` | Tecnología del catálogo (nombre único sin distinguir mayúsculas, descripción opcional e imagen opcional 1 a 1 vía `id_image`). |
 | `image.py` | `images` | Archivo de imagen guardado en el almacenamiento (hoy local): `key`, nombre original saneado, content-type (siempre WebP), tamaño, checksum y fecha. |
 | `project_technology.py` | `project_technologies` | Vínculo proyecto–tecnología con clave compuesta `(id_project, id_technology)`: se borra con el proyecto (CASCADE) y no permite borrar una tecnología en uso (RESTRICT). |
-| `status.py` | `statuses` | Persistencia del catálogo de estados por ámbito (`project`, `student_project`, `student_section_year`), con `code`, `name`, `description` e `is_final`. |
+| `status.py` | `statuses` | Persistencia del catálogo de estados por ámbito (`project`, `student_project`, `student_section_year`, `delivery`), con `code`, `name`, `description` e `is_final`. |
 | `state/base.py` | — | Base `State`: metadatos, transiciones (`next_codes`), efecto `on_enter` y registro `(ambito, code) → clase`. |
 | `state/state_project.py` | — | `ProjectState` y sus estados (`Uninsured`, `InIdea`, `InProgress`, `PendingApprovalProject`, `RejectedProject`, `Approved`, `Cancelled`), con transiciones y efectos (incluye cerrar las cursadas al aprobar/cancelar). |
 | `state/student_section_year.py` | — | `StudentSectionYearState` y sus estados (`Registered`, `Attending`, `Abandoned`, `FinishedApproved`, `FinishedFailed`), con transiciones. |
+| `state/delivery.py` | — | `DeliveryState` y sus estados (`RequestedDelivery`, `PendingApprovalDelivery`, `PendingModificationDelivery`, `ApprovedDelivery`), con transiciones. |
 | `state/state_student_project.py` | — | `StudentProjectState` y sus estados (`Active`, `PendingApprovalMember`, `Abandoned`, `Finished`, `Expelled`, `RejectedMember`), con transiciones y efectos sobre la cursada. |
 | `token.py` | `refresh_tokens` | Refresh tokens vigentes, guardados hasheados. |
 | `email_verification.py` | `email_verifications` | Códigos de verificación por mail (OTP), hasheados. |
@@ -285,7 +288,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `calendars.py` | `/section-years/{id}/calendar`, `.../calendar/bulk` y `.../calendar-classes` | Calendario del curso lectivo (clases y actividades), carga masiva desde JSON, alta puntual y operaciones en lote sobre clases. |
 | `calendar_classes.py` | `/calendar-classes` | Consulta, edición y borrado de una clase concreta. |
 | `activities.py` | `/section-years/{id}/activities` y `/activities` | Actividades/entregas del curso lectivo: alta, listado, consulta, edición y baja. |
-| `deliveries.py` | `/projects/{id}/deliveries`, `/deliveries/{id}` y `/activities/{id}/deliveries` | Entregas pre-creadas por proyecto/actividad: listado, consulta, envío de link y notas (según rol) y reparación de filas faltantes. |
+| `deliveries.py` | `/projects/{id}/deliveries`, `/deliveries/{id}` y `/activities/{id}/deliveries` | Entregas pre-creadas por proyecto/actividad: listado, consulta, edición de link/notas, `submit`/`withdraw`/`approve`/`reject` y reparación de filas faltantes. |
 | `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase con porcentaje por alumno, hacer check-in con código e importar desde el chat/CSV. |
 | `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state`, `status` y porcentaje de asistencia; las cursadas son de solo lectura (409). |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
@@ -316,7 +319,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 
 | `calendar_classes.py` | Lógica de clases: CRUD puntual, alta en lote por patrón de días, modificación/borrado en lote por ids o filtro, choques y solapamientos (409). |
 | `activities.py` | Lógica de actividades: CRUD, validación de fecha dentro del año, listado con filtros y paginación. |
-| `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, envío de link, notas por rol, fechas y bloqueos de borrado. |
+| `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, edición de link/notas, transiciones de estado, fechas y bloqueos de borrado. |
 | `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno. |
 | `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo, contando solo clases con toma y respetando rangos. |
 | `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango y datos públicos del alumno. |
@@ -335,6 +338,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `statuses.py` | Lógica de estados: catálogo base derivado de la jerarquía (`DEFAULT_STATUSES`), búsqueda, listado, `to_public`, `membership_initial_status`, `is_member` e `is_insured`. |
 | `state/base.py` | Motor `apply_transition`: resuelve el estado actual, valida el destino y ejecuta el efecto de entrada; no hace commit. |
 | `state/student_section_year.py` | Transiciones de cursada: valida `next_codes`, maneja `allow_project_joins` y sincroniza `state` con `status.code`. |
+| `state/delivery.py` | Transiciones de entrega: `submit`, `withdraw`, `approve` y `reject`, sin efectos laterales. |
 | `state/state_project.py` | Efectos de proyecto (`ProjectEffector`): memoria del subestado al desasegurar y cierre de membresías/cursadas al aprobar (`finished_approved`) o cancelar (`finished_failed`). |
 | `state/state_student_project.py` | Efectos de membresía (`MembershipEffector`): rechazo de otras solicitudes pendientes, alta/reactivación de la cursada `attending`, cierre como `abandoned`/`finished_approved` y sucesión de jefe (`enrolled_at`). |
 
@@ -352,8 +356,8 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_years.py` | CRUD de cursos lectivos, cambio de año con inscripciones y configuración de `allow_project_joins`. |
 | `test_calendars.py` | Calendario y clases: permisos, calendario 1 a 1, alta puntual y en lote, validaciones, solapamientos, edición/borrado en lote, actividades y cascada. |
 | `test_calendar_bulk_load.py` | Carga masiva del calendario: permisos, clases/actividades, dry_run, límites, validaciones, solapamientos internos y contra existentes, y todo o nada. |
-| `test_activities.py` | Actividades: permisos, alta, validaciones, consulta con filtros/paginación, edición, baja y cascada. |
-| `test_deliveries.py` | Entregas: pre-creación, permisos, envío de link, notas, fechas, reparación y bloqueos de borrado. |
+| `test_activities.py` | Actividades: permisos, alta, `link_required`, validaciones, consulta con filtros/paginación, edición, baja y cascada. |
+| `test_deliveries.py` | Entregas: pre-creación, permisos, estados, submit/withdraw/approve/reject, notas, fechas, reparación y bloqueos de borrado. |
 | `test_attendance.py` | Asistencia: permisos, abrir/rotar/cerrar, check-in, código inválido/vencido, marcado solo `attending`, lista con `state` y porcentaje, historial y cascadas. |
 | `test_attendance_transcript.py` | Importación desde el chat: parseo, tolerancia de nombres, preview/confirmación, CSV/texto, errores, permisos y exclusión de `finished_*`. |
 | `test_me_calendar.py` | Mi calendario (`GET /me/calendar`): año actual del profesor y del alumno (incluye inscripción sola), fallback al grupo, sin cursos, rango y orden. |

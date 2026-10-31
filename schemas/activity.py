@@ -12,6 +12,7 @@ class ActivityCreate(SQLModel):
     description: str | None = None
     due_date: date_type
     due_time: time | None = None
+    link_required: bool = False
 
     @field_validator("title")
     @classmethod
@@ -29,6 +30,7 @@ class ActivityUpdate(SQLModel):
     description: str | None = None
     due_date: date_type | None = None
     due_time: time | None = None
+    link_required: bool | None = None
 
     @field_validator("title")
     @classmethod
@@ -46,6 +48,8 @@ class ActivityUpdate(SQLModel):
         # `description` y `due_time`, que se limpian con null).
         if "title" in self.model_fields_set and self.title is None:
             raise ValueError("title cannot be null")
+        if "link_required" in self.model_fields_set and self.link_required is None:
+            raise ValueError("link_required cannot be null")
         return self
 
 
@@ -57,6 +61,7 @@ class ActivityPublic(SQLModel):
     description: str | None = None
     due_date: date_type
     due_time: time | None = None
+    link_required: bool = False
 
 
 class ActivityList(SQLModel):

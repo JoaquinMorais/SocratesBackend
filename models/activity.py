@@ -27,5 +27,6 @@ class Activity(SQLModel, table=True):
     )
     due_date: date_type = Field(index=True)
     due_time: time | None = Field(default=None, sa_type=Time)
+    link_required: bool = Field(default=False)
 
     calendar: Calendar = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

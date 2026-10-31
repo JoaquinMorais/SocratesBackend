@@ -31,6 +31,7 @@ def to_public(activity: Activity, calendar: Calendar | None = None) -> ActivityP
         description=activity.description,
         due_date=activity.due_date,
         due_time=activity.due_time,
+        link_required=activity.link_required,
     )
 
 
@@ -107,6 +108,8 @@ async def update_activity(
         activity.description = data.description
     if "due_time" in changes:
         activity.due_time = data.due_time
+    if "link_required" in changes and data.link_required is not None:
+        activity.link_required = data.link_required
 
     db.add(activity)
     await db.commit()

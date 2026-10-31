@@ -417,7 +417,8 @@ Actividades/entregas del curso lectivo (`GET/POST /section-years/{id}/activities
 
 **Crear**
 - `test_create_activity`: testear el alta con título, descripción, fecha y hora, y que la respuesta incluye el curso lectivo.
-- `test_create_without_optional_fields`: testear que descripción y hora son opcionales.
+- `test_create_without_optional_fields`: testear que descripción y hora son opcionales, y que `link_required` queda en `false`.
+- `test_create_with_link_required`: testear que `link_required=true` se guarda y se devuelve.
 - `test_create_validation`: testear título vacío o demasiado largo, fecha fuera del año del curso, hora inválida, campos faltantes/desconocidos (422) y curso inexistente (404).
 - `test_title_is_trimmed`: testear que el título se recorta.
 
@@ -501,6 +502,9 @@ Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH 
 
 **Permisos**
 - `test_delivery_permissions`: testear 401 sin login; 403 para alumnos ajenos, proyectos no privilegiados y profesor no asignado; 200 para miembros, profesor asignado y super admin. El alumno envía link, pero no notas; el profesor califica.
+- `test_delivery_status_lifecycle`: testear `submit`, `withdraw`, `reject` y `approve`, que el link no cambia el estado y que un alumno no puede editar en `pending_approval`/`approved`.
+- `test_delivery_submit_requires_link_only_when_activity_requires_it`: testear que el submit exige link solo si `Activity.link_required=true`.
+- `test_delivery_actions_permissions`: testear que alumnos ajenos no pueden submit/withdraw/approve/reject y que el staff sí.
 - `test_delivery_final_project_student_cannot_update`: testear que un alumno no modifica el link de un proyecto final (409) y que el staff sí puede.
 
 **Campos y fechas**
@@ -1083,7 +1087,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_projects_cover_all_states`: testear que hay al menos un proyecto en cada estado (`uninsured`, `in_idea`, `in_progress`, `pending_approval`, `rejected`, `approved` y `cancelled`).
 - `test_seed_memberships_cover_all_states`: testear que hay membresías en todos los estados (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`).
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los 18 estados base (7 de `project`, 6 de `student_project` y 5 de `student_section_year`) y sus estados finales.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 22 estados base (7 de `project`, 6 de `student_project`, 5 de `student_section_year` y 4 de `delivery`) y sus estados finales.
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada proyecto con integrantes tiene exactamente un jefe.
 - `test_seed_membership_statuses_are_valid_and_consistent`: testear que cada membresía tiene un estado de su ámbito y que los jefes no quedan en estados de solicitud.
 - `test_seed_cancelled_projects_have_failed_cursadas`: testear que los integrantes de proyectos cancelados quedan `abandoned`/`rejected` y sus cursadas `finished_failed`.
@@ -1097,20 +1101,20 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_student_section_years_are_consistent`: testear inscripción única por alumno/año, cursada única por comisión, una sola cursada `attending` por alumno, cobertura de todos los estados, espejo `state == status.code` y relación con las membresías.
 - `test_seed_students_may_have_several_section_years`: testear que hay alumnos con más de una fila en distintos cursos lectivos.
 - `test_seed_calendars_are_consistent`: testear un calendario por curso lectivo, clases dentro del año, horarios válidos, sin solapamientos y con clases en todos los calendarios.
-- `test_seed_activities_are_consistent`: testear actividades dentro del año, con título y calendario válido, y al menos una por curso lectivo.
+- `test_seed_activities_are_consistent`: testear actividades dentro del año, con título, calendario y `link_required` válido, y al menos una por curso lectivo.
 - `test_seed_technology_catalog_and_links`: testear nombres únicos sin distinguir mayúsculas y vínculos proyecto-tecnología válidos y sin duplicados.
-- `test_seed_deliveries_are_precreated`: testear que existe una entrega por cada combinación proyecto × actividad del mismo curso lectivo, sin duplicados, con algunas enviadas/calificadas y otras vacías.
+- `test_seed_deliveries_are_precreated`: testear que existe una entrega por cada combinación proyecto × actividad del mismo curso lectivo, sin duplicados, con los cuatro estados representados y algunas enviadas/calificadas y otras vacías.
 - `test_seed_attendance_is_consistent`: testear asistencias únicas, solo sobre cursadas válidas y clases pasadas, sesiones cerradas, ~50-60% de clases con toma y que al menos el 80% de los alumnos tenga 60-100% de asistencia sobre esas clases.
 
 ## `tests/test_statuses.py`
 
 **Permisos y lectura (`GET /statuses`)**
 - `test_requires_authentication`: testear que listar estados sin login responde 401.
-- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 18 estados (7 de `project`, 6 de `student_project` y 5 de `student_section_year`).
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 22 estados (7 de `project`, 6 de `student_project`, 5 de `student_section_year` y 4 de `delivery`).
 - `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description`, `is_final` e `is_insured`.
 
 **Consultar**
-- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae sus 7 estados, `student_project` sus 6 y `student_section_year` sus 5 (`registered`, `attending`, `abandoned`, `finished_approved`, `finished_failed`).
+- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae sus 7 estados, `student_project` sus 6 y `student_section_year` sus 5 (`registered`, `attending`, `abandoned`, `finished_approved`, `finished_failed`) y `delivery` sus 4 (`requested`, `pending_approval`, `pending_modification`, `approved`).
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
@@ -1123,6 +1127,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_project_transitions`: testear la máquina de estados del proyecto (`uninsured → in_idea → in_progress → pending_approval → approved | rejected`, `rejected → in_progress`, insured → `uninsured`), que `approved` y `cancelled` no salen a ningún lado y que no se puede ir de `approved` a `cancelled`.
 - `test_final_states_have_no_transitions`: testear que toda clase de estado marcada `is_final` no tiene transiciones, incluidos los estados de cursada.
 - `test_student_section_year_transitions`: testear las transiciones de `registered`, `attending`, `abandoned`, `finished_approved` y `finished_failed`.
+- `test_delivery_transitions`: testear las transiciones de `requested`, `pending_approval`, `pending_modification` y `approved`.
 - `test_catalog_codes_match_states`: testear que los códigos de cada catálogo de la jerarquía coinciden exactamente con los del catálogo persistido de ese ámbito y que los destinos de las transiciones existen.
 - `test_default_statuses_match_state_metadata`: testear que el catálogo base (`name`, `description`, `is_final`) coincide con los metadatos de las clases de estado.
 - `test_registry_maps_catalog_states`: testear que el registro `(ambito, code) → clase` resuelve cada estado del catálogo a su clase de dominio.

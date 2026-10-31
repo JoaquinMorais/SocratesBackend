@@ -30,10 +30,22 @@ async def _project(client, headers, id_section_year: int, quantity: int | None =
     return r.json()
 
 
-async def _activity(client, headers, id_section_year: int, title: str = "Entrega") -> dict:
+async def _activity(
+    client,
+    headers,
+    id_section_year: int,
+    title: str = "Entrega",
+    *,
+    link_required: bool = False,
+) -> dict:
     r = await client.post(
         f"/section-years/{id_section_year}/activities",
-        json={"title": title, "due_date": "2026-05-15", "due_time": "23:59"},
+        json={
+            "title": title,
+            "due_date": "2026-05-15",
+            "due_time": "23:59",
+            "link_required": link_required,
+        },
         headers=headers,
     )
     assert r.status_code == 201, r.text
@@ -94,6 +106,12 @@ async def _patch(client, headers, id_delivery: int, **body):
     )
 
 
+async def _action(client, headers, id_delivery: int, action: str):
+    return await client.post(
+        f"/deliveries/{id_delivery}/{action}", headers=headers
+    )
+
+
 async def test_delivery_precreated_on_project_and_activity(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await section_year(client, admin, "3K1", 2026)
@@ -108,6 +126,7 @@ async def test_delivery_precreated_on_project_and_activity(client, login):
     assert body["items"][0]["development_grade"] is None
     assert body["items"][0]["submitted_at"] is None
     assert body["items"][0]["updated_at"] is None
+    assert body["items"][0]["status"]["code"] == "requested"
 
     second = await _project(client, admin, sy)
     body = (await _project_deliveries(client, admin, second["id_project"])).json()
@@ -334,3 +353,96 @@ async def test_delivery_precreated_from_calendar_bulk(client, login):
     body = (await _project_deliveries(client, admin, project["id_project"])).json()
     assert body["total"] == 1
     assert body["items"][0]["activity"]["title"] == "Bulk"
+
+
+async def test_delivery_status_lifecycle(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    project = await _project(client, admin, sy)
+    activity = await _activity(client, admin, sy)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    delivery_id = await _delivery_id(project["id_project"], activity["id_activity"])
+    ana = await login("100001@sistemas.frc.utn.edu.ar")
+
+    r = await _patch(client, ana, delivery_id, link="https://example.com/one")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "requested"
+
+    r = await _action(client, ana, delivery_id, "submit")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "pending_approval"
+
+    assert (
+        await _patch(client, ana, delivery_id, link="https://example.com/two")
+    ).status_code == 409
+    r = await _patch(client, admin, delivery_id, link="https://example.com/two")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "pending_approval"
+
+    r = await _action(client, ana, delivery_id, "withdraw")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "requested"
+    assert (
+        await _patch(client, ana, delivery_id, link="https://example.com/three")
+    ).status_code == 200
+
+    assert (await _action(client, ana, delivery_id, "submit")).status_code == 200
+    r = await _action(client, admin, delivery_id, "reject")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "pending_modification"
+    assert (
+        await _patch(client, ana, delivery_id, link="https://example.com/four")
+    ).status_code == 200
+    assert (await _action(client, ana, delivery_id, "submit")).status_code == 200
+    r = await _action(client, admin, delivery_id, "approve")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "approved"
+
+    assert (
+        await _patch(client, ana, delivery_id, link="https://example.com/five")
+    ).status_code == 409
+    r = await _patch(client, admin, delivery_id, link="https://example.com/five")
+    assert r.status_code == 200
+    assert r.json()["status"]["code"] == "approved"
+
+
+async def test_delivery_submit_requires_link_only_when_activity_requires_it(
+    client, login
+):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    project = await _project(client, admin, sy)
+    required = await _activity(client, admin, sy, "Con link", link_required=True)
+    optional = await _activity(client, admin, sy, "Sin link", link_required=False)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    ana = await login("100001@sistemas.frc.utn.edu.ar")
+
+    required_id = await _delivery_id(project["id_project"], required["id_activity"])
+    optional_id = await _delivery_id(project["id_project"], optional["id_activity"])
+    assert (await _action(client, ana, required_id, "submit")).status_code == 409
+    assert (await _action(client, ana, optional_id, "submit")).status_code == 200
+
+    assert (
+        await _patch(client, ana, required_id, link="https://example.com/required")
+    ).status_code == 200
+    assert (await _action(client, ana, required_id, "submit")).status_code == 200
+
+
+async def test_delivery_actions_permissions(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    project = await _project(client, admin, sy)
+    activity = await _activity(client, admin, sy)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    delivery_id = await _delivery_id(project["id_project"], activity["id_activity"])
+    ana = await login("100001@sistemas.frc.utn.edu.ar")
+    luis = await login(LUIS)
+
+    assert (await _action(client, luis, delivery_id, "submit")).status_code == 403
+    assert (await _action(client, luis, delivery_id, "withdraw")).status_code == 403
+    assert (await _action(client, luis, delivery_id, "approve")).status_code == 403
+    assert (await _action(client, luis, delivery_id, "reject")).status_code == 403
+
+    await _action(client, ana, delivery_id, "submit")
+    assert (await _action(client, luis, delivery_id, "approve")).status_code == 403
+    assert (await _action(client, luis, delivery_id, "reject")).status_code == 403
