@@ -10,6 +10,7 @@ from models.state.state_student_project import (
     Abandoned,
     Active,
     Expelled,
+    Finished,
     PendingApprovalMember,
     RejectedMember,
 )
@@ -174,7 +175,14 @@ async def add_member(
 
     created = False
     if existing is not None:
-        if existing.status.code != RejectedMember.code:
+        if existing.status.code in (Active.code, Finished.code):
+            raise _conflict("This student already belongs to this project")
+        if existing.status.code not in (
+            PendingApprovalMember.code,
+            RejectedMember.code,
+            Abandoned.code,
+            Expelled.code,
+        ):
             raise _conflict("This student already belongs to this project")
         membership, created = existing, False
     else:
@@ -206,9 +214,10 @@ async def add_member(
 
 
 async def decide_membership(
-    db, id_user: int, id_project: int, id_student_project: int, target: str
+    db, access, id_user: int, id_project: int, id_student_project: int, target: str
 ) -> StudentProjectPublic:
-    """El jefe acepta (`active`) o rechaza (`rejected`) una solicitud."""
+    """El jefe, un profesor del curso lectivo o un super admin acepta (`active`)
+    o rechaza (`rejected`) una solicitud."""
     project = await get_project(db, id_project)  # 404 si el proyecto no existe
     membership = await _get_membership(db, id_project, id_student_project)
 
@@ -221,8 +230,11 @@ async def decide_membership(
             )
         )
     ).first()
-    if leader is None:
-        raise _forbidden("Only the group leader can accept or reject requests")
+    if leader is None and not access.can_manage(project.id_section_year):
+        raise _forbidden(
+            "Only the group leader, a professor of this section year or a super admin "
+            "can accept or reject requests"
+        )
 
     if target == Active.code:
         if await _has_member_membership(

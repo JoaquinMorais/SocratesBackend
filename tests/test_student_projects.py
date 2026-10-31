@@ -178,9 +178,49 @@ async def test_non_leader_cannot_decide(client, login, make_professor):
     await _join(client, await login(STUDENT), project["id_project"])  # Ana, jefa
     pending = (await _join(client, await login(LUIS), project["id_project"])).json()
 
-    for headers in (await login(LUIS), await login(await make_professor("prof@frc.utn.edu.ar")), admin):
+    for headers in (await login(LUIS), await login(await make_professor("prof@frc.utn.edu.ar"))):
         r = await _decide(client, headers, project["id_project"], pending["id_student_project"], "active")
         assert r.status_code == 403
+    # super admin sí puede decidir
+    r = await _decide(client, admin, project["id_project"], pending["id_student_project"], "active")
+    assert r.status_code == 200
+
+
+async def test_professor_can_accept_request(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    mail = await make_professor("profdecide@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    await _join(client, await login(STUDENT), project["id_project"])  # Ana, jefa
+    pending = (await _join(client, await login(LUIS), project["id_project"])).json()
+    r = await _decide(client, await login(mail), project["id_project"], pending["id_student_project"], "active")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
+
+
+async def test_professor_can_reject_request(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    mail = await make_professor("profdecide2@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    await _join(client, await login(STUDENT), project["id_project"])  # Ana, jefa
+    pending = (await _join(client, await login(LUIS), project["id_project"])).json()
+    r = await _decide(client, await login(mail), project["id_project"], pending["id_student_project"], "rejected")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "rejected"
+
+
+async def test_super_admin_can_accept_request(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _join(client, await login(STUDENT), project["id_project"])  # Ana, jefa
+    pending = (await _join(client, await login(LUIS), project["id_project"])).json()
+    r = await _decide(client, admin, project["id_project"], pending["id_student_project"], "active")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
 
 
 async def test_professor_cannot_abandon(client, login, make_professor):
@@ -669,6 +709,36 @@ async def test_add_reactivates_rejected_membership(client, login):
     sy = await _section_year(client, admin)
     project = await _create(client, admin, sy)
     await _add_membership(project["id_project"], LUIS_ID, "rejected")
+    r = await _add(client, admin, project["id_project"], LUIS_ID)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
+
+
+async def test_add_reactivates_expelled_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], LUIS_ID, "expelled")
+    r = await _add(client, admin, project["id_project"], LUIS_ID)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
+
+
+async def test_add_reactivates_abandoned_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], LUIS_ID, "abandoned")
+    r = await _add(client, admin, project["id_project"], LUIS_ID)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "active"
+
+
+async def test_add_reactivates_pending_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    await _add_membership(project["id_project"], LUIS_ID, "pending_approval")
     r = await _add(client, admin, project["id_project"], LUIS_ID)
     assert r.status_code == 200, r.text
     assert r.json()["status"]["code"] == "active"

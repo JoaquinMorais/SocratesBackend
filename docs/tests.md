@@ -821,7 +821,10 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_requires_authentication`: testear que unirse, listar, aceptar/rechazar, abandonar, expulsar y delegar sin login responden 401.
 - `test_professor_cannot_join`: testear que un profesor o super admin no puede unirse a un grupo (403; solo alumnos).
 - `test_professor_cannot_abandon`: testear que un profesor recibe 403 al querer abandonar (solo alumnos).
-- `test_non_leader_cannot_decide`: testear que un alumno que no es el jefe, un profesor y el super admin reciben 403 al aceptar o rechazar.
+- `test_non_leader_cannot_decide`: testear que un alumno que no es el jefe y un profesor no asignado reciben 403 al aceptar o rechazar (el super admin sí puede).
+- `test_professor_can_accept_request`: testear que un profesor asignado acepta una solicitud y el alumno queda `active`.
+- `test_professor_can_reject_request`: testear que un profesor asignado rechaza una solicitud y el alumno queda `rejected`.
+- `test_super_admin_can_accept_request`: testear que el super admin acepta una solicitud y el alumno queda `active`.
 
 **Unirse**
 - `test_first_member_becomes_leader_and_active`: testear que el primer integrante de un grupo vacío entra como jefe y `active`.
@@ -875,6 +878,9 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_cannot_add_already_member`: testear que un alumno que ya pertenece al proyecto en otro estado responde 409.
 - `test_cannot_add_member_of_another_project`: testear que un alumno que ya es `member` de otro proyecto responde 409.
 - `test_add_reactivates_rejected_membership`: testear que una solicitud `rejected` previa se reactiva como `active` (200).
+- `test_add_reactivates_expelled_membership`: testear que una membresía `expelled` previa se reactiva como `active` (200).
+- `test_add_reactivates_abandoned_membership`: testear que una membresía `abandoned` previa se reactiva como `active` (200).
+- `test_add_reactivates_pending_membership`: testear que una membresía `pending_approval` previa se reactiva como `active` (200).
 - `test_add_rejects_other_pending_requests`: testear que al añadir se rechazan las otras solicitudes `pending_approval` del alumno.
 
 **Delegar jefatura**

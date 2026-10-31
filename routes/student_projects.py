@@ -132,7 +132,7 @@ async def get_project_members_route(
     summary="Aceptar o rechazar una solicitud de ingreso",
     responses={
         **_AUTH_ERRORS,
-        403: {"description": "El usuario no es el jefe del grupo"},
+        403: {"description": "El usuario no es el jefe del grupo, ni profesor del curso lectivo, ni super admin"},
         404: {"description": "No existe el proyecto o la membresía"},
         409: {
             "description": (
@@ -151,15 +151,16 @@ async def decide_membership_route(
     user: user_dependency,
 ):
     """
-    **El jefe del grupo** acepta (`active`) o rechaza (`rejected`) una solicitud
-    de ingreso. Nadie más puede hacerlo.
+    El **jefe del grupo**, un **profesor del curso lectivo** o un **super admin**
+    acepta (`active`) o rechaza (`rejected`) una solicitud de ingreso.
 
     Solo se puede decidir sobre una membresía `pending_approval`. Al aceptar, el
     alumno no puede ya pertenecer (`member`) a otro proyecto (409) y sus otras
     solicitudes `pending_approval` pasan a `rejected`.
     """
+    access = await build_access(db, user)
     return await decide_membership(
-        db, user.id_user, id_project, id_student_project, data.status
+        db, access, user.id_user, id_project, id_student_project, data.status
     )
 
 
@@ -266,8 +267,9 @@ async def add_member_route(
       alumno añadido pasa a ser el jefe.
     - Aplica la regla de un solo `member` (`active`/`finished`) por alumno en
       todo el sistema: si ya pertenece a otro grupo responde **409**.
-    - Si el alumno ya tenía una solicitud `rejected` en este grupo, se reactiva
-      (responde **200**); si ya pertenece en otro estado, responde **409**.
+    - Si el alumno tenía una solicitud `rejected`, `pending_approval`, `abandoned`
+      o `expelled` en este grupo, se reactiva como `active` (responde **200**); si
+      ya es `active` o `finished`, responde **409**.
     - Al pasar a `active` se rechazan sus otras solicitudes `pending_approval`.
     """
     access = await build_access(db, user)
@@ -282,7 +284,7 @@ async def add_member_route(
     summary="Delegar la jefatura del grupo",
     responses={
         **_AUTH_ERRORS,
-        403: {"description": "El usuario no es el jefe del grupo"},
+        403: {"description": "El usuario no es el jefe del grupo, ni profesor del curso lectivo, ni super admin"},
         404: {"description": "No existe el proyecto o la membresía"},
         409: {
             "description": (
