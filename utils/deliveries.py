@@ -28,6 +28,7 @@ from schemas.delivery import (
     DeliveryGradeCreate,
     DeliveryGradeList,
     DeliveryGradePublic,
+    DeliveryGradeUpdate,
     DeliveryList,
     DeliveryProjectSummary,
     DeliveryPublic,
@@ -478,6 +479,38 @@ async def reject_delivery(db, access, id_delivery: int) -> DeliveryPublic:
     return await delivery_public(db, delivery)
 
 
+async def get_grade(
+    db, id_delivery: int, id_delivery_grade: int
+) -> DeliveryGrade:
+    grade = await db.get(DeliveryGrade, id_delivery_grade)
+    if grade is None or grade.id_delivery != id_delivery:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Delivery grade not found"
+        )
+    return grade
+
+
+async def _section_year_score(
+    db, id_section_year: int, id_score: int
+) -> SectionYearScore:
+    from utils.scores import ensure_section_year_scores
+
+    await ensure_section_year_scores(db, id_section_year)
+    section_score = (
+        await db.exec(
+            select(SectionYearScore)
+            .join(Score, Score.id_score == SectionYearScore.id_score)
+            .where(
+                SectionYearScore.id_section_year == id_section_year,
+                Score.id_score == id_score,
+            )
+        )
+    ).scalars().first()
+    if section_score is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Score not found")
+    return section_score
+
+
 async def create_grade(
     db, access, id_delivery: int, data: DeliveryGradeCreate
 ) -> DeliveryGradePublic:
@@ -491,21 +524,7 @@ async def create_grade(
         )
 
     section_year_id = delivery.activity.calendar.id_section_year
-    from utils.scores import ensure_section_year_scores
-
-    await ensure_section_year_scores(db, section_year_id)
-    section_score = (
-        await db.exec(
-            select(SectionYearScore)
-            .join(Score, Score.id_score == SectionYearScore.id_score)
-            .where(
-                SectionYearScore.id_section_year == section_year_id,
-                Score.id_score == data.id_score,
-            )
-        )
-    ).scalars().first()
-    if section_score is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Score not found")
+    section_score = await _section_year_score(db, section_year_id, data.id_score)
 
     grade = DeliveryGrade(
         id_delivery=id_delivery,
@@ -517,6 +536,51 @@ async def create_grade(
     db.add(grade)
     await db.commit()
     return grade_to_public(grade)
+
+
+async def update_grade(
+    db,
+    access,
+    id_delivery: int,
+    id_delivery_grade: int,
+    data: DeliveryGradeUpdate,
+) -> DeliveryGradePublic:
+    delivery = await get_delivery(db, id_delivery)
+    if not _is_staff(access, delivery.project):
+        raise _forbidden()
+    grade = await get_grade(db, id_delivery, id_delivery_grade)
+
+    changes = data.model_dump(exclude_none=True)
+    if not changes:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update"
+        )
+
+    if "id_score" in changes:
+        section_score = await _section_year_score(
+            db,
+            delivery.activity.calendar.id_section_year,
+            changes["id_score"],
+        )
+        grade.id_section_year_score = section_score.id_section_year_score
+        grade.score = section_score
+    if "category" in changes:
+        grade.category = changes["category"]
+    grade.graded_at = _now()
+    db.add(grade)
+    await db.commit()
+    return grade_to_public(grade)
+
+
+async def delete_grade(
+    db, access, id_delivery: int, id_delivery_grade: int
+) -> None:
+    delivery = await get_delivery(db, id_delivery)
+    if not _is_staff(access, delivery.project):
+        raise _forbidden()
+    grade = await get_grade(db, id_delivery, id_delivery_grade)
+    await db.delete(grade)
+    await db.commit()
 
 
 async def list_delivery_grades(

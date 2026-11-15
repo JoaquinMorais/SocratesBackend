@@ -12,6 +12,7 @@ DATA = {
     "description": "Descripción",
     "objective": "Objetivo",
     "problem": "Problemática",
+    "drive_folder_url": "https://drive.google.com/drive/folders/example",
 }
 
 ENDPOINTS = [
@@ -157,7 +158,10 @@ async def test_create_project_defaults(client, login):
     assert (p["group_number"], p["privacy"], p["restricted"]) == (1, "public", False)
     assert p["status"]["code"] == "uninsured"
     assert p["status"]["ambito"] == "project"
-    assert [p[k] for k in ("name", "description", "objective", "problem")] == [None] * 4
+    assert [
+        p[k]
+        for k in ("name", "description", "objective", "problem", "drive_folder_url")
+    ] == [None] * 5
 
 
 async def test_create_assigns_first_free_group_number(client, login):
@@ -560,14 +564,33 @@ async def test_patch_each_field(client, login):
     await _set_status(project["id_project"], "in_idea")  # insured: la privacidad almacenada aplica
     r = await client.patch(
         f"{URL}/{project['id_project']}",
-        json={"name": "Nombre", "description": "Desc", "objective": "Obj", "problem": "Prob", "privacy": "protected"},
+        json={
+            "name": "Nombre",
+            "description": "Desc",
+            "objective": "Obj",
+            "problem": "Prob",
+            "drive_folder_url": "https://drive.google.com/drive/folders/abc",
+            "privacy": "protected",
+        },
         headers=admin,
     )
     assert r.status_code == 200
     body = r.json()
     assert [
-        body["name"], body["description"], body["objective"], body["problem"], body["privacy"]
-    ] == ["Nombre", "Desc", "Obj", "Prob", "protected"]
+        body["name"],
+        body["description"],
+        body["objective"],
+        body["problem"],
+        body["drive_folder_url"],
+        body["privacy"],
+    ] == [
+        "Nombre",
+        "Desc",
+        "Obj",
+        "Prob",
+        "https://drive.google.com/drive/folders/abc",
+        "protected",
+    ]
     assert body["status"]["code"] == "in_idea"  # el estado no cambia
 
 
@@ -593,10 +616,29 @@ async def test_patch_can_clear_optional_fields(client, login):
     admin = await login(SUPER_ADMIN)
     project = await _create(client, admin, await _section_year(client, admin))
     url = f"{URL}/{project['id_project']}"
-    await client.patch(url, json={"name": "Uno", "description": "Desc"}, headers=admin)
-    body = (await client.patch(url, json={"name": None, "description": None}, headers=admin)).json()
+    await client.patch(
+        url,
+        json={
+            "name": "Uno",
+            "description": "Desc",
+            "drive_folder_url": "https://drive.google.com/drive/folders/abc",
+        },
+        headers=admin,
+    )
+    body = (
+        await client.patch(
+            url,
+            json={
+                "name": None,
+                "description": None,
+                "drive_folder_url": None,
+            },
+            headers=admin,
+        )
+    ).json()
     assert body["name"] is None
     assert body["description"] is None
+    assert body["drive_folder_url"] is None
 
 
 async def test_patch_privacy_null_rejected(client, login):
@@ -620,6 +662,13 @@ async def test_patch_invalid_rejected(client, login):
     assert (await client.patch(url, json={"name": "   "}, headers=admin)).status_code == 422
     assert (await client.patch(url, json={"privacy": "shiny"}, headers=admin)).status_code == 422
     assert (await client.patch(url, json={"group_number": 5}, headers=admin)).status_code == 422
+    assert (
+        await client.patch(
+            url,
+            json={"drive_folder_url": "not-a-url"},
+            headers=admin,
+        )
+    ).status_code == 422
 
 
 async def test_patch_not_found(client, login):

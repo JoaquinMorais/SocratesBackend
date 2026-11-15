@@ -13,6 +13,8 @@ from schemas.project import (
     ProjectPublic,
     ProjectUpdate,
 )
+from schemas.project_evaluation import ProjectEvaluationPublic
+from schemas.project_statistics import ProjectStatisticsPublic
 from schemas.project_status import ProjectStatusList
 from schemas.student_project import StudentProjectAttendanceList
 from schemas.status import MembershipStatus
@@ -21,6 +23,8 @@ from utils.permissions import professor_dependency
 from utils.date_ranges import validate_optional_range
 from utils.project_attendance import list_project_attendance
 from utils.project_statuses import list_project_status_history, to_public as status_history_public
+from utils.project_evaluations import build_project_evaluation
+from utils.project_statistics import build_project_statistics
 from utils.projects import (
     advance_project,
     approve_project,
@@ -292,6 +296,92 @@ async def get_project_overview_route(
 
 
 @projects_router.get(
+    "/{id_project}/evaluations",
+    response_model=ProjectEvaluationPublic,
+    summary="Consultar las evaluaciones de un proyecto",
+    responses={
+        **_READ_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto"},
+    },
+)
+async def get_project_evaluations_route(
+    id_project: int, db: db_dependency, user: user_dependency
+):
+    """
+    Devuelve las **evaluaciones consolidadas de un proyecto**. **Solo profesor
+    del curso lectivo o super admin.**
+
+    Incluye, por separado:
+
+    - `project`: datos y estado actual del proyecto.
+    - `activities`: todas las entregas del proyecto (actividad, estado, link,
+      fechas, historial de notas y últimas notas por categoría).
+    - `statistics`: conteos y promedios de notas, más la asistencia agregada.
+    - `members`: integrantes `active`/`finished` con su condición, jefatura y
+      porcentaje de asistencia individual.
+
+    Los promedios de notas usan el valor vigente de cada `SectionYearScore`.
+    `average_latest` promedia la última nota de cada entrega y categoría;
+    `average_all` promedia todo el historial. La asistencia agregada suma las
+    asistencias y las clases computadas de los integrantes, y es `null` si no
+    hay clases computadas.
+    """
+    access = await build_access(db, user)
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can see evaluations",
+        )
+    return await build_project_evaluation(db, project)
+
+
+@projects_router.get(
+    "/{id_project}/statistics",
+    response_model=ProjectStatisticsPublic,
+    summary="Consultar las estadísticas completas de un proyecto",
+    responses={
+        **_READ_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto"},
+    },
+)
+async def get_project_statistics_route(
+    id_project: int, db: db_dependency, user: user_dependency
+):
+    """
+    Devuelve las **estadísticas completas de un proyecto**. **Solo profesor del
+    curso lectivo o super admin.**
+
+    Incluye:
+
+    - `project`: datos y estado actual.
+    - `statistics`: conteos de entregas e integrantes por estado, notas totales
+      y promedios latest/all por categoría, asistencia agregada, comentarios y
+      cantidad de tecnologías.
+    - `activity_statistics`: resumen por actividad con última nota de cada
+      categoría y promedios.
+    - `member_statistics`: integrantes `active`/`finished` con condición,
+      jefatura y asistencia individual.
+    - `technologies`: cantidad y nombres de las tecnologías del proyecto.
+
+    Los promedios usan el valor vigente de `SectionYearScore` y se redondean a
+    dos decimales. La asistencia agregada es
+    `attended_classes * 100 / total_classes`; es `null` si no hay clases
+    computadas.
+    """
+    access = await build_access(db, user)
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can see statistics",
+        )
+    return await build_project_statistics(db, project)
+
+
+@projects_router.get(
     "/{id_project}/attendance",
     response_model=StudentProjectAttendanceList,
     summary="Consultar la asistencia de los integrantes de un proyecto",
@@ -339,6 +429,9 @@ async def get_project_attendance_route(
     - `attended_classes` cuenta las asistencias de esa cursada; `total_classes`
       cuenta las clases con toma del curso lectivo.
     - Si no hay clases con toma, `attendance_percentage` es `null`.
+    - `statistics` agrega a todos los integrantes filtrados: asistencias, clases
+      computadas y porcentaje global (`attended_classes * 100 / total_classes`).
+      El agregado usa todos los miembros, no solo la página pedida.
     - La asistencia se calcula por cursada: si un alumno cursó dos veces, cada
       curso lectivo tiene su propio porcentaje.
     - Orden: jefe primero, luego estado y antigüedad; paginado.
@@ -440,8 +533,10 @@ async def update_project_route(
     `finished`.
 
     **Campos editables** (opcionales, se envían solo los que cambian): `name`,
-    `description`, `objective`, `problem` y `privacy`. Enviar un campo de texto
-    con `null` lo **limpia**; `privacy` es obligatoria y no admite `null`.
+    `description`, `objective`, `problem`, `drive_folder_url` y `privacy`.
+    Enviar un campo de texto o la carpeta de Drive con `null` lo **limpia**;
+    `drive_folder_url` debe ser una URL `http`/`https`; `privacy` es obligatoria
+    y no admite `null`.
 
     No se puede modificar si el proyecto está en un estado final (`approved` o
     `cancelled`): responde **409**. El `group_number` y el curso lectivo no se

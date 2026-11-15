@@ -5,6 +5,7 @@ from sqlmodel import col, func, select
 
 from models import Project, Section, SectionYear, Status, Student, StudentProject, User
 from models.state import MEMBER_CODES
+from models.state.state_project import Approved
 from models.state.state_student_project import (
     STUDENT_PROJECT_ORDER,
     Abandoned,
@@ -266,6 +267,28 @@ async def abandon_membership(
         db, membership, Abandoned.code, effector=MembershipEffector(db)
     )
     await db.commit()
+
+
+async def finish_membership(
+    db, access, id_project: int, id_student_project: int
+) -> StudentProjectPublic:
+    """Finaliza una membresía `active` de un proyecto aprobado."""
+    project = await get_project(db, id_project)
+    if not access.can_manage(project.id_section_year):
+        raise _forbidden(
+            "Only a professor of this section year or a super admin can finish members"
+        )
+    if project.status.code != Approved.code:
+        raise _conflict("Only an approved project can finish members")
+    membership = await _get_membership(db, id_project, id_student_project)
+    if membership.status.code != Active.code:
+        raise _conflict("Only an active member can be finished")
+
+    await apply_transition(
+        db, membership, Finished.code, effector=MembershipEffector(db)
+    )
+    await db.commit()
+    return _public(membership)
 
 
 async def expel_membership(db, access, id_project: int, id_student_project: int) -> None:

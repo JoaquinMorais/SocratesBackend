@@ -116,7 +116,11 @@ async def test_rename_section(client, login):
         f"/sections/{created['id_section']}", json={"name": "3k3"}, headers=headers
     )
     assert r.status_code == 200
-    assert r.json() == {"id_section": created["id_section"], "name": "3K3"}
+    assert r.json() == {
+        "id_section": created["id_section"],
+        "name": "3K3",
+        "is_generic": False,
+    }
     assert (await client.get(f"/sections/{created['id_section']}", headers=headers)).json()["name"] == "3K3"
 
 

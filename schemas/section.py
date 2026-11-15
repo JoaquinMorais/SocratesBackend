@@ -23,6 +23,7 @@ class SectionUpdate(SectionCreate):
 class SectionPublic(SQLModel):
     id_section: int
     name: str
+    is_generic: bool = False
 
 
 class SectionList(SQLModel):

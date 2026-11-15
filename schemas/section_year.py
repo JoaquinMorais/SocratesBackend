@@ -33,6 +33,7 @@ class SectionYearPublic(SQLModel):
     max_students: int
     allow_project_joins: bool
     allow_student_submissions: bool
+    is_generic: bool = False
 
 
 class SectionYearList(SQLModel):

@@ -7,6 +7,7 @@ from schemas.delivery import (
     DeliveryGradeCreate,
     DeliveryGradeList,
     DeliveryGradePublic,
+    DeliveryGradeUpdate,
     DeliveryList,
     DeliveryPublic,
     DeliveryRepairCreate,
@@ -17,6 +18,7 @@ from utils.deliveries import (
     approve_delivery,
     create_delivery,
     create_grade,
+    delete_grade,
     delivery_public,
     get_delivery,
     list_activity_deliveries,
@@ -25,6 +27,7 @@ from utils.deliveries import (
     reject_delivery,
     submit_delivery,
     update_delivery,
+    update_grade,
     withdraw_delivery,
 )
 from utils.projects import build_access
@@ -181,10 +184,80 @@ async def create_delivery_grade_route(
     - `id_score`: etiqueta del catálogo; se resuelve contra el puntaje
       configurado para el curso lectivo de la entrega.
     - No se puede calificar una entrega `approved` (**409**).
-    - La nota no cambia el estado de la entrega. No se edita ni se borra.
+    - La nota no cambia el estado de la entrega.
+    - Una nota cargada por error se puede corregir con `PATCH` o eliminar con
+      `DELETE`.
     """
     access = await build_access(db, user)
     return await create_grade(db, access, id_delivery, data)
+
+
+@deliveries_router.patch(
+    "/deliveries/{id_delivery}/grades/{id_delivery_grade}",
+    response_model=DeliveryGradePublic,
+    summary="Corregir una nota de una entrega",
+    responses={
+        **_DELIVERY_ERRORS,
+        404: {
+            "description": (
+                "No existe la entrega, la nota o el score del curso lectivo"
+            )
+        },
+        422: {
+            "description": (
+                "Body vacío, categoría o score inválido, o campos desconocidos"
+            )
+        },
+    },
+)
+async def update_delivery_grade_route(
+    id_delivery: int,
+    id_delivery_grade: int,
+    data: DeliveryGradeUpdate,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    Corrige una nota cargada por error. **Solo profesor del curso o super admin.**
+
+    - Permite cambiar `category` y/o `id_score`; no se puede cambiar la entrega.
+    - Se permite incluso si la entrega está `approved`.
+    - `id_score` debe pertenecer al curso lectivo de la entrega.
+    - La fecha `graded_at` se actualiza al momento de la corrección, por lo que la
+      nota corregida pasa a ser la última de su categoría.
+    - Body vacío o campos desconocidos: **422**.
+    """
+    access = await build_access(db, user)
+    return await update_grade(
+        db, access, id_delivery, id_delivery_grade, data
+    )
+
+
+@deliveries_router.delete(
+    "/deliveries/{id_delivery}/grades/{id_delivery_grade}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar una nota de una entrega",
+    responses={
+        **_DELIVERY_ERRORS,
+        404: {"description": "No existe la entrega o la nota"},
+    },
+)
+async def delete_delivery_grade_route(
+    id_delivery: int,
+    id_delivery_grade: int,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    Elimina una nota cargada por error. **Solo profesor del curso o super admin.**
+
+    - Se permite incluso si la entrega está `approved`.
+    - Si se elimina la última nota de una categoría, vuelve a quedar vigente la
+      anterior.
+    - Responde **204**.
+    """
+    access = await build_access(db, user)
+    await delete_grade(db, access, id_delivery, id_delivery_grade)
 
 
 async def _delivery_action(

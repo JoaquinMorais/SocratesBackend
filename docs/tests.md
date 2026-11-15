@@ -307,6 +307,32 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_delete_with_student_registrations_rejected`: testear que un curso lectivo con inscripciones de alumnos responde 409 y se puede eliminar tras quitarlas.
 
 
+## `tests/test_student_attendance_report.py`
+
+Reporte de asistencia de un alumno particular para staff (`GET /students/{id}/attendance`).
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_student_cannot_read`: testear que un alumno no puede consultar el reporte (403).
+- `test_unassigned_professor_cannot_read`: testear que un profesor sin cursos en común con el alumno recibe 403.
+- `test_assigned_professor_only_sees_own_course`: testear que el profesor ve solo las cursadas de los cursos que dicta.
+- `test_super_admin_sees_all_courses_and_filters`: testear que el super admin ve todas las cursadas y que `from`/`to` filtran el historial.
+- `test_unknown_student_returns_404`: testear que un alumno inexistente responde 404.
+
+## `tests/test_student_statistics.py`
+
+Estadísticas de alumnos inscriptos y cursando (`GET /students/statistics/registered` y `/students/statistics/attending`).
+
+**Permisos**
+- `test_requires_authentication`: testear que ambos endpoints responden 401 sin login.
+- `test_student_cannot_read`: testear que un alumno recibe 403.
+- `test_filters_and_professor_scope`: testear el alcance por curso del profesor, los filtros por curso y el 403 al consultar un curso ajeno; el super admin ve todos.
+- `test_unknown_section_year`: testear que un curso inexistente responde 404.
+
+**Estadísticas**
+- `test_registered_statistics`: testear totales, desglose, con/sin proyecto, membresías y que la asistencia de `registered` sea `null`; incluye paginación.
+- `test_attending_statistics`: testear totales, proyectos, asistencia agregada e individual de los alumnos cursando.
+
 ## `tests/test_student_section_years.py`
 
 Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo (`POST /student-section-years`, `GET /student-section-years`, `GET /student-section-years/{id}`, `PATCH`, `DELETE`); lectura para profesores y super admin, escritura de la inscripción solo super admin. Las cursadas son de solo lectura por API.
@@ -515,7 +541,7 @@ Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/atten
 
 ## `tests/test_deliveries.py`
 
-Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH /deliveries/{id}`, `GET /activities/{id}/deliveries`, `POST /projects/{id}/deliveries` y `/deliveries/{id}/grades`): filas pre-creadas, link, estados, notas históricas y fechas.
+Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH /deliveries/{id}`, `GET /activities/{id}/deliveries`, `POST /projects/{id}/deliveries`, `/deliveries/{id}/grades` y `/deliveries/{id}/grades/{id_grade}`): filas pre-creadas, link, estados, notas históricas, corrección y eliminación de notas.
 
 **Pre-creación**
 - `test_delivery_precreated_on_project_and_activity`: testear que al crear proyecto/actividad se crean las entregas vacías correspondientes.
@@ -535,6 +561,11 @@ Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH 
 **Campos y fechas**
 - `test_delivery_fields_validation_and_timestamps`: testear URL inválida, body vacío/campos desconocidos (422), `submitted_at` null antes del link y seteado al enviarlo, `updated_at`, y limpiar el link.
 - `test_delivery_grade_history_and_current_values`: testear varias notas por categoría, `latest_grades`, valor actual del `SectionYearScore`, endpoint de historial y que un alumno no puede calificar.
+- `test_grade_update_permissions`: testear 403 para alumno y profesor no asignado, y 200 para profesor asignado y super admin.
+- `test_grade_update_recalculates_latest_and_allows_approved`: testear la corrección de score/categoría, la actualización de `graded_at` y que una entrega aprobada admite correcciones.
+- `test_grade_update_validation_and_not_found`: testear body vacío, campos desconocidos, categoría/score inválidos, score o nota inexistente y entrega inexistente.
+- `test_grade_update_rejects_grade_from_another_delivery`: testear que una nota de otra entrega responde 404.
+- `test_grade_delete_and_latest_fallback`: testear que al eliminar la última nota vuelve la anterior, que repetir responde 404 y que una entrega aprobada permite eliminar.
 - `test_delivery_repair_endpoint`: testear que `POST` repara una fila faltante, responde 409 si ya existe y 422 si la actividad es de otro curso lectivo.
 
 **Borrado**
@@ -680,7 +711,7 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
 
 **Crear**
-- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo y problemática en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo, problemática y `drive_folder_url` en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
 - `test_create_assigns_first_free_group_number`: testear que sin `group_number` toma el primer hueco libre (no el mayor + 1), también después de números explícitos, y que sin huecos continúa después del mayor.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
@@ -719,7 +750,7 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_finished_member_can_patch`: testear que un miembro con membresía `finished` puede modificar el proyecto.
 - `test_assigned_professor_can_patch`: testear que un profesor del curso lectivo puede modificar el proyecto.
 - `test_super_admin_can_patch`: testear que un super admin puede modificar cualquier proyecto.
-- `test_patch_each_field`: testear que se editan `name`, `description`, `objective`, `problem` y `privacy`, y que el estado no cambia.
+- `test_patch_each_field`: testear que se editan `name`, `description`, `objective`, `problem`, `drive_folder_url` y `privacy`, y que el estado no cambia.
 - `test_patch_only_changes_sent_fields`: testear que lo no enviado no cambia.
 - `test_patch_same_values_is_ok`: testear que reenviar los mismos valores no da error.
 - `test_patch_can_clear_optional_fields`: testear que enviar `null` en un campo de texto lo limpia.
@@ -793,12 +824,54 @@ Asistencia de los integrantes de un proyecto (`GET /projects/{id}/attendance`): 
 - `test_project_attendance_permissions`: testear que sin login responde 401; alumno y profesor no asignado 403; profesor asignado y super admin 200; proyecto inexistente 404.
 
 **Estadísticas**
-- `test_project_attendance_counts_and_percentages`: testear `attended_classes`, `total_classes` y porcentaje por integrante, con métodos de asistencia variados.
+- `test_project_attendance_counts_and_percentages`: testear `attended_classes`, `total_classes`, porcentaje por integrante y las estadísticas agregadas; con `limit`, el agregado sigue usando todos los miembros.
 - `test_project_attendance_counts_manual_class`: testear que una clase sin sesión, marcada a mano, cuenta en el porcentaje del proyecto.
 - `test_project_attendance_range`: testear que `from`/`to` limitan las clases y recalculan el porcentaje.
-- `test_project_attendance_without_sessions_and_status_filter`: testear que sin tomas el porcentaje es `null`, que por defecto solo se listan members y que `status=abandoned` permite consultar otros estados.
+- `test_project_attendance_without_sessions_and_status_filter`: testear que sin tomas el porcentaje y el agregado son `null`, que por defecto solo se listan members y que `status=abandoned` permite consultar otros estados.
 - `test_project_attendance_does_not_mix_section_years`: testear que la asistencia del curso lectivo del proyecto no mezcla otra cursada del mismo alumno.
 - `test_project_attendance_invalid_filters`: testear `status` inválido, rango incompleto o invertido (422).
+
+## `tests/test_project_evaluations.py`
+
+Evaluación consolidada de un proyecto (`GET /projects/{id}/evaluations`): estado, actividades, entregas, notas, estadísticas y desglose de integrantes.
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_student_and_unassigned_professor_forbidden`: testear que un alumno y un profesor no asignado reciben 403.
+- `test_assigned_professor_and_super_admin_can_read`: testear que el profesor del curso y el super admin reciben 200.
+- `test_unknown_project`: testear que un proyecto inexistente responde 404.
+
+**Resultado**
+- `test_evaluation_includes_activities_grades_members_and_statistics`: testear las actividades con sus entregas y notas, los promedios de la última nota y de todo el historial, la asistencia agregada y el desglose por integrante con condición, jefatura y asistencia individual.
+- `test_evaluation_without_grades_or_attendance`: testear que sin notas los promedios son `null` y que sin clases computadas la asistencia agregada también es `null`.
+
+## `tests/test_project_statistics.py`
+
+Estadísticas completas de un proyecto (`GET /projects/{id}/statistics`): métricas agregadas y resúmenes compactos.
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_student_and_unassigned_professor_forbidden`: testear que un alumno y un profesor no asignado reciben 403.
+- `test_assigned_professor_and_super_admin_can_read`: testear que el profesor del curso y el super admin reciben 200.
+- `test_unknown_project`: testear que un proyecto inexistente responde 404.
+
+**Contenido**
+- `test_empty_project_statistics`: testear que un proyecto vacío devuelve conteos en cero, promedios y asistencia `null`, y arrays vacíos.
+- `test_complete_project_statistics`: testear distribución de estados de entrega, integrantes por estado, promedios globales y por actividad, asistencia agregada e individual, comentarios/anotaciones, tecnologías y resúmenes compactos.
+
+## `tests/test_section_year_evaluations.py`
+
+Evaluaciones de todos los proyectos de un curso lectivo (`GET /section-years/{id}/evaluations`).
+
+**Permisos**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_student_and_unassigned_professor_forbidden`: testear que un alumno y un profesor no asignado reciben 403.
+- `test_assigned_professor_and_super_admin_can_read`: testear que el profesor del curso y el super admin reciben 200.
+- `test_unknown_section_year`: testear que un curso lectivo inexistente responde 404.
+
+**Contenido**
+- `test_section_year_evaluations_include_all_projects`: testear que devuelve todos los proyectos ordenados por grupo, con sus actividades, notas, estadísticas e integrantes; incluye proyectos vacíos con estadísticas en cero/null.
+- `test_section_year_without_projects`: testear que un curso sin proyectos devuelve `projects: []`.
 
 ## `tests/test_project_insure.py`
 
@@ -954,6 +1027,14 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_add_member_with_registration_in_other_section_same_year`: testear que se puede añadir directamente a un alumno inscripto en otra comisión del mismo año, creando la cursada `attending` y conservando la inscripción original.
 - `test_add_member_does_not_create_registration`: testear que el alta directa de un alumno sin filas crea solo la cursada `attending` y no una inscripción `registered`.
 
+**Finalizar integrante**
+- `test_finish_requires_authentication`: testear que finalizar sin login responde 401.
+- `test_finish_permissions`: testear 403 para alumno y profesor no asignado; 200 para profesor asignado.
+- `test_finish_requires_approved_project`: testear que un proyecto no aprobado responde 409.
+- `test_finish_requires_active_membership`: testear que `pending_approval` y `finished` responden 409.
+- `test_finish_success_updates_membership_and_cursada`: testear que `active` pasa a `finished` y la cursada a `finished_approved`; repetir responde 409.
+- `test_finish_unknown_references`: testear proyecto o membresía inexistente (404).
+
 **Delegar jefatura**
 - `test_leader_can_transfer_leadership`: testear que el jefe delega la jefatura en otro integrante `active` (200) y deja de ser jefe.
 - `test_cannot_transfer_to_pending`: testear que no se puede delegar a un integrante `pending_approval` (409).
@@ -1037,6 +1118,17 @@ Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/secti
 **Reglas**
 - `test_projects_follow_privacy`: testear que en los proyectos del curso actual el privado ajeno no aparece, el protegido viene `restricted` con el detalle en `null`, el público completo, y que el profesor de ese curso lectivo ve todo.
 - `test_ordering_and_pagination`: testear el orden por número de grupo, `limit`/`offset`, `total` y que `limit=0` responde 422.
+
+## `tests/test_generic_section_year.py`
+
+Curso lectivo genérico `PRESOCRATICO` usado para proyectos de ejemplo.
+
+- `test_generic_section_year_exists_and_is_public`: testear que existe con año 2000, `is_generic=true` y que cualquier usuario logueado puede consultarlo.
+- `test_generic_is_excluded_from_normal_lists`: testear que no aparece en `GET /section-years` ni `GET /sections`.
+- `test_generic_is_read_only_in_admin_endpoints`: testear que no se puede modificar, configurar ni eliminar la comisión o el curso genérico.
+- `test_is_generic_cannot_be_set_from_api`: testear que el campo no se puede enviar en altas (422).
+- `test_any_professor_can_create_and_edit_example_projects`: testear que un profesor no asignado puede crear y editar proyectos en el genérico y que siguen siendo consultables.
+- `test_generic_projects_are_excluded_from_technology_statistics`: testear que los ejemplos no afectan las estadísticas agregadas de tecnologías.
 
 ## `tests/test_images.py`
 
@@ -1154,6 +1246,15 @@ Vínculo proyecto–tecnología: asociar (`POST /projects/{id}/technologies`), a
 
 **Borrar el proyecto**
 - `test_delete_project_cascades_links`: testear que al eliminar un proyecto (vacío y `uninsured`) sus vínculos desaparecen con él, la tecnología sobrevive y un proyecto nuevo arranca sin vínculos.
+
+## `tests/test_project_technology_statistics.py`
+
+Estadísticas agregadas de tecnologías por ciclo lectivo (`GET /project-technologies/statistics`): cualquier usuario logueado, sin datos de proyectos.
+
+**Acceso y contenido**
+- `test_requires_authentication`: testear que consultar sin login responde 401.
+- `test_any_user_can_read_aggregated_data`: testear que un alumno puede consultar, que cuentan proyectos públicos/privados/protegidos, la agrupación por año y curso, los porcentajes sobre proyectos con tecnologías, los totales globales y que no aparecen ids ni nombres de proyectos.
+- `test_empty_statistics`: testear que sin proyectos devuelve totales en cero y arrays vacíos.
 
 ## `tests/test_seed.py`
 

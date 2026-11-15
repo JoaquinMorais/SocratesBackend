@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from config.database import db_dependency
+from schemas.project_technology_statistics import ProjectTechnologyStatisticsPublic
 from schemas.technology import (
     ProjectTechnologyBulkCreate,
     ProjectTechnologyCreate,
@@ -17,6 +18,7 @@ from utils.project_technologies import (
     list_project_technologies,
     remove_technology,
 )
+from utils.project_technology_statistics import build_project_technology_statistics
 from utils.technologies import to_public
 
 project_technologies_router = APIRouter(tags=["project-technologies"])
@@ -31,6 +33,29 @@ _MANAGE_ERRORS = {
     },
     409: {"description": "El proyecto está en un estado final"},
 }
+
+
+@project_technologies_router.get(
+    "/project-technologies/statistics",
+    response_model=ProjectTechnologyStatisticsPublic,
+    summary="Consultar estadísticas generales de tecnologías por ciclo lectivo",
+    responses={401: {"description": "Token ausente, inválido o vencido"}},
+)
+async def get_project_technology_statistics_route(
+    db: db_dependency,
+    _: user_dependency,
+):
+    """
+    Devuelve un **resumen agregado** de las tecnologías usadas por los
+    proyectos, por año y por curso lectivo. **Cualquier usuario logueado.**
+
+    - Cuenta todos los proyectos, sin importar su privacidad: `public`,
+      `protected`, `private` y `uninsured`.
+    - Los porcentajes se calculan sobre proyectos con al menos una tecnología.
+    - Incluye totales globales por tecnología.
+    - No expone qué proyecto usa qué tecnología.
+    """
+    return await build_project_technology_statistics(db)
 
 
 @project_technologies_router.post(

@@ -29,6 +29,7 @@ class Project(SQLModel, table=True):
     description: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     objective: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     problem: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    drive_folder_url: str | None = Field(default=None, max_length=1000)
 
     section_year: SectionYear = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
     status: Status = Relationship(

@@ -7,9 +7,10 @@ from models.state.student_section_year import REGISTERED
 from schemas.student_project import (
     StudentProjectAttendanceList,
     StudentProjectAttendancePublic,
+    StudentProjectAttendanceStatsPublic,
 )
 from utils.attendance_stats import attendance_stats_for_cursadas
-from utils.student_projects import list_members
+from utils.student_projects import list_all_members, list_members
 
 
 async def list_project_attendance(
@@ -62,6 +63,53 @@ async def list_project_attendance(
         )
         for member in members
     ]
+
+    all_members = await list_all_members(
+        db, project.id_project, statuses=statuses
+    )
+    all_ids = [member.id_student for member in all_members]
+    all_cursadas = (
+        (
+            await db.exec(
+                select(StudentSectionYear).where(
+                    StudentSectionYear.id_section_year == project.id_section_year,
+                    StudentSectionYear.id_student.in_(all_ids),
+                    StudentSectionYear.state != REGISTERED,
+                )
+            )
+        ).all()
+        if all_ids
+        else []
+    )
+    all_stats = await attendance_stats_for_cursadas(
+        db, all_cursadas, from_date=from_date, to_date=to_date
+    )
+    attended_total = sum(
+        stat.attended_classes
+        for stat in all_stats.values()
+    )
+    classes_total = sum(
+        stat.total_classes
+        for stat in all_stats.values()
+    )
+    statistics = StudentProjectAttendanceStatsPublic(
+        members_total=len(all_members),
+        members_with_attendance=sum(
+            1
+            for cursada in all_cursadas
+            if (
+                all_stats.get(cursada.id_student_section_year) is not None
+                and all_stats[cursada.id_student_section_year].total_classes > 0
+            )
+        ),
+        attended_classes=attended_total,
+        total_classes=classes_total,
+        attendance_percentage=(
+            round(attended_total * 100 / classes_total, 2)
+            if classes_total
+            else None
+        ),
+    )
     section = project.section_year.section
     return StudentProjectAttendanceList(
         id_project=project.id_project,
@@ -70,6 +118,7 @@ async def list_project_attendance(
         id_section=section.id_section,
         section_name=section.name,
         group_number=project.group_number,
+        statistics=statistics,
         items=items,
         total=total,
         limit=limit,

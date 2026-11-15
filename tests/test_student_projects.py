@@ -64,6 +64,12 @@ async def _expel(client, headers, id_project: int, id_student_project: int):
     )
 
 
+async def _finish(client, headers, id_project: int, id_student_project: int):
+    return await client.post(
+        f"{URL}/{id_project}/members/{id_student_project}/finish", headers=headers
+    )
+
+
 async def _add(client, headers, id_project: int, id_student: int):
     return await client.post(
         f"{URL}/{id_project}/members/{id_student}", headers=headers
@@ -833,6 +839,105 @@ async def test_transfer_unknown_membership(client, login):
     await _join(client, await login(STUDENT), project["id_project"])
     r = await _leader(client, await login(STUDENT), project["id_project"], 999)
     assert r.status_code == 404
+
+
+# ---------- finalizar integrante ----------
+async def test_finish_requires_authentication(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    membership = await _add_membership(
+        project["id_project"], ANA_ID, "active", is_leader=True
+    )
+    await _set_status(project["id_project"], "approved")
+    assert (await _finish(client, {}, project["id_project"], membership)).status_code == 401
+
+
+async def test_finish_permissions(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    membership = await _add_membership(
+        project["id_project"], ANA_ID, "active", is_leader=True
+    )
+    await _set_status(project["id_project"], "approved")
+
+    assert (
+        await _finish(
+            client, await login(STUDENT), project["id_project"], membership
+        )
+    ).status_code == 403
+    other = await login(await make_professor("prof-finish-other@frc.utn.edu.ar"))
+    assert (
+        await _finish(client, other, project["id_project"], membership)
+    ).status_code == 403
+
+    mail = await make_professor("prof-finish@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    r = await _finish(client, await login(mail), project["id_project"], membership)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "finished"
+
+
+async def test_finish_requires_approved_project(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    membership = await _add_membership(
+        project["id_project"], ANA_ID, "active", is_leader=True
+    )
+    assert (
+        await _finish(client, admin, project["id_project"], membership)
+    ).status_code == 409
+
+
+async def test_finish_requires_active_membership(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    pending = await _add_membership(project["id_project"], ANA_ID, "pending_approval")
+    finished = await _add_membership(project["id_project"], LUIS_ID, "finished")
+    await _set_status(project["id_project"], "approved")
+
+    assert (
+        await _finish(client, admin, project["id_project"], pending)
+    ).status_code == 409
+    assert (
+        await _finish(client, admin, project["id_project"], finished)
+    ).status_code == 409
+
+
+async def test_finish_success_updates_membership_and_cursada(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    ana = await login(STUDENT)
+    assert (await _join(client, ana, project["id_project"])).status_code == 201
+    membership = await _find_membership(project["id_project"], ANA_ID)
+    await _set_status(project["id_project"], "approved")
+
+    r = await _finish(client, admin, project["id_project"], membership)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "finished"
+    assert (await _cursada(ANA_ID, sy)).state == "finished_approved"
+
+    assert (
+        await _finish(client, admin, project["id_project"], membership)
+    ).status_code == 409
+
+
+async def test_finish_unknown_references(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    membership = await _add_membership(
+        project["id_project"], ANA_ID, "active", is_leader=True
+    )
+    await _set_status(project["id_project"], "approved")
+    assert (await _finish(client, admin, 999999, membership)).status_code == 404
+    assert (
+        await _finish(client, admin, project["id_project"], 999999)
+    ).status_code == 404
 
 
 # ---------- consultar ----------

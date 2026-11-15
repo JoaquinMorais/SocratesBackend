@@ -1,4 +1,5 @@
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import ConfigDict, field_validator, model_validator
 from sqlmodel import Field, SQLModel
@@ -25,6 +26,18 @@ class ProjectBulkCreate(SQLModel):
     quantity: int = Field(ge=1, le=50)
 
 
+def _validate_drive_folder(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    parts = urlsplit(value)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ValueError("drive_folder_url must be an http(s) URL")
+    return value
+
+
 class ProjectUpdate(SQLModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -32,6 +45,7 @@ class ProjectUpdate(SQLModel):
     description: str | None = None
     objective: str | None = None
     problem: str | None = None
+    drive_folder_url: str | None = Field(default=None, max_length=1000)
     privacy: Privacy | None = None
 
     @field_validator("name")
@@ -43,6 +57,11 @@ class ProjectUpdate(SQLModel):
         if not v:
             raise ValueError("name cannot be blank")
         return v
+
+    @field_validator("drive_folder_url")
+    @classmethod
+    def normalize_drive_folder(cls, v: str | None) -> str | None:
+        return _validate_drive_folder(v)
 
     @model_validator(mode="after")
     def privacy_cannot_be_null(self):
@@ -67,6 +86,7 @@ class ProjectPublic(SQLModel):
     description: str | None = None
     objective: str | None = None
     problem: str | None = None
+    drive_folder_url: str | None = None
 
 
 class ProjectList(SQLModel):

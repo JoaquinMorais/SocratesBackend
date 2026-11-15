@@ -40,6 +40,7 @@ def to_public(sy: SectionYear, section: Section | None = None) -> SectionYearPub
         max_students=sy.max_students,
         allow_project_joins=sy.allow_project_joins,
         allow_student_submissions=sy.allow_student_submissions,
+        is_generic=sy.is_generic,
     )
 
 
@@ -126,6 +127,11 @@ async def _combination_taken(
 
 async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
     section = await _get_section(db, data.id_section)
+    if section.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section cannot be used for a normal section year",
+        )
     if await _combination_taken(db, data.year, data.id_section):
         raise _duplicate()
     _validate_range(data.min_students, data.max_students)
@@ -154,6 +160,11 @@ async def update_section_year(
     db, id_section_year: int, data: SectionYearUpdate
 ) -> SectionYearPublic:
     sy = await get_section_year(db, id_section_year)
+    if sy.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section year cannot be modified",
+        )
     changes = data.model_dump(exclude_none=True)
     if not changes:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No fields to update")
@@ -165,6 +176,11 @@ async def update_section_year(
     year = changes.get("year", sy.year)
     id_section = changes.get("id_section", sy.id_section)
     section = await _get_section(db, id_section)
+    if section.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section cannot be used for a normal section year",
+        )
 
     if (year, id_section) != (sy.year, sy.id_section):
         if await _combination_taken(db, year, id_section, exclude_id=id_section_year):
@@ -204,6 +220,11 @@ async def update_section_year_settings(
     db, id_section_year: int, data: SectionYearSettingsUpdate
 ) -> SectionYearPublic:
     sy = await get_section_year(db, id_section_year)
+    if sy.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section year cannot be modified",
+        )
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(sy, field, value)
     db.add(sy)
@@ -213,6 +234,11 @@ async def update_section_year_settings(
 
 async def delete_section_year(db, id_section_year: int) -> None:
     sy = await get_section_year(db, id_section_year)
+    if sy.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section year cannot be deleted",
+        )
     if await has_delivery_data_for_section_year(db, id_section_year):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -228,17 +254,38 @@ async def delete_section_year(db, id_section_year: int) -> None:
         )
 
 
+async def get_generic_section_year(db) -> SectionYear:
+    sy = (
+        await db.exec(
+            select(SectionYear).where(SectionYear.is_generic == True)  # noqa: E712
+        )
+    ).first()
+    if sy is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Generic section year not found"
+        )
+    return sy
+
+
 async def list_section_years(
     db, *, year: int | None, id_section: int | None, limit: int, offset: int
 ) -> tuple[list[SectionYear], int]:
-    conditions = []
+    conditions = [
+        SectionYear.is_generic == False,  # noqa: E712
+        Section.is_generic == False,  # noqa: E712
+    ]
     if year is not None:
         conditions.append(SectionYear.year == year)
     if id_section is not None:
         conditions.append(SectionYear.id_section == id_section)
 
     total = (
-        await db.exec(select(func.count()).select_from(SectionYear).where(*conditions))
+        await db.exec(
+            select(func.count())
+            .select_from(SectionYear)
+            .join(Section, Section.id_section == SectionYear.id_section)
+            .where(*conditions)
+        )
     ).one()
     items = (
         await db.exec(

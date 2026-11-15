@@ -7,7 +7,11 @@ from schemas.section import SectionCreate, SectionPublic, SectionUpdate
 
 
 def to_public(section: Section) -> SectionPublic:
-    return SectionPublic(id_section=section.id_section, name=section.name)
+    return SectionPublic(
+        id_section=section.id_section,
+        name=section.name,
+        is_generic=section.is_generic,
+    )
 
 
 def _duplicate() -> HTTPException:
@@ -43,6 +47,11 @@ async def create_section(db, data: SectionCreate) -> Section:
 
 async def update_section(db, id_section: int, data: SectionUpdate) -> Section:
     section = await get_section(db, id_section)
+    if section.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section cannot be modified",
+        )
     if data.name == section.name:
         return section
     if await _name_taken(db, data.name, exclude_id=id_section):
@@ -59,6 +68,11 @@ async def update_section(db, id_section: int, data: SectionUpdate) -> Section:
 
 async def delete_section(db, id_section: int) -> None:
     section = await get_section(db, id_section)
+    if section.is_generic:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The generic section cannot be deleted",
+        )
     try:
         await db.delete(section)
         await db.commit()
@@ -68,7 +82,7 @@ async def delete_section(db, id_section: int) -> None:
 
 
 async def list_sections(db, *, q: str | None, limit: int, offset: int) -> tuple[list[Section], int]:
-    conditions = []
+    conditions = [Section.is_generic == False]  # noqa: E712
     if q:
         conditions.append(col(Section.name).ilike(f"%{q.strip()}%"))
     total = (

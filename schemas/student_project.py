@@ -53,6 +53,14 @@ class StudentProjectAttendancePublic(StudentProjectMemberPublic):
     attendance: AttendanceStatsPublic | None = None
 
 
+class StudentProjectAttendanceStatsPublic(SQLModel):
+    members_total: int
+    members_with_attendance: int
+    attended_classes: int
+    total_classes: int
+    attendance_percentage: float | None = None
+
+
 class StudentProjectAttendanceList(SQLModel):
     id_project: int
     id_section_year: int
@@ -60,6 +68,7 @@ class StudentProjectAttendanceList(SQLModel):
     id_section: int
     section_name: str
     group_number: int
+    statistics: StudentProjectAttendanceStatsPublic
     items: list[StudentProjectAttendancePublic]
     total: int
     limit: int

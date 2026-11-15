@@ -174,6 +174,19 @@ async def test_project_attendance_counts_and_percentages(client, login):
     }
     assert body["id_section_year"] == sy
     assert body["total"] == 2
+    assert body["statistics"] == {
+        "members_total": 2,
+        "members_with_attendance": 2,
+        "attended_classes": 3,
+        "total_classes": 6,
+        "attendance_percentage": 50.0,
+    }
+
+    page = (
+        await _attendance(client, admin, project["id_project"], limit=1)
+    ).json()
+    assert len(page["items"]) == 1
+    assert page["statistics"] == body["statistics"]
 
 
 async def test_project_attendance_counts_manual_class(client, login):

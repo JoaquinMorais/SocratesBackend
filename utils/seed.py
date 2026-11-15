@@ -747,6 +747,64 @@ async def _fill_seed_deliveries(
         session.add(delivery)
 
 
+GENERIC_SECTION_NAME = "PRESOCRATICO"
+GENERIC_SECTION_YEAR = 2000
+
+
+async def ensure_generic_section_year(session: AsyncSession) -> None:
+    """Asegura la comisión y el curso lectivo de ejemplos pre-Socrates."""
+    section = (
+        await session.exec(select(Section).where(Section.name == GENERIC_SECTION_NAME))
+    ).first()
+    if section is None:
+        section = Section(name=GENERIC_SECTION_NAME, is_generic=True)
+        session.add(section)
+        await session.flush()
+    elif not section.is_generic:
+        section.is_generic = True
+        session.add(section)
+
+    section_year = (
+        await session.exec(
+            select(SectionYear).where(SectionYear.is_generic == True)  # noqa: E712
+        )
+    ).first()
+    if section_year is None:
+        section_year = (
+            await session.exec(
+                select(SectionYear).where(
+                    SectionYear.year == GENERIC_SECTION_YEAR,
+                    SectionYear.id_section == section.id_section,
+                )
+            )
+        ).first()
+    if section_year is None:
+        section_year = SectionYear(
+            year=GENERIC_SECTION_YEAR,
+            id_section=section.id_section,
+            min_students=1,
+            max_students=100,
+            is_generic=True,
+        )
+        session.add(section_year)
+        await session.flush()
+    elif not section_year.is_generic:
+        section_year.is_generic = True
+        session.add(section_year)
+
+    calendar = (
+        await session.exec(
+            select(Calendar).where(
+                Calendar.id_section_year == section_year.id_section_year
+            )
+        )
+    ).first()
+    if calendar is None:
+        session.add(Calendar(id_section_year=section_year.id_section_year))
+    await ensure_section_year_scores(session, section_year.id_section_year)
+    await session.flush()
+
+
 async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> None:
     # Los estados son la base de proyectos y membresías: se aseguran siempre,
     # exista o no la seed (más adelante la seed puede sumar los suyos).
@@ -755,6 +813,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     await ensure_scores(session)
     existing = (await session.exec(select(User.id_user).limit(1))).first()
     if existing is not None:
+        await ensure_generic_section_year(session)
         await session.commit()
         return
 
@@ -792,5 +851,6 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     await _load_student_projects(session, data, students, projects, statuses)
     await _load_student_cursadas(session, statuses)
     await _load_attendance(session, data, section_years, calendars)
+    await ensure_generic_section_year(session)
 
     await session.commit()

@@ -66,13 +66,13 @@ async def _all(model):
 
 
 async def test_seed_key_counts():
-    assert await _count(Section) == 4
-    assert await _count(SectionYear) == 10
+    assert await _count(Section) == 5
+    assert await _count(SectionYear) == 11
     assert await _count(Professor) == 16
     assert await _count(Student) == 200
     assert await _count(ProfessorSectionYear) == 30
     assert await _count(Project) == 32
-    assert await _count(Calendar) == 10
+    assert await _count(Calendar) == 11
     assert await _count(Activity) == 30
     assert await _count(Technology) == 20
     assert await _count(ProjectTechnology) == 95
@@ -80,9 +80,16 @@ async def test_seed_key_counts():
 
 async def test_seed_section_years_allow_project_joins():
     section_years = await _all(SectionYear)
-    assert len(section_years) == 10
-    enabled = {(sy.section.name, sy.year) for sy in section_years if sy.allow_project_joins}
+    assert len(section_years) == 11
+    enabled = {
+        (sy.section.name, sy.year)
+        for sy in section_years
+        if sy.allow_project_joins
+    }
     assert enabled == {("3K2", 2025), ("3K3", 2026)}
+    generic = [sy for sy in section_years if sy.is_generic]
+    assert len(generic) == 1
+    assert (generic[0].section.name, generic[0].year) == ("PRESOCRATICO", 2000)
 
 
 async def test_seed_section_years_disallow_student_submissions():
@@ -91,7 +98,9 @@ async def test_seed_section_years_disallow_student_submissions():
 
 
 async def test_seed_group_size_ranges_and_years():
-    section_years = await _all(SectionYear)
+    section_years = [
+        sy for sy in await _all(SectionYear) if not sy.is_generic
+    ]
     assert {sy.section.name for sy in section_years} == {"3K1", "3K2", "3K3", "3K4"}
     by_key = {(sy.section.name, sy.year) for sy in section_years}
     assert {(f"3K{i}", 2024) for i in range(1, 5)} <= by_key
@@ -109,6 +118,9 @@ async def test_seed_three_distinct_professors_per_section_year():
     assignments = await _all(ProfessorSectionYear)
     for sy in section_years:
         ids = [a.id_professor for a in assignments if a.id_section_year == sy.id_section_year]
+        if sy.is_generic:
+            assert ids == []
+            continue
         assert len(ids) == 3, f"{sy.year} {sy.section.name} no tiene 3 profesores"
         assert len(set(ids)) == 3, "hay un profesor repetido en el mismo curso lectivo"
 
@@ -377,9 +389,22 @@ async def test_seed_calendars_are_consistent():
         for previous, current in zip(slots, slots[1:]):
             assert previous.end_time <= current.start_time
 
+    generic_calendars = {
+        c.id_calendar
+        for c in calendars
+        if next(
+            sy for sy in section_years
+            if sy.id_section_year == c.id_section_year
+        ).is_generic
+    }
     assert all(
         any(row.id_calendar == calendar.id_calendar for row in classes)
         for calendar in calendars
+        if calendar.id_calendar not in generic_calendars
+    )
+    assert all(
+        not any(row.id_calendar == calendar_id for row in classes)
+        for calendar_id in generic_calendars
     )
 
 
@@ -396,7 +421,17 @@ async def test_seed_activities_are_consistent():
     )
     assert all(activity.title.strip() for activity in activities)
     assert all(activity.id_calendar in calendar_by_id for activity in activities)
-    assert {activity.id_calendar for activity in activities} == set(calendar_by_id)
+    generic_calendars = {
+        c.id_calendar
+        for c in calendars
+        if next(
+            sy for sy in section_years
+            if sy.id_section_year == c.id_section_year
+        ).is_generic
+    }
+    assert {activity.id_calendar for activity in activities} == (
+        set(calendar_by_id) - generic_calendars
+    )
     assert all(isinstance(activity.link_required, bool) for activity in activities)
     assert any(activity.link_required for activity in activities)
     assert any(not activity.link_required for activity in activities)

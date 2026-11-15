@@ -55,6 +55,13 @@ class DeliveryGradeCreate(SQLModel):
     id_score: int = Field(gt=0)
 
 
+class DeliveryGradeUpdate(SQLModel):
+    model_config = ConfigDict(extra="forbid")
+
+    category: GradeCategory | None = None
+    id_score: int | None = Field(default=None, gt=0)
+
+
 class DeliveryScorePublic(SQLModel):
     id_score: int
     code: str

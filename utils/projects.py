@@ -51,11 +51,20 @@ class Access:
     """Qué puede hacer el usuario; se arma una vez por request."""
 
     is_super_admin: bool = False
+    is_professor: bool = False
     section_year_ids: set[int] = field(default_factory=set)  # cursos donde es profesor
+    generic_section_year_ids: set[int] = field(default_factory=set)
     project_ids: set[int] = field(default_factory=set)  # proyectos donde es miembro
 
     def can_manage(self, id_section_year: int) -> bool:
-        return self.is_super_admin or id_section_year in self.section_year_ids
+        return (
+            self.is_super_admin
+            or id_section_year in self.section_year_ids
+            or (
+                self.is_professor
+                and id_section_year in self.generic_section_year_ids
+            )
+        )
 
     def is_privileged(self, project: Project) -> bool:
         return self.can_manage(project.id_section_year) or project.id_project in self.project_ids
@@ -84,6 +93,7 @@ class Access:
 async def build_access(db, user: User) -> Access:
     access = Access()
     if user.professor:
+        access.is_professor = True
         access.is_super_admin = user.professor.is_super_admin
         # Se cargan siempre: un super admin también puede dictar cursos y sus
         # endpoints "/me" necesitan sus asignaciones.
@@ -93,6 +103,12 @@ async def build_access(db, user: User) -> Access:
             )
         )
         access.section_year_ids = set(rows.all())
+        generic_rows = await db.exec(
+            select(SectionYear.id_section_year).where(
+                SectionYear.is_generic == True  # noqa: E712
+            )
+        )
+        access.generic_section_year_ids = set(generic_rows.all())
     if user.student:
         rows = await db.exec(
             select(StudentProject.id_project)
@@ -124,6 +140,7 @@ def to_public(project: Project, restricted: bool = False) -> ProjectPublic:
         description=None if restricted else project.description,
         objective=None if restricted else project.objective,
         problem=None if restricted else project.problem,
+        drive_folder_url=None if restricted else project.drive_folder_url,
     )
 
 

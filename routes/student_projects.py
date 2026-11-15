@@ -17,6 +17,7 @@ from utils.student_projects import (
     add_member,
     decide_membership,
     expel_membership,
+    finish_membership,
     join_project,
     list_members,
     transfer_leadership,
@@ -231,6 +232,42 @@ async def expel_membership_route(
     """
     access = await build_access(db, user)
     await expel_membership(db, access, id_project, id_student_project)
+
+
+@student_projects_router.post(
+    "/projects/{id_project}/members/{id_student_project}/finish",
+    response_model=StudentProjectPublic,
+    summary="Finalizar la participación de un integrante",
+    responses={
+        **_AUTH_ERRORS,
+        403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
+        404: {"description": "No existe el proyecto o la membresía"},
+        409: {
+            "description": (
+                "El proyecto no está `approved` o la membresía no está `active` "
+                "(incluye una membresía ya finalizada)"
+            )
+        },
+    },
+)
+async def finish_membership_route(
+    id_project: int,
+    id_student_project: int,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    Finaliza manualmente la participación de un integrante. **Solo profesor del
+    curso lectivo o super admin.**
+
+    - El proyecto debe estar **`approved`**; si no, responde **409**.
+    - La membresía debe estar **`active`**; si ya es `finished` o está en otro
+      estado, responde **409**.
+    - Pasa la membresía a `finished` y su cursada a `finished_approved`.
+    - Los estados finales no se revierten.
+    """
+    access = await build_access(db, user)
+    return await finish_membership(db, access, id_project, id_student_project)
 
 
 @student_projects_router.post(

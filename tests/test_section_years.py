@@ -6,9 +6,9 @@ READ = [
 ]
 WRITE = [
     ("POST", "/section-years", {"year": 2025, "id_section": 1, "min_students": 1, "max_students": 10}),
-    ("PATCH", "/section-years/1", {"year": 2024}),
-    ("PATCH", "/section-years/1/settings", {"allow_project_joins": True}),
-    ("DELETE", "/section-years/1", None),
+    ("PATCH", "/section-years/999999", {"year": 2024}),
+    ("PATCH", "/section-years/999999/settings", {"allow_project_joins": True}),
+    ("DELETE", "/section-years/999999", None),
 ]
 ENDPOINTS = READ + WRITE
 

@@ -504,17 +504,25 @@ async def unmark_manual(
     await db.commit()
 
 
-async def list_my_attendance(
+async def list_student_attendance(
     db,
-    student,
+    id_student: int,
     *,
+    section_year_ids: set[int] | None = None,
     from_date: date | None = None,
     to_date: date | None = None,
 ) -> MyAttendanceListPublic:
     validate_optional_range(from_date, to_date)
+    if section_year_ids is not None and not section_year_ids:
+        return MyAttendanceListPublic(section_years=[], items=[])
 
+    enrollment_conditions = [StudentSectionYear.id_student == id_student]
+    if section_year_ids is not None:
+        enrollment_conditions.append(
+            StudentSectionYear.id_section_year.in_(section_year_ids)
+        )
     enrollments = select(StudentSectionYear.id_student_section_year).where(
-        StudentSectionYear.id_student == student.id_student
+        *enrollment_conditions
     )
     conditions = [Attendance.id_student_section_year.in_(enrollments)]
     if from_date is not None:
@@ -543,13 +551,16 @@ async def list_my_attendance(
         )
     ).all()
 
-    cursadas = (
-        await db.exec(
-            select(StudentSectionYear).where(
-                StudentSectionYear.id_student == student.id_student,
-                StudentSectionYear.state != REGISTERED,
-            )
+    cursada_conditions = [
+        StudentSectionYear.id_student == id_student,
+        StudentSectionYear.state != REGISTERED,
+    ]
+    if section_year_ids is not None:
+        cursada_conditions.append(
+            StudentSectionYear.id_section_year.in_(section_year_ids)
         )
+    cursadas = (
+        await db.exec(select(StudentSectionYear).where(*cursada_conditions))
     ).all()
     stats = await attendance_stats_for_cursadas(
         db, cursadas, from_date=from_date, to_date=to_date
@@ -592,4 +603,19 @@ async def list_my_attendance(
             )
             for attendance, calendar_class, section_year, section in rows
         ]
+    )
+
+
+async def list_my_attendance(
+    db,
+    student,
+    *,
+    from_date: date | None = None,
+    to_date: date | None = None,
+) -> MyAttendanceListPublic:
+    return await list_student_attendance(
+        db,
+        student.id_student,
+        from_date=from_date,
+        to_date=to_date,
     )

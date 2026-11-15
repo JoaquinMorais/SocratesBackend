@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
 from schemas.score import SectionYearScoreList, SectionYearScoresUpdate
+from schemas.project_evaluation import SectionYearEvaluationsPublic
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearList,
@@ -13,9 +14,11 @@ from schemas.section_year import (
 )
 from utils.auth import user_dependency
 from utils.permissions import professor_dependency, super_admin_dependency
+from utils.project_evaluations import build_section_year_evaluations
 from utils.projects import build_access
 from utils.section_years import (
     create_section_year,
+    get_generic_section_year,
     delete_section_year,
     get_section_year,
     list_section_years,
@@ -95,6 +98,63 @@ async def get_section_years(
     return SectionYearList(
         items=[to_public(sy) for sy in items], total=total, limit=limit, offset=offset
     )
+
+
+@section_years_router.get(
+    "/{id_section_year}/evaluations",
+    response_model=SectionYearEvaluationsPublic,
+    summary="Consultar las evaluaciones de todos los proyectos del curso",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es profesor del curso ni super admin"},
+        **_NOT_FOUND,
+    },
+)
+async def get_section_year_evaluations_route(
+    id_section_year: int,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+):
+    """
+    Devuelve la **evaluación consolidada de todos los proyectos del curso
+    lectivo**. **Solo profesor asignado al curso o super admin.**
+
+    - Incluye todos los proyectos, incluso los vacíos, ordenados por número de
+      grupo y luego por id.
+    - Cada proyecto trae sus actividades/entregas, notas, estadísticas e
+      integrantes con su condición y asistencia individual, igual que
+      `GET /projects/{id}/evaluations`.
+    - Si el curso no tiene proyectos, devuelve `projects: []`.
+    """
+    access = await build_access(db, user)
+    section_year = await get_section_year(db, id_section_year)
+    if not access.can_manage(id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can see evaluations",
+        )
+    return await build_section_year_evaluations(db, section_year)
+
+
+@section_years_router.get(
+    "/generic",
+    response_model=SectionYearPublic,
+    summary="Consultar el curso lectivo genérico",
+    responses={401: {"description": "Token ausente, inválido o vencido"}},
+)
+async def get_generic_section_year_route(
+    db: db_dependency, _: user_dependency
+):
+    """
+    Devuelve el curso lectivo genérico **PRESOCRATICO** (año 2000), usado para
+    cargar proyectos de ejemplo de años anteriores. **Cualquier usuario
+    logueado.**
+
+    Este curso no aparece en `GET /section-years` ni en las estadísticas
+    normales.
+    """
+    return to_public(await get_generic_section_year(db))
 
 
 @section_years_router.get(
