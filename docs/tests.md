@@ -507,7 +507,7 @@ Importación de asistencia desde el chat/CSV (`POST /calendar-classes/{id}/atten
 
 ## `tests/test_deliveries.py`
 
-Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH /deliveries/{id}`, `GET /activities/{id}/deliveries` y `POST /projects/{id}/deliveries`): filas pre-creadas, link, dos notas y fechas.
+Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH /deliveries/{id}`, `GET /activities/{id}/deliveries`, `POST /projects/{id}/deliveries` y `/deliveries/{id}/grades`): filas pre-creadas, link, estados, notas históricas y fechas.
 
 **Pre-creación**
 - `test_delivery_precreated_on_project_and_activity`: testear que al crear proyecto/actividad se crean las entregas vacías correspondientes.
@@ -525,7 +525,8 @@ Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH 
 - `test_student_submissions_disabled_blocks_student_writes`: testear que con `allow_student_submissions=false` el alumno puede consultar pero recibe 403 al editar el link, entregar, retirar o crear una entrega faltante, y que el profesor asignado no se ve afectado.
 
 **Campos y fechas**
-- `test_delivery_fields_validation_and_timestamps`: testear notas 1-100, URL inválida, body vacío/campos desconocidos (422), `submitted_at` null antes del link y seteado al enviarlo, `updated_at`, y limpiar el link.
+- `test_delivery_fields_validation_and_timestamps`: testear URL inválida, body vacío/campos desconocidos (422), `submitted_at` null antes del link y seteado al enviarlo, `updated_at`, y limpiar el link.
+- `test_delivery_grade_history_and_current_values`: testear varias notas por categoría, `latest_grades`, valor actual del `SectionYearScore`, endpoint de historial y que un alumno no puede calificar.
 - `test_delivery_repair_endpoint`: testear que `POST` repara una fila faltante, responde 409 si ya existe y 422 si la actividad es de otro curso lectivo.
 
 **Borrado**
@@ -1127,9 +1128,22 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_students_may_have_several_section_years`: testear que hay alumnos con más de una fila en distintos cursos lectivos.
 - `test_seed_calendars_are_consistent`: testear un calendario por curso lectivo, clases dentro del año, horarios válidos, sin solapamientos y con clases en todos los calendarios.
 - `test_seed_activities_are_consistent`: testear actividades dentro del año, con título, calendario y `link_required` válido, y al menos una por curso lectivo.
+- `test_seed_scores_and_delivery_grades_are_consistent`: testear seis puntajes globales, seis valores por curso lectivo y notas de entrega válidas con categorías y referencias correctas.
 - `test_seed_technology_catalog_and_links`: testear nombres únicos sin distinguir mayúsculas y vínculos proyecto-tecnología válidos y sin duplicados.
 - `test_seed_deliveries_are_precreated`: testear que existe una entrega por cada combinación proyecto × actividad del mismo curso lectivo, sin duplicados, con los cuatro estados representados y algunas enviadas/calificadas y otras vacías.
 - `test_seed_attendance_is_consistent`: testear asistencias únicas, solo sobre cursadas válidas y clases pasadas, sesiones cerradas, ~50-60% de clases con toma y que al menos el 80% de los alumnos tenga 60-100% de asistencia sobre esas clases.
+
+## `tests/test_scores.py`
+
+Puntajes por curso lectivo (`GET/PATCH /section-years/{id}/scores`): etiquetas globales, valores configurables y permisos.
+
+**Permisos**
+- `test_scores_requires_authentication`: testear que consultar o modificar sin login responde 401.
+- `test_scores_permissions`: testear que alumno y profesor no asignado reciben 403; profesor asignado y super admin pueden consultar y modificar.
+
+**Valores**
+- `test_scores_defaults_and_update`: testear las seis etiquetas con sus valores por defecto y una actualización parcial.
+- `test_scores_validation`: testear código desconocido, códigos repetidos, valores fuera de 1-100, campos desconocidos y lista vacía (422).
 
 ## `tests/test_statuses.py`
 

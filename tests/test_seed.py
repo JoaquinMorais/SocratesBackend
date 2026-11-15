@@ -13,6 +13,7 @@ from models import (
     Calendar,
     CalendarClass,
     Delivery,
+    DeliveryGrade,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -20,6 +21,8 @@ from models import (
     ProjectTechnology,
     Section,
     SectionYear,
+    SectionYearScore,
+    Score,
     Status,
     Student,
     StudentProject,
@@ -420,7 +423,10 @@ async def test_seed_deliveries_are_precreated():
     assert len(pairs) == len(deliveries)
     assert any(delivery.link is not None for delivery in deliveries)
     assert any(delivery.link is None for delivery in deliveries)
-    assert any(delivery.activity_grade is not None for delivery in deliveries)
+    grades = await _all(DeliveryGrade)
+    assert grades
+    assert any(grade.category == "follow_up" for grade in grades)
+    assert any(grade.category == "activity" for grade in grades)
     assert {delivery.status.code for delivery in deliveries} == {
         "requested",
         "pending_approval",
@@ -429,6 +435,27 @@ async def test_seed_deliveries_are_precreated():
     }
     section_year_ids = {sy.id_section_year for sy in section_years}
     assert all(project.id_section_year in section_year_ids for project in projects)
+
+
+async def test_seed_scores_and_delivery_grades_are_consistent():
+    scores = await _all(Score)
+    section_scores = await _all(SectionYearScore)
+    deliveries = await _all(Delivery)
+    grades = await _all(DeliveryGrade)
+    section_years = await _all(SectionYear)
+
+    assert len(scores) == 6
+    assert len(section_scores) == 6 * len(section_years)
+    assert all(1 <= score.value <= 100 for score in section_scores)
+    assert grades
+    delivery_ids = {delivery.id_delivery for delivery in deliveries}
+    score_ids = {score.id_section_year_score for score in section_scores}
+    assert all(
+        grade.id_delivery in delivery_ids
+        and grade.id_section_year_score in score_ids
+        and grade.category in {"follow_up", "activity"}
+        for grade in grades
+    )
 
 
 async def test_seed_technology_catalog_and_links():

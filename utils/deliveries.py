@@ -5,7 +5,15 @@ from sqlalchemy import func, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 
-from models import Activity, Calendar, Delivery, Project
+from models import (
+    Activity,
+    Calendar,
+    Delivery,
+    DeliveryGrade,
+    Project,
+    Score,
+    SectionYearScore,
+)
 from models.state.delivery import (
     APPROVED,
     PENDING_APPROVAL,
@@ -16,10 +24,14 @@ from schemas.activity import ActivityPublic
 from utils.state.delivery import apply_delivery_transition
 from utils.statuses import get_status, to_public as status_public
 from schemas.delivery import (
+    DeliveryGradeCreate,
+    DeliveryGradeList,
+    DeliveryGradePublic,
     DeliveryList,
     DeliveryProjectSummary,
     DeliveryPublic,
     DeliveryRepairCreate,
+    DeliveryScorePublic,
     DeliveryUpdate,
 )
 
@@ -53,13 +65,6 @@ def _forbidden() -> HTTPException:
     return HTTPException(
         status.HTTP_403_FORBIDDEN,
         "Only a project member, its professor or a super admin can do this",
-    )
-
-
-def _grades_forbidden() -> HTTPException:
-    return HTTPException(
-        status.HTTP_403_FORBIDDEN,
-        "Only a professor of this section year or a super admin can grade deliveries",
     )
 
 
@@ -151,8 +156,43 @@ def _activity_public(activity: Activity) -> ActivityPublic:
     )
 
 
-def to_public(delivery: Delivery) -> DeliveryPublic:
+def _score_public(section_year_score: SectionYearScore) -> DeliveryScorePublic:
+    return DeliveryScorePublic(
+        id_score=section_year_score.id_score,
+        code=section_year_score.score.code,
+        name=section_year_score.score.name,
+        value=section_year_score.value,
+    )
+
+
+def grade_to_public(grade: DeliveryGrade) -> DeliveryGradePublic:
+    return DeliveryGradePublic(
+        id_delivery_grade=grade.id_delivery_grade,
+        id_delivery=grade.id_delivery,
+        category=grade.category,
+        score=_score_public(grade.score),
+        graded_at=grade.graded_at,
+    )
+
+
+def _latest_grades(
+    grades: list[DeliveryGradePublic],
+) -> list[DeliveryGradePublic]:
+    latest: list[DeliveryGradePublic] = []
+    seen: set[str] = set()
+    for grade in grades:
+        if grade.category in seen:
+            continue
+        seen.add(grade.category)
+        latest.append(grade)
+    return latest
+
+
+def to_public(
+    delivery: Delivery, grades: list[DeliveryGrade] | None = None
+) -> DeliveryPublic:
     project = delivery.project
+    public_grades = [grade_to_public(grade) for grade in (grades or [])]
     return DeliveryPublic(
         id_delivery=delivery.id_delivery,
         id_project=delivery.id_project,
@@ -166,11 +206,34 @@ def to_public(delivery: Delivery) -> DeliveryPublic:
             name=project.name,
         ),
         link=delivery.link,
-        activity_grade=delivery.activity_grade,
-        development_grade=delivery.development_grade,
         submitted_at=delivery.submitted_at,
         updated_at=delivery.updated_at,
+        grades=public_grades,
+        latest_grades=_latest_grades(public_grades),
     )
+
+
+async def _grades_by_delivery(
+    db, id_deliveries: list[int]
+) -> dict[int, list[DeliveryGrade]]:
+    if not id_deliveries:
+        return {}
+    rows = (
+        await db.exec(
+            select(DeliveryGrade)
+            .where(DeliveryGrade.id_delivery.in_(id_deliveries))
+            .order_by(DeliveryGrade.graded_at.desc(), DeliveryGrade.id_delivery_grade.desc())
+        )
+    ).scalars().all()
+    result: dict[int, list[DeliveryGrade]] = {}
+    for row in rows:
+        result.setdefault(row.id_delivery, []).append(row)
+    return result
+
+
+async def delivery_public(db, delivery: Delivery) -> DeliveryPublic:
+    grades = await _grades_by_delivery(db, [delivery.id_delivery])
+    return to_public(delivery, grades.get(delivery.id_delivery, []))
 
 
 async def list_project_deliveries(
@@ -208,8 +271,12 @@ async def list_project_deliveries(
             item.id_activity,
         ),
     )
+    grades = await _grades_by_delivery(db, [item.id_delivery for item in items])
     return DeliveryList(
-        items=[to_public(item) for item in items],
+        items=[
+            to_public(item, grades.get(item.id_delivery, []))
+            for item in items
+        ],
         total=total,
         limit=limit,
         offset=offset,
@@ -247,8 +314,12 @@ async def list_activity_deliveries(
         items,
         key=lambda item: (item.project.group_number, item.id_project),
     )
+    grades = await _grades_by_delivery(db, [item.id_delivery for item in items])
     return DeliveryList(
-        items=[to_public(item) for item in items],
+        items=[
+            to_public(item, grades.get(item.id_delivery, []))
+            for item in items
+        ],
         total=total,
         limit=limit,
         offset=offset,
@@ -271,8 +342,6 @@ def _validate_update_permissions(
         raise _student_submissions_forbidden()
 
     fields = data.model_fields_set
-    if "activity_grade" in fields or "development_grade" in fields:
-        raise _grades_forbidden()
     if project.status.is_final:
         raise _final_for_student()
     if delivery is not None and delivery.status.code not in (
@@ -298,10 +367,6 @@ def _apply_values(
             delivery.submitted_at = None
         elif delivery.submitted_at is None:
             delivery.submitted_at = now
-    if "activity_grade" in fields:
-        delivery.activity_grade = data.activity_grade
-    if "development_grade" in fields:
-        delivery.development_grade = data.development_grade
     delivery.updated_at = now
 
 
@@ -317,7 +382,7 @@ async def update_delivery(
     _apply_values(delivery, data)
     db.add(delivery)
     await db.commit()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 async def create_delivery(
@@ -355,7 +420,7 @@ async def create_delivery(
     except IntegrityError:
         await db.rollback()
         raise _duplicate()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 def _require_action_access(access, project: Project) -> bool:
@@ -380,7 +445,7 @@ async def submit_delivery(db, access, id_delivery: int) -> DeliveryPublic:
     await apply_delivery_transition(db, delivery, PENDING_APPROVAL)
     db.add(delivery)
     await db.commit()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 async def withdraw_delivery(db, access, id_delivery: int) -> DeliveryPublic:
@@ -389,7 +454,7 @@ async def withdraw_delivery(db, access, id_delivery: int) -> DeliveryPublic:
     await apply_delivery_transition(db, delivery, REQUESTED)
     db.add(delivery)
     await db.commit()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 async def approve_delivery(db, access, id_delivery: int) -> DeliveryPublic:
@@ -399,7 +464,7 @@ async def approve_delivery(db, access, id_delivery: int) -> DeliveryPublic:
     await apply_delivery_transition(db, delivery, APPROVED)
     db.add(delivery)
     await db.commit()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 async def reject_delivery(db, access, id_delivery: int) -> DeliveryPublic:
@@ -409,7 +474,60 @@ async def reject_delivery(db, access, id_delivery: int) -> DeliveryPublic:
     await apply_delivery_transition(db, delivery, PENDING_MODIFICATION)
     db.add(delivery)
     await db.commit()
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
+
+
+async def create_grade(
+    db, access, id_delivery: int, data: DeliveryGradeCreate
+) -> DeliveryGradePublic:
+    delivery = await get_delivery(db, id_delivery)
+    if not _is_staff(access, delivery.project):
+        raise _forbidden()
+    if delivery.status.code == APPROVED:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "An approved delivery cannot receive new grades",
+        )
+
+    section_year_id = delivery.activity.calendar.id_section_year
+    from utils.scores import ensure_section_year_scores
+
+    await ensure_section_year_scores(db, section_year_id)
+    section_score = (
+        await db.exec(
+            select(SectionYearScore)
+            .join(Score, Score.id_score == SectionYearScore.id_score)
+            .where(
+                SectionYearScore.id_section_year == section_year_id,
+                Score.id_score == data.id_score,
+            )
+        )
+    ).scalars().first()
+    if section_score is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Score not found")
+
+    grade = DeliveryGrade(
+        id_delivery=id_delivery,
+        id_section_year_score=section_score.id_section_year_score,
+        category=data.category,
+        delivery=delivery,
+        score=section_score,
+    )
+    db.add(grade)
+    await db.commit()
+    return grade_to_public(grade)
+
+
+async def list_delivery_grades(
+    db, access, id_delivery: int
+) -> DeliveryGradeList:
+    delivery = await get_delivery(db, id_delivery)
+    if not _can_read(access, delivery.project):
+        raise _forbidden()
+    rows = await _grades_by_delivery(db, [id_delivery])
+    return DeliveryGradeList(
+        items=[grade_to_public(grade) for grade in rows.get(id_delivery, [])]
+    )
 
 
 async def has_delivery_data_for_activity(db, id_activity: int) -> bool:
@@ -459,6 +577,5 @@ async def has_delivery_data_for_section_year(db, id_section_year: int) -> bool:
 def _has_data_condition():
     return or_(
         Delivery.link.is_not(None),
-        Delivery.activity_grade.is_not(None),
-        Delivery.development_grade.is_not(None),
+        Delivery.id_delivery.in_(select(DeliveryGrade.id_delivery)),
     )

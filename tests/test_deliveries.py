@@ -112,6 +112,20 @@ async def _action(client, headers, id_delivery: int, action: str):
     )
 
 
+async def _scores(client, headers, id_section_year: int) -> dict[str, dict]:
+    r = await client.get(f"/section-years/{id_section_year}/scores", headers=headers)
+    assert r.status_code == 200, r.text
+    return {item["code"]: item for item in r.json()["items"]}
+
+
+async def _grade(client, headers, id_delivery: int, category: str, id_score: int):
+    return await client.post(
+        f"/deliveries/{id_delivery}/grades",
+        json={"category": category, "id_score": id_score},
+        headers=headers,
+    )
+
+
 async def test_delivery_precreated_on_project_and_activity(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await section_year(client, admin, "3K1", 2026)
@@ -122,8 +136,8 @@ async def test_delivery_precreated_on_project_and_activity(client, login):
     assert body["total"] == 1
     assert body["items"][0]["id_activity"] == activity["id_activity"]
     assert body["items"][0]["link"] is None
-    assert body["items"][0]["activity_grade"] is None
-    assert body["items"][0]["development_grade"] is None
+    assert body["items"][0]["grades"] == []
+    assert body["items"][0]["latest_grades"] == []
     assert body["items"][0]["submitted_at"] is None
     assert body["items"][0]["updated_at"] is None
     assert body["items"][0]["status"]["code"] == "requested"
@@ -195,21 +209,25 @@ async def test_delivery_permissions(client, login, make_professor):
     r = await _patch(client, ana, delivery_id, link="https://drive.google.com/folder/1")
     assert r.status_code == 200, r.text
     assert r.json()["submitted_at"] is not None
+    scores = await _scores(client, admin, sy)
     assert (
-        await _patch(client, ana, delivery_id, activity_grade=80)
+        await _grade(client, ana, delivery_id, "activity", scores["excellent"]["id_score"])
     ).status_code == 403
 
     # El profesor califica y puede modificar el link.
-    r = await _patch(
+    r = await _grade(
         client,
         await login(assigned),
         delivery_id,
-        activity_grade=80,
-        development_grade=90,
+        "activity",
+        scores["excellent"]["id_score"],
     )
+    assert r.status_code == 201, r.text
+    assert r.json()["score"]["code"] == "excellent"
+    assert r.json()["category"] == "activity"
+
+    r = await _patch(client, await login(assigned), delivery_id, link="https://example.com/new")
     assert r.status_code == 200, r.text
-    assert r.json()["activity_grade"] == 80
-    assert r.json()["development_grade"] == 90
 
 
 async def test_student_submissions_disabled_blocks_student_writes(
@@ -277,29 +295,21 @@ async def test_delivery_fields_validation_and_timestamps(client, login):
     activity = await _activity(client, admin, sy)
     delivery_id = await _delivery_id(project["id_project"], activity["id_activity"])
 
-    assert (await _patch(client, admin, delivery_id, activity_grade=0)).status_code == 422
-    assert (await _patch(client, admin, delivery_id, activity_grade=101)).status_code == 422
     assert (await _patch(client, admin, delivery_id, link="not-a-url")).status_code == 422
     assert (await _patch(client, admin, delivery_id)).status_code == 422
     assert (
         await _patch(client, admin, delivery_id, extra="x")
     ).status_code == 422
 
-    r = await _patch(client, admin, delivery_id, development_grade=75)
-    assert r.status_code == 200
-    first_updated = r.json()["updated_at"]
-    assert r.json()["submitted_at"] is None
-
     r = await _patch(client, admin, delivery_id, link="https://example.com/drive")
     assert r.status_code == 200
     assert r.json()["submitted_at"] is not None
     second_updated = r.json()["updated_at"]
-    assert second_updated >= first_updated
 
     r = await _patch(client, admin, delivery_id, link=None)
     assert r.status_code == 200
     assert r.json()["submitted_at"] is None
-    assert r.json()["development_grade"] == 75
+    assert r.json()["updated_at"] >= second_updated
 
 
 async def test_delivery_final_project_student_cannot_update(client, login):
@@ -316,10 +326,14 @@ async def test_delivery_final_project_student_cannot_update(client, login):
         await _patch(client, ana, delivery_id, link="https://example.com/final")
     ).status_code == 409
     assert (
-        await _patch(
-            client, admin, delivery_id, link="https://example.com/final", activity_grade=80
-        )
+        await _patch(client, admin, delivery_id, link="https://example.com/final")
     ).status_code == 200
+    scores = await _scores(client, admin, sy)
+    assert (
+        await _grade(
+            client, admin, delivery_id, "activity", scores["good"]["id_score"]
+        )
+    ).status_code == 201
 
 
 async def test_delivery_repair_endpoint(client, login):
@@ -456,6 +470,10 @@ async def test_delivery_status_lifecycle(client, login):
     assert r.status_code == 200
     assert r.json()["status"]["code"] == "approved"
 
+    scores = await _scores(client, admin, sy)
+    assert (
+        await _grade(client, admin, delivery_id, "activity", scores["good"]["id_score"])
+    ).status_code == 409
     assert (
         await _patch(client, ana, delivery_id, link="https://example.com/five")
     ).status_code == 409
@@ -504,3 +522,56 @@ async def test_delivery_actions_permissions(client, login):
     await _action(client, ana, delivery_id, "submit")
     assert (await _action(client, luis, delivery_id, "approve")).status_code == 403
     assert (await _action(client, luis, delivery_id, "reject")).status_code == 403
+
+
+async def test_delivery_grade_history_and_current_values(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    project = await _project(client, admin, sy)
+    activity = await _activity(client, admin, sy)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    delivery_id = await _delivery_id(project["id_project"], activity["id_activity"])
+    scores = await _scores(client, admin, sy)
+
+    first = await _grade(
+        client, admin, delivery_id, "activity", scores["good"]["id_score"]
+    )
+    assert first.status_code == 201
+    second = await _grade(
+        client, admin, delivery_id, "activity", scores["excellent"]["id_score"]
+    )
+    assert second.status_code == 201
+    third = await _grade(
+        client, admin, delivery_id, "follow_up", scores["regular"]["id_score"]
+    )
+    assert third.status_code == 201
+
+    body = (await client.get(f"/deliveries/{delivery_id}", headers=admin)).json()
+    assert len(body["grades"]) == 3
+    assert len(body["latest_grades"]) == 2
+    latest = {item["category"]: item for item in body["latest_grades"]}
+    assert latest["activity"]["score"]["code"] == "excellent"
+    assert latest["follow_up"]["score"]["code"] == "regular"
+
+    r = await client.patch(
+        f"/section-years/{sy}/scores",
+        json={"scores": [{"code": "excellent", "value": 95}]},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    body = (await client.get(f"/deliveries/{delivery_id}", headers=admin)).json()
+    latest = {item["category"]: item for item in body["latest_grades"]}
+    assert latest["activity"]["score"]["value"] == 95
+
+    grades = (
+        await client.get(f"/deliveries/{delivery_id}/grades", headers=admin)
+    ).json()
+    assert len(grades["items"]) == 3
+    assert grades["items"][0]["category"] == "follow_up"
+
+    assert (
+        await _grade(
+            client, await login("100001@sistemas.frc.utn.edu.ar"), delivery_id,
+            "activity", scores["good"]["id_score"],
+        )
+    ).status_code == 403

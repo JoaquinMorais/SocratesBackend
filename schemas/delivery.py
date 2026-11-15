@@ -1,8 +1,9 @@
 from datetime import date as date_type
-from datetime import datetime, time
+from datetime import datetime
+from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import ConfigDict, field_validator, model_validator
+from pydantic import ConfigDict, field_validator
 from sqlmodel import Field, SQLModel
 
 from schemas.activity import ActivityPublic
@@ -25,8 +26,6 @@ class DeliveryUpdate(SQLModel):
     model_config = ConfigDict(extra="forbid")
 
     link: str | None = Field(default=None, max_length=1000)
-    activity_grade: int | None = Field(default=None, ge=1, le=100)
-    development_grade: int | None = Field(default=None, ge=1, le=100)
 
     @field_validator("link")
     @classmethod
@@ -39,19 +38,40 @@ class DeliveryRepairCreate(SQLModel):
 
     id_activity: int = Field(gt=0)
     link: str | None = Field(default=None, max_length=1000)
-    activity_grade: int | None = Field(default=None, ge=1, le=100)
-    development_grade: int | None = Field(default=None, ge=1, le=100)
 
     @field_validator("link")
     @classmethod
     def normalize_link(cls, value: str | None) -> str | None:
         return _validate_link(value)
 
-    @model_validator(mode="after")
-    def at_least_one_value(self):
-        if self.link is None and self.activity_grade is None and self.development_grade is None:
-            raise ValueError("link or at least one grade is required")
-        return self
+
+GradeCategory = Literal["follow_up", "activity"]
+
+
+class DeliveryGradeCreate(SQLModel):
+    model_config = ConfigDict(extra="forbid")
+
+    category: GradeCategory
+    id_score: int = Field(gt=0)
+
+
+class DeliveryScorePublic(SQLModel):
+    id_score: int
+    code: str
+    name: str
+    value: int
+
+
+class DeliveryGradePublic(SQLModel):
+    id_delivery_grade: int
+    id_delivery: int
+    category: GradeCategory
+    score: DeliveryScorePublic
+    graded_at: datetime
+
+
+class DeliveryGradeList(SQLModel):
+    items: list[DeliveryGradePublic]
 
 
 class DeliveryProjectSummary(SQLModel):
@@ -69,10 +89,10 @@ class DeliveryPublic(SQLModel):
     project: DeliveryProjectSummary
     status: StatusPublic
     link: str | None = None
-    activity_grade: int | None = None
-    development_grade: int | None = None
     submitted_at: datetime | None = None
     updated_at: datetime | None = None
+    grades: list[DeliveryGradePublic] = []
+    latest_grades: list[DeliveryGradePublic] = []
 
 
 class DeliveryList(SQLModel):

@@ -4,6 +4,9 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
 from schemas.delivery import (
+    DeliveryGradeCreate,
+    DeliveryGradeList,
+    DeliveryGradePublic,
     DeliveryList,
     DeliveryPublic,
     DeliveryRepairCreate,
@@ -13,12 +16,14 @@ from utils.auth import user_dependency
 from utils.deliveries import (
     approve_delivery,
     create_delivery,
+    create_grade,
+    delivery_public,
     get_delivery,
     list_activity_deliveries,
+    list_delivery_grades,
     list_project_deliveries,
     reject_delivery,
     submit_delivery,
-    to_public,
     update_delivery,
     withdraw_delivery,
 )
@@ -91,7 +96,7 @@ async def get_delivery_route(
         delivery.project.id_section_year
     ) and delivery.project.id_project not in access.project_ids:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot see this delivery")
-    return to_public(delivery)
+    return await delivery_public(db, delivery)
 
 
 @deliveries_router.patch(
@@ -105,7 +110,7 @@ async def get_delivery_route(
                 "Un alumno intenta modificar una entrega de un proyecto final"
             )
         },
-        422: {"description": "Body vacío, notas fuera de 1-100, link inválido o campos desconocidos"},
+        422: {"description": "Body vacío, link inválido o campos desconocidos"},
     },
 )
 async def update_delivery_route(
@@ -123,14 +128,63 @@ async def update_delivery_route(
       `allow_student_submissions=true`. Si envía notas, responde **403**.
     - Si `allow_student_submissions=false`, cualquier escritura del alumno
       responde **403**.
-    - El profesor del curso o super admin puede modificar `link`,
-      `activity_grade` y `development_grade`, incluso con el proyecto final.
-    - Las notas van de 1 a 100. El link debe ser una URL `http` o `https`.
+    - El profesor del curso o super admin puede modificar `link`, incluso con el
+      proyecto final. Las notas se cargan por `POST /deliveries/{id}/grades`.
+    - El link debe ser una URL `http` o `https`.
     - Se actualiza `updated_at`; el primer link no nulo setea `submitted_at`.
     - Body vacío: **422**; entrega inexistente: **404**.
     """
     access = await build_access(db, user)
     return await update_delivery(db, access, id_delivery, data)
+
+
+@deliveries_router.get(
+    "/deliveries/{id_delivery}/grades",
+    response_model=DeliveryGradeList,
+    summary="Listar las notas de una entrega",
+    responses=_DELIVERY_ERRORS,
+)
+async def get_delivery_grades_route(
+    id_delivery: int, db: db_dependency, user: user_dependency
+):
+    """
+    Devuelve el historial de notas de una entrega, de la más nueva a la más
+    vieja. **Integrantes `active`/`finished`, profesor del curso o super admin.**
+    """
+    access = await build_access(db, user)
+    return await list_delivery_grades(db, access, id_delivery)
+
+
+@deliveries_router.post(
+    "/deliveries/{id_delivery}/grades",
+    response_model=DeliveryGradePublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="Agregar una nota a una entrega",
+    responses={
+        **_DELIVERY_ERRORS,
+        404: {"description": "No existe la entrega o el score del curso lectivo"},
+        409: {"description": "La entrega está aprobada y no admite nuevas notas"},
+        422: {"description": "Categoría o score inválido"},
+    },
+)
+async def create_delivery_grade_route(
+    id_delivery: int,
+    data: DeliveryGradeCreate,
+    db: db_dependency,
+    user: user_dependency,
+):
+    """
+    Agrega una nota histórica a una entrega. **Solo profesor del curso o super
+    admin.**
+
+    - `category`: `follow_up` (Seguimiento) o `activity` (Actividad).
+    - `id_score`: etiqueta del catálogo; se resuelve contra el puntaje
+      configurado para el curso lectivo de la entrega.
+    - No se puede calificar una entrega `approved` (**409**).
+    - La nota no cambia el estado de la entrega. No se edita ni se borra.
+    """
+    access = await build_access(db, user)
+    return await create_grade(db, access, id_delivery, data)
 
 
 async def _delivery_action(

@@ -20,6 +20,7 @@ from models.state.student_section_year import (
     REGISTERED,
 )
 from utils.deliveries import has_delivery_data_for_section_year
+from utils.scores import ensure_section_year_scores
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearPublic,
@@ -141,6 +142,7 @@ async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
     try:
         await db.flush()  # obtiene id_section_year
         db.add(Calendar(id_section_year=sy.id_section_year))
+        await ensure_section_year_scores(db, sy.id_section_year)
         await db.commit()
     except IntegrityError:  # dos altas simultáneas con la misma combinación
         await db.rollback()

@@ -13,6 +13,7 @@ from models import (
     Calendar,
     CalendarClass,
     Delivery,
+    DeliveryGrade,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -22,12 +23,14 @@ from models import (
     Status,
     Student,
     StudentProject,
+    SectionYearScore,
     StudentSectionYear,
     Technology,
     ProjectTechnology,
     User,
 )
 from models.state import PROJECT_INITIAL
+from models.score import Score
 from models.state.delivery import (
     APPROVED as DELIVERY_APPROVED,
     PENDING_APPROVAL as DELIVERY_PENDING_APPROVAL,
@@ -51,6 +54,7 @@ from models.state.student_section_year import (
     REGISTERED,
 )
 from utils.deliveries import ensure_deliveries_for_section_year
+from utils.scores import ensure_scores, ensure_section_year_scores
 from utils.security import hash_otp
 from utils.statuses import (
     ensure_statuses,
@@ -139,6 +143,8 @@ async def _load_section_years(
     for sy in section_years.values():
         session.add(Calendar(id_section_year=sy.id_section_year))
     await session.flush()
+    for sy in section_years.values():
+        await ensure_section_year_scores(session, sy.id_section_year)
     return section_years
 
 
@@ -676,8 +682,23 @@ async def _fill_seed_deliveries(
     """Completa una parte de las entregas pre-creadas para el seed de demo."""
     cutoff = date(2026, 10, 30)
     deliveries = (await session.exec(select(Delivery))).all()
+    score_rows = (
+        await session.exec(
+            select(SectionYearScore, Score)
+            .join(Score, Score.id_score == SectionYearScore.id_score)
+            .order_by(Score.sort_order)
+        )
+    ).all()
+    scores_by_section: dict[int, list[SectionYearScore]] = {}
+    for score_row, _ in score_rows:
+        scores_by_section.setdefault(score_row.id_section_year, []).append(
+            score_row
+        )
+
     for delivery in deliveries:
         activity = delivery.activity
+        section_year_id = delivery.project.id_section_year
+        available_scores = scores_by_section.get(section_year_id, [])
         if activity.due_date > cutoff:
             continue
         bucket = (delivery.id_project * 17 + delivery.id_activity * 31) % 100
@@ -694,8 +715,6 @@ async def _fill_seed_deliveries(
         delivery.updated_at = submitted
         if bucket < 35:
             delivery.status = statuses[("delivery", DELIVERY_APPROVED)]
-            delivery.activity_grade = 60 + (bucket * 7) % 41
-            delivery.development_grade = 60 + (bucket * 11) % 41
         elif bucket < 55:
             delivery.status = statuses[("delivery", DELIVERY_PENDING_APPROVAL)]
         elif bucket < 68:
@@ -704,6 +723,27 @@ async def _fill_seed_deliveries(
             ]
         else:
             delivery.status = statuses[("delivery", DELIVERY_REQUESTED)]
+
+        if available_scores:
+            first = available_scores[bucket % len(available_scores)]
+            session.add(
+                DeliveryGrade(
+                    id_delivery=delivery.id_delivery,
+                    id_section_year_score=first.id_section_year_score,
+                    category="activity",
+                    graded_at=submitted,
+                )
+            )
+            if bucket < 55 and len(available_scores) > 1:
+                second = available_scores[(bucket + 1) % len(available_scores)]
+                session.add(
+                    DeliveryGrade(
+                        id_delivery=delivery.id_delivery,
+                        id_section_year_score=second.id_section_year_score,
+                        category="follow_up",
+                        graded_at=submitted,
+                    )
+                )
         session.add(delivery)
 
 
@@ -712,6 +752,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     # exista o no la seed (más adelante la seed puede sumar los suyos).
     statuses = await ensure_statuses(session)
 
+    await ensure_scores(session)
     existing = (await session.exec(select(User.id_user).limit(1))).first()
     if existing is not None:
         await session.commit()

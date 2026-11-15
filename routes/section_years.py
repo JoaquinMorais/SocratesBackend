@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, status
 
 from config.database import db_dependency
+from schemas.score import SectionYearScoreList, SectionYearScoresUpdate
 from schemas.section_year import (
     SectionYearCreate,
     SectionYearList,
@@ -22,6 +23,7 @@ from utils.section_years import (
     update_section_year,
     update_section_year_settings,
 )
+from utils.scores import list_section_year_scores, update_section_year_scores, to_public as score_public
 
 section_years_router = APIRouter(prefix="/section-years", tags=["section-years"])
 
@@ -106,6 +108,73 @@ async def get_section_year_route(
 ):
     """Devuelve un curso lectivo por su id. **Cualquier usuario logeado.**"""
     return to_public(await get_section_year(db, id_section_year))
+
+
+@section_years_router.get(
+    "/{id_section_year}/scores",
+    response_model=SectionYearScoreList,
+    summary="Consultar los puntajes del curso lectivo",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es profesor del curso ni super admin"},
+        **_NOT_FOUND,
+    },
+)
+async def get_section_year_scores_route(
+    id_section_year: int,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+):
+    """
+    Devuelve las seis etiquetas de puntuación con el valor configurado para el
+    curso lectivo. **Profesor asignado o super admin.**
+    """
+    access = await build_access(db, user)
+    if not access.can_manage(id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can see scores",
+        )
+    await get_section_year(db, id_section_year)
+    rows = await list_section_year_scores(db, id_section_year)
+    return SectionYearScoreList(items=[score_public(row) for row in rows])
+
+
+@section_years_router.patch(
+    "/{id_section_year}/scores",
+    response_model=SectionYearScoreList,
+    summary="Configurar los puntajes del curso lectivo",
+    responses={
+        401: {"description": "Token ausente, inválido o vencido"},
+        403: {"description": "El usuario no es profesor del curso ni super admin"},
+        **_NOT_FOUND,
+        422: {"description": "Código desconocido, valores fuera de 1-100, códigos repetidos o campos desconocidos"},
+    },
+)
+async def update_section_year_scores_route(
+    id_section_year: int,
+    data: SectionYearScoresUpdate,
+    db: db_dependency,
+    user: user_dependency,
+    _: professor_dependency,
+):
+    """
+    Modifica los valores de las etiquetas de puntuación del curso lectivo.
+    **Profesor asignado o super admin.**
+
+    Se envían solo las etiquetas que cambian, con `code` y `value` (entero 1-100).
+    Las notas históricas usan el valor vigente del curso lectivo.
+    """
+    access = await build_access(db, user)
+    if not access.can_manage(id_section_year):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can change scores",
+        )
+    await get_section_year(db, id_section_year)
+    rows = await update_section_year_scores(db, id_section_year, data)
+    return SectionYearScoreList(items=[score_public(row) for row in rows])
 
 
 @section_years_router.patch(

@@ -20,14 +20,6 @@ class Delivery(SQLModel, table=True):
         UniqueConstraint(
             "id_project", "id_activity", name="uq_delivery_project_activity"
         ),
-        CheckConstraint(
-            "activity_grade IS NULL OR (activity_grade >= 1 AND activity_grade <= 100)",
-            name="ck_delivery_activity_grade",
-        ),
-        CheckConstraint(
-            "development_grade IS NULL OR (development_grade >= 1 AND development_grade <= 100)",
-            name="ck_delivery_development_grade",
-        ),
     )
 
     id_delivery: int | None = Field(default=None, primary_key=True)
@@ -43,8 +35,6 @@ class Delivery(SQLModel, table=True):
     )
     id_status: int = Field(foreign_key="statuses.id_status", index=True)
     link: str | None = Field(default=None, max_length=1000)
-    activity_grade: int | None = Field(default=None)
-    development_grade: int | None = Field(default=None)
     submitted_at: datetime | None = Field(
         default=None, sa_type=DateTime(timezone=True)
     )
