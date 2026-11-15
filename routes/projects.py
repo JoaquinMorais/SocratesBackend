@@ -333,11 +333,11 @@ async def get_project_attendance_route(
 
     - Por defecto incluye members (`active`/`finished`). El parámetro repetible
       `status` permite consultar otros estados; un estado inválido responde 422.
-    - El porcentaje se calcula sobre las clases con toma de asistencia
-      (`AttendanceSession`) del curso lectivo. Si se envían `from`/`to`, se
-      calcula sobre las clases del rango.
-    - `attended_classes` cuenta las asistencias de esa cursada en clases con
-      toma; `total_classes` cuenta las clases con toma del curso lectivo.
+    - El porcentaje se calcula sobre las clases con toma de asistencia: una
+      `AttendanceSession` (código) o al menos una asistencia manual/importada.
+      Si se envían `from`/`to`, se calcula sobre las clases del rango.
+    - `attended_classes` cuenta las asistencias de esa cursada; `total_classes`
+      cuenta las clases con toma del curso lectivo.
     - Si no hay clases con toma, `attendance_percentage` es `null`.
     - La asistencia se calcula por cursada: si un alumno cursó dos veces, cada
       curso lectivo tiene su propio porcentaje.

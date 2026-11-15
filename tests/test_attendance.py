@@ -379,6 +379,78 @@ async def test_manual_mark_and_unmark(client, login):
     assert listed["items"][0]["method"] is None
 
 
+async def test_manual_class_counts_in_attendance_percentage(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    enrollment = await _enroll(client, admin, ANA_ID, sy)
+    r = await client.post(
+        f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/"
+        f"{enrollment['id_student_section_year']}",
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+
+    listed = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    item = next(
+        row for row in listed["items"]
+        if row["id_student_section_year"] == enrollment["id_student_section_year"]
+    )
+    assert item["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
+
+
+async def test_manual_class_counts_absences(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    calendar_class = await _class(client, admin, sy)
+    ana = await _enroll(client, admin, ANA_ID, sy)
+    luis = await _enroll(client, admin, LUIS_ID, sy)
+    r = await client.post(
+        f"{URL}/{calendar_class['id_calendar_class']}/attendance/students/"
+        f"{ana['id_student_section_year']}",
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+
+    listed = (await _list(client, admin, calendar_class["id_calendar_class"])).json()
+    by_student = {item["id_student"]: item for item in listed["items"]}
+    assert by_student[LUIS_ID]["attendance"] == {
+        "attended_classes": 0,
+        "total_classes": 1,
+        "attendance_percentage": 0.0,
+    }
+
+
+async def test_code_and_manual_classes_both_count(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _sy(client, admin)
+    with_code = await _class(client, admin, sy)
+    manual = await _class(client, admin, sy, date="2026-03-10")
+    enrollment = await _enroll(client, admin, ANA_ID, sy)
+    opened = await _open(client, admin, with_code["id_calendar_class"])
+    r = await _checkin(
+        client, await login(STUDENT), with_code["id_calendar_class"], opened["code"]
+    )
+    assert r.status_code == 200, r.text
+    r = await client.post(
+        f"{URL}/{manual['id_calendar_class']}/attendance/students/"
+        f"{enrollment['id_student_section_year']}",
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+
+    listed = (await _list(client, admin, manual["id_calendar_class"])).json()
+    assert listed["items"][0]["attendance"] == {
+        "attended_classes": 2,
+        "total_classes": 2,
+        "attendance_percentage": 100.0,
+    }
+
+
 async def test_manual_foreign_enrollment_rejected(client, login):
     admin = await login(SUPER_ADMIN)
     sy_a = await _sy(client, admin, "3K1", 2026)

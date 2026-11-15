@@ -328,7 +328,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `activities.py` | Lógica de actividades: CRUD, `link_required`, validación de fecha dentro del año, listado con filtros y paginación. |
 | `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, edición de link, notas históricas, transiciones de estado, fechas, bloqueos de borrado y bloqueo de escrituras de alumnos cuando `allow_student_submissions=false`. |
 | `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno. |
-| `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo, contando solo clases con toma y respetando rangos. |
+| `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo; cuenta como clase con toma la que tiene sesión de código o alguna asistencia manual/importada y respeta rangos. |
 | `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango y datos públicos del alumno. |
 | `attendance_transcript.py` | Importación desde el chat: parseo de texto/CSV, matching legajo exacto + nombre tolerante, reporte preview/confirmación y creación con `method=transcript`. |
 | `calendars.py` | Lógica del calendario: `get_calendar_with_classes`, `get_my_calendar` y validación de rangos. |

@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import func
+from sqlalchemy import exists, func, or_
 from sqlmodel import select
 
 from models import (
@@ -32,31 +32,34 @@ def _to_public(attended: int, total: int) -> AttendanceStatsPublic:
     )
 
 
-async def session_counts(
+async def class_counts(
     db,
     section_year_ids: set[int] | list[int],
     *,
     from_date: date | None = None,
     to_date: date | None = None,
 ) -> dict[int, int]:
-    """Clases con toma por curso lectivo (opcionalmente dentro de un rango)."""
+    """Clases con toma por curso lectivo (sesión o asistencia registrada)."""
     if not section_year_ids:
         return {}
     conditions = [Calendar.id_section_year.in_(list(section_year_ids))]
     conditions.extend(_date_conditions(from_date, to_date))
+    session_exists = exists().where(
+        AttendanceSession.id_calendar_class
+        == CalendarClass.id_calendar_class
+    )
+    attendance_exists = exists().where(
+        Attendance.id_calendar_class == CalendarClass.id_calendar_class
+    )
+    conditions.append(or_(session_exists, attendance_exists))
     rows = (
         await db.exec(
             select(
                 Calendar.id_section_year,
-                func.count(AttendanceSession.id_attendance_session),
+                func.count(CalendarClass.id_calendar_class),
             )
             .select_from(Calendar)
             .join(CalendarClass, CalendarClass.id_calendar == Calendar.id_calendar)
-            .join(
-                AttendanceSession,
-                AttendanceSession.id_calendar_class
-                == CalendarClass.id_calendar_class,
-            )
             .where(*conditions)
             .group_by(Calendar.id_section_year)
         )
@@ -71,7 +74,7 @@ async def attended_counts(
     from_date: date | None = None,
     to_date: date | None = None,
 ) -> dict[int, int]:
-    """Asistencias por cursada, contando solo clases que tienen toma."""
+    """Asistencias por cursada, incluyendo código, manual e importación."""
     if not cursada_ids:
         return {}
     conditions = [Attendance.id_student_section_year.in_(list(cursada_ids))]
@@ -81,10 +84,6 @@ async def attended_counts(
             select(
                 Attendance.id_student_section_year,
                 func.count(Attendance.id_attendance),
-            )
-            .join(
-                AttendanceSession,
-                AttendanceSession.id_calendar_class == Attendance.id_calendar_class,
             )
             .join(
                 CalendarClass,
@@ -119,7 +118,7 @@ async def attendance_stats_for_cursadas(
         return {}
 
     section_year_ids = {row.id_section_year for row in cursadas}
-    totals = await session_counts(
+    totals = await class_counts(
         db, section_year_ids, from_date=from_date, to_date=to_date
     )
     attended = await attended_counts(

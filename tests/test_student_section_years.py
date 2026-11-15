@@ -428,16 +428,56 @@ async def _class_with_session(id_section_year: int, day: date) -> int:
         return calendar_class.id_calendar_class
 
 
-async def _mark(id_student_section_year: int, id_calendar_class: int):
+async def _class_without_session(id_section_year: int, day: date) -> int:
+    async with SessionLocal() as session:
+        calendar = (
+            await session.exec(
+                select(Calendar).where(Calendar.id_section_year == id_section_year)
+            )
+        ).one()
+        calendar_class = CalendarClass(
+            id_calendar=calendar.id_calendar,
+            date=day,
+            start_time=time(18, 30),
+            end_time=time(20, 0),
+            modality="in_person",
+        )
+        session.add(calendar_class)
+        await session.commit()
+        return calendar_class.id_calendar_class
+
+
+async def _mark(
+    id_student_section_year: int,
+    id_calendar_class: int,
+    method: str = "code",
+):
     async with SessionLocal() as session:
         session.add(
             Attendance(
                 id_student_section_year=id_student_section_year,
                 id_calendar_class=id_calendar_class,
-                method="code",
+                method=method,
             )
         )
         await session.commit()
+
+
+async def test_enrollment_includes_manual_class(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy = await section_year(client, headers, "3K1", 2026)
+    await _enroll(client, headers, ANA, sy)
+    cursada = await create_cursada(ANA, sy)
+    class_id = await _class_without_session(sy, date(2026, 3, 3))
+    await _mark(cursada.id_student_section_year, class_id, method="manual")
+
+    body = (await client.get(URL, headers=headers)).json()
+    attending = next(item for item in body["items"] if item["state"] == "attending")
+    assert attending["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
 
 
 async def test_enrollment_includes_attendance_percentage(client, login):

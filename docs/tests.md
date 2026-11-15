@@ -349,6 +349,7 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 **Cursadas administradas**
 - `test_managed_cursada_cannot_be_edited_or_deleted`: testear que una cursada no se puede modificar ni borrar por esta vía (409) y sigue existiendo.
 - `test_enrollment_includes_attendance_percentage`: testear que la inscripción trae `attendance: null` y la cursada su porcentaje; la consulta por id devuelve las mismas estadísticas.
+- `test_enrollment_includes_manual_class`: testear que una clase marcada a mano sin sesión cuenta en `total_classes` y `attended_classes`.
 
 ## `tests/test_calendars.py`
 
@@ -567,6 +568,9 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 
 **Manual y listado**
 - `test_manual_mark_and_unmark`: testear el marcado y quitado a mano, la idempotencia y que la lista refleje `present`/`method`.
+- `test_manual_class_counts_in_attendance_percentage`: testear que una clase marcada a mano sin sesión cuenta como dictada y suma el presente.
+- `test_manual_class_counts_absences`: testear que una clase marcada a mano también cuenta para los alumnos ausentes.
+- `test_code_and_manual_classes_both_count`: testear que las clases tomadas por código y a mano se suman en el mismo porcentaje.
 - `test_manual_foreign_enrollment_rejected`: testear que una cursada de otro curso lectivo responde 422 y una inexistente 404.
 - `test_list_includes_all_enrolled_in_order`: testear que la lista incluye a los alumnos con cursada `attending`/`finished_*` (los no marcados en `false`), ordenados por apellido, que excluye inscripciones/abandonadas y que no expone el código.
 - `test_class_list_includes_attendance_percentage`: testear que cada alumno de la lista trae su porcentaje sobre las clases con toma del curso lectivo.
@@ -760,6 +764,7 @@ Asistencia de los integrantes de un proyecto (`GET /projects/{id}/attendance`): 
 
 **Estadísticas**
 - `test_project_attendance_counts_and_percentages`: testear `attended_classes`, `total_classes` y porcentaje por integrante, con métodos de asistencia variados.
+- `test_project_attendance_counts_manual_class`: testear que una clase sin sesión, marcada a mano, cuenta en el porcentaje del proyecto.
 - `test_project_attendance_range`: testear que `from`/`to` limitan las clases y recalculan el porcentaje.
 - `test_project_attendance_without_sessions_and_status_filter`: testear que sin tomas el porcentaje es `null`, que por defecto solo se listan members y que `status=abandoned` permite consultar otros estados.
 - `test_project_attendance_does_not_mix_section_years`: testear que la asistencia del curso lectivo del proyecto no mezcla otra cursada del mismo alumno.

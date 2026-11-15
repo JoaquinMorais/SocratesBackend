@@ -268,7 +268,8 @@ async def get_my_attendance_route(
       fecha de la clase. El resumen por curso lectivo usa el mismo rango.
     - `section_years` trae, por cada cursada, `attended_classes`, `total_classes`
       y `attendance_percentage` (0-100, dos decimales; `null` si no hay clases con
-      toma). Cada curso lectivo se calcula por separado.
+      toma). Una clase cuenta si tiene sesión de código o alguna asistencia
+      manual/importada. Cada curso lectivo se calcula por separado.
     - Orden: clase más reciente primero.
     """
     return await list_my_attendance(

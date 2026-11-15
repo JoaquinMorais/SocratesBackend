@@ -76,6 +76,31 @@ async def _class_with_session(
         return calendar_class.id_calendar_class
 
 
+async def _class_without_session(
+    id_section_year: int,
+    day: date,
+    *,
+    start: time = time(18, 30),
+    end: time = time(20, 0),
+) -> int:
+    async with SessionLocal() as session:
+        calendar = (
+            await session.exec(
+                select(Calendar).where(Calendar.id_section_year == id_section_year)
+            )
+        ).one()
+        calendar_class = CalendarClass(
+            id_calendar=calendar.id_calendar,
+            date=day,
+            start_time=start,
+            end_time=end,
+            modality="in_person",
+        )
+        session.add(calendar_class)
+        await session.commit()
+        return calendar_class.id_calendar_class
+
+
 async def _mark(id_student_section_year: int, id_calendar_class: int, method: str = "code"):
     async with SessionLocal() as session:
         session.add(
@@ -149,6 +174,31 @@ async def test_project_attendance_counts_and_percentages(client, login):
     }
     assert body["id_section_year"] == sy
     assert body["total"] == 2
+
+
+async def test_project_attendance_counts_manual_class(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2025)
+    project = await _project(client, admin, sy)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    await _membership(project["id_project"], LUIS_ID, "active")
+    ana = await create_cursada(ANA_ID, sy)
+    luis = await create_cursada(LUIS_ID, sy)
+    class_id = await _class_without_session(sy, date(2025, 3, 3))
+    await _mark(ana.id_student_section_year, class_id, method="manual")
+
+    body = (await _attendance(client, admin, project["id_project"])).json()
+    by_student = {item["id_student"]: item for item in body["items"]}
+    assert by_student[ANA_ID]["attendance"] == {
+        "attended_classes": 1,
+        "total_classes": 1,
+        "attendance_percentage": 100.0,
+    }
+    assert by_student[LUIS_ID]["attendance"] == {
+        "attended_classes": 0,
+        "total_classes": 1,
+        "attendance_percentage": 0.0,
+    }
 
 
 async def test_project_attendance_range(client, login):

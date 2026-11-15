@@ -153,7 +153,8 @@ async def get_attendance(
     curso lectivo, con su `state`, `present` (los no marcados vienen en `false`),
     el método (`code`, `manual` o `transcript`) y la hora de la marca. También
     incluye `attendance` con `attended_classes`, `total_classes` y
-    `attendance_percentage` del curso lectivo completo. Las inscripciones
+    `attendance_percentage` del curso lectivo completo; una clase cuenta si tiene
+    sesión de código o alguna asistencia manual/importada. Las inscripciones
     `registered` y las cursadas `abandoned` no aparecen. Incluye el estado de la
     sesión (abierta/cerrada y vencimiento), **sin exponer el código**. Orden:
     apellido y nombre.
