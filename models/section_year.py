@@ -20,5 +20,7 @@ class SectionYear(SQLModel, table=True):
     max_students: int
     # Habilita reintentar un curso lectivo cuya cursada quedó `finished_failed`.
     allow_project_joins: bool = Field(default=False)
+    # Habilita que los alumnos entreguen actividades de este curso lectivo.
+    allow_student_submissions: bool = Field(default=False)
 
     section: Section = Relationship(sa_relationship_kwargs={"lazy": "selectin"})

@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from config.database import db_dependency
-from schemas.user import Role, UserList
+from schemas.user import RoleFilter, UserList
 from utils.permissions import super_admin_dependency
 from utils.users import delete_user, list_users, to_list_item
 
@@ -18,12 +18,13 @@ users_router = APIRouter(prefix="/users", tags=["users"])
     responses={
         401: {"description": "Token ausente, inválido o vencido"},
         403: {"description": "El usuario no es super admin"},
+        422: {"description": "Rol inválido (`role` debe ser `student`, `professor` o `super_admin`)"},
     },
 )
 async def get_users(
     db: db_dependency,
     _: super_admin_dependency,
-    role: Annotated[Role | None, Query(description="Filtrar por rol")] = None,
+    role: Annotated[RoleFilter | None, Query(description="Filtrar por rol (`student`, `professor` o `super_admin`)")] = None,
     q: Annotated[
         str | None,
         Query(

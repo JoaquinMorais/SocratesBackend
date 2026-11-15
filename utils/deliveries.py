@@ -63,6 +63,13 @@ def _grades_forbidden() -> HTTPException:
     )
 
 
+def _student_submissions_forbidden() -> HTTPException:
+    return HTTPException(
+        status.HTTP_403_FORBIDDEN,
+        "Student submissions are disabled for this section year",
+    )
+
+
 def _final_for_student() -> HTTPException:
     return HTTPException(
         status.HTTP_409_CONFLICT,
@@ -260,6 +267,9 @@ def _validate_update_permissions(
     if staff:
         return True
 
+    if not project.section_year.allow_student_submissions:
+        raise _student_submissions_forbidden()
+
     fields = data.model_fields_set
     if "activity_grade" in fields or "development_grade" in fields:
         raise _grades_forbidden()
@@ -352,6 +362,8 @@ def _require_action_access(access, project: Project) -> bool:
     if not _can_edit(access, project):
         raise _forbidden()
     staff = _is_staff(access, project)
+    if not staff and not project.section_year.allow_student_submissions:
+        raise _student_submissions_forbidden()
     if not staff and project.status.is_final:
         raise _final_for_student()
     return staff

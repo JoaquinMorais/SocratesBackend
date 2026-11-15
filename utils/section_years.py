@@ -38,6 +38,7 @@ def to_public(sy: SectionYear, section: Section | None = None) -> SectionYearPub
         min_students=sy.min_students,
         max_students=sy.max_students,
         allow_project_joins=sy.allow_project_joins,
+        allow_student_submissions=sy.allow_student_submissions,
     )
 
 
@@ -134,6 +135,7 @@ async def create_section_year(db, data: SectionYearCreate) -> SectionYearPublic:
         min_students=data.min_students,
         max_students=data.max_students,
         allow_project_joins=data.allow_project_joins,
+        allow_student_submissions=data.allow_student_submissions,
     )
     db.add(sy)
     try:
@@ -175,6 +177,9 @@ async def update_section_year(
     sy.min_students = min_students
     sy.max_students = max_students
     sy.allow_project_joins = changes.get("allow_project_joins", sy.allow_project_joins)
+    sy.allow_student_submissions = changes.get(
+        "allow_student_submissions", sy.allow_student_submissions
+    )
     db.add(sy)
     if year_changed:
         # mantener sincronizada la copia del año que usa la restricción única
@@ -197,7 +202,8 @@ async def update_section_year_settings(
     db, id_section_year: int, data: SectionYearSettingsUpdate
 ) -> SectionYearPublic:
     sy = await get_section_year(db, id_section_year)
-    sy.allow_project_joins = data.allow_project_joins
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(sy, field, value)
     db.add(sy)
     await db.commit()
     return to_public(sy)

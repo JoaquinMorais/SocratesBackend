@@ -82,6 +82,11 @@ async def test_seed_section_years_allow_project_joins():
     assert enabled == {("3K2", 2025), ("3K3", 2026)}
 
 
+async def test_seed_section_years_disallow_student_submissions():
+    section_years = await _all(SectionYear)
+    assert all(not sy.allow_student_submissions for sy in section_years)
+
+
 async def test_seed_group_size_ranges_and_years():
     section_years = await _all(SectionYear)
     assert {sy.section.name for sy in section_years} == {"3K1", "3K2", "3K3", "3K4"}

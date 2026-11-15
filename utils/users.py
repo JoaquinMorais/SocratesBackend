@@ -4,7 +4,7 @@ from sqlmodel import col, delete, func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from models import EmailVerification, Professor, RefreshToken, User
-from schemas.user import UserListItem, UserPublic, UserUpdate
+from schemas.user import RoleFilter, UserListItem, UserPublic, UserUpdate
 from utils.professors import delete_professor
 from utils.students import delete_student
 
@@ -53,13 +53,15 @@ async def update_user(db: AsyncSession, user: User, data: UserUpdate) -> User:
 
 
 async def list_users(
-    db: AsyncSession, *, role: str | None, q: str | None, limit: int, offset: int
+    db: AsyncSession, *, role: RoleFilter | None, q: str | None, limit: int, offset: int
 ) -> tuple[list[User], int]:
     conditions = []
     if role == "student":
         conditions.append(User.student.has())
     elif role == "professor":
         conditions.append(User.professor.has())
+    elif role == "super_admin":
+        conditions.append(User.professor.has(Professor.is_super_admin.is_(True)))
 
     if q:
         like = f"%{q.strip()}%"

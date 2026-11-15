@@ -1,4 +1,4 @@
-from pydantic import ConfigDict
+from pydantic import ConfigDict, model_validator
 from sqlmodel import Field, SQLModel
 
 
@@ -10,6 +10,7 @@ class SectionYearCreate(SQLModel):
     min_students: int = Field(ge=1, le=100)
     max_students: int = Field(ge=1, le=100)
     allow_project_joins: bool = False
+    allow_student_submissions: bool = False
 
 
 class SectionYearUpdate(SQLModel):
@@ -20,6 +21,7 @@ class SectionYearUpdate(SQLModel):
     min_students: int | None = Field(default=None, ge=1, le=100)
     max_students: int | None = Field(default=None, ge=1, le=100)
     allow_project_joins: bool | None = None
+    allow_student_submissions: bool | None = None
 
 
 class SectionYearPublic(SQLModel):
@@ -30,6 +32,7 @@ class SectionYearPublic(SQLModel):
     min_students: int
     max_students: int
     allow_project_joins: bool
+    allow_student_submissions: bool
 
 
 class SectionYearList(SQLModel):
@@ -38,7 +41,15 @@ class SectionYearList(SQLModel):
     limit: int
     offset: int
 
+
 class SectionYearSettingsUpdate(SQLModel):
     model_config = ConfigDict(extra="forbid")
 
-    allow_project_joins: bool
+    allow_project_joins: bool | None = None
+    allow_student_submissions: bool | None = None
+
+    @model_validator(mode="after")
+    def at_least_one_flag(self):
+        if self.allow_project_joins is None and self.allow_student_submissions is None:
+            raise ValueError("At least one setting must be provided")
+        return self

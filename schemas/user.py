@@ -6,6 +6,8 @@ from sqlmodel import Field, SQLModel
 
 Role = Literal["student", "professor"]
 
+RoleFilter = Literal["student", "professor", "super_admin"]
+
 MIN_AGE = 18
 
 

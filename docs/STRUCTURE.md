@@ -246,7 +246,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `student.py` | `students` | Datos del alumno (año de ingreso); su mail se calcula por legajo. |
 | `professor.py` | `professors` | Datos del profesor (mail propio e indicador de super admin). |
 | `section.py` | `sections` | Comisión (por ejemplo `3K1`). |
-| `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo y `allow_project_joins` para reintentar `finished_failed`. |
+| `section_year.py` | `section_years` | Curso lectivo: comisión + año, con el mínimo y máximo de estudiantes por grupo, `allow_project_joins` para reintentar `finished_failed` y `allow_student_submissions` para habilitar entregas de alumnos. |
 | `calendar.py` | `calendars` | Calendario del curso lectivo (1 a 1): `id_section_year` único y zona horaria informativa. |
 | `calendar_class.py` | `calendar_classes` | Clase concreta del calendario: fecha, hora de inicio/fin, modalidad, aula y link; sin solapamientos. |
 | `activity.py` | `activities` | Actividad/entrega del curso lectivo: título, descripción, fecha y hora de entrega y `link_required`. |
@@ -284,11 +284,11 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `students.py` | `/students` | Alta de alumnos (individual y masiva), su modificación, su eliminación (solo super admin, con la regla de membresías) y listado de alumnos con sus grupos (incluye `is_leader` y el estado de la membresía, filtrable con `status`). |
 | `professors.py` | `/professors` | Alta, modificación y eliminación de profesores (super admin). |
 | `sections.py` | `/sections` | CRUD de comisiones. |
-| `section_years.py` | `/section-years` | CRUD de cursos lectivos y `PATCH /section-years/{id}/settings` para `allow_project_joins` (profesor asignado o super admin). |
+| `section_years.py` | `/section-years` | CRUD de cursos lectivos y `PATCH /section-years/{id}/settings` para `allow_project_joins` y `allow_student_submissions` (profesor asignado o super admin). |
 | `calendars.py` | `/section-years/{id}/calendar`, `.../calendar/bulk` y `.../calendar-classes` | Calendario del curso lectivo (clases y actividades), carga masiva desde JSON, alta puntual y operaciones en lote sobre clases. |
 | `calendar_classes.py` | `/calendar-classes` | Consulta, edición y borrado de una clase concreta. |
 | `activities.py` | `/section-years/{id}/activities` y `/activities` | Actividades/entregas del curso lectivo: alta, listado, consulta, edición y baja. |
-| `deliveries.py` | `/projects/{id}/deliveries`, `/deliveries/{id}` y `/activities/{id}/deliveries` | Entregas pre-creadas por proyecto/actividad: listado, consulta, edición de link/notas, `submit`/`withdraw`/`approve`/`reject` y reparación de filas faltantes. |
+| `deliveries.py` | `/projects/{id}/deliveries`, `/deliveries/{id}` y `/activities/{id}/deliveries` | Entregas pre-creadas por proyecto/actividad: listado, consulta, edición de link/notas, `submit`/`withdraw`/`approve`/`reject` y reparación de filas faltantes; las escrituras del alumno requieren `allow_student_submissions` en el curso lectivo. |
 | `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase con porcentaje por alumno, hacer check-in con código e importar desde el chat/CSV. |
 | `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state`, `status` y porcentaje de asistencia; las cursadas son de solo lectura (409). |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
@@ -315,11 +315,11 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `students.py` | Alta masiva de alumnos, modificación de un alumno, su eliminación (solo super admin; bloqueada con membresías vigentes, limpia restos viejos, sesiones y OTP) y listado con los grupos de cada alumno (filtrado por estado de la membresía). |
 | `professors.py` | Alta, modificación y eliminación de profesores. |
 | `sections.py` | Lógica del CRUD de comisiones. |
-| `section_years.py` | Lógica del CRUD de cursos lectivos, `allow_project_joins`, del cambio de año (mueve las cursadas), del calendario 1 a 1 (`ensure_calendar`) y del acceso de lectura por curso (solo cursadas o grupo). |
+| `section_years.py` | Lógica del CRUD de cursos lectivos, `allow_project_joins`, `allow_student_submissions`, del cambio de año (mueve las cursadas), del calendario 1 a 1 (`ensure_calendar`) y del acceso de lectura por curso (solo cursadas o grupo). |
 
 | `calendar_classes.py` | Lógica de clases: CRUD puntual, alta en lote por patrón de días, modificación/borrado en lote por ids o filtro, choques y solapamientos (409). |
 | `activities.py` | Lógica de actividades: CRUD, validación de fecha dentro del año, listado con filtros y paginación. |
-| `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, edición de link/notas, transiciones de estado, fechas y bloqueos de borrado. |
+| `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, edición de link/notas, transiciones de estado, fechas, bloqueos de borrado y bloqueo de escrituras de alumnos cuando `allow_student_submissions=false`. |
 | `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno. |
 | `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo, contando solo clases con toma y respetando rangos. |
 | `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango y datos públicos del alumno. |
@@ -353,11 +353,11 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_students.py` | Alta individual y masiva, modificación, listado y eliminación de alumnos (permisos, regla de membresías, legajo libre, sesiones y OTP). |
 | `test_professors.py` | Alta, modificación y eliminación de profesores. |
 | `test_sections.py` | CRUD de comisiones. |
-| `test_section_years.py` | CRUD de cursos lectivos, cambio de año con inscripciones y configuración de `allow_project_joins`. |
+| `test_section_years.py` | CRUD de cursos lectivos, cambio de año con inscripciones y configuración de `allow_project_joins` y `allow_student_submissions`. |
 | `test_calendars.py` | Calendario y clases: permisos, calendario 1 a 1, alta puntual y en lote, validaciones, solapamientos, edición/borrado en lote, actividades y cascada. |
 | `test_calendar_bulk_load.py` | Carga masiva del calendario: permisos, clases/actividades, dry_run, límites, validaciones, solapamientos internos y contra existentes, y todo o nada. |
 | `test_activities.py` | Actividades: permisos, alta, `link_required`, validaciones, consulta con filtros/paginación, edición, baja y cascada. |
-| `test_deliveries.py` | Entregas: pre-creación, permisos, estados, submit/withdraw/approve/reject, notas, fechas, reparación y bloqueos de borrado. |
+| `test_deliveries.py` | Entregas: pre-creación, permisos, estados, submit/withdraw/approve/reject, notas, fechas, reparación, bloqueo de escrituras de alumnos y bloqueos de borrado. |
 | `test_attendance.py` | Asistencia: permisos, abrir/rotar/cerrar, check-in, código inválido/vencido, marcado solo `attending`, lista con `state` y porcentaje, historial y cascadas. |
 | `test_attendance_transcript.py` | Importación desde el chat: parseo, tolerancia de nombres, preview/confirmación, CSV/texto, errores, permisos y exclusión de `finished_*`. |
 | `test_me_calendar.py` | Mi calendario (`GET /me/calendar`): año actual del profesor y del alumno (incluye inscripción sola), fallback al grupo, sin cursos, rango y orden. |
@@ -371,7 +371,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación y eliminación. |
 | `test_student_projects.py` | Integrantes del proyecto: unirse, aceptar/rechazar (jefe), abandonar, expulsar, delegar jefatura, listar, reglas de membresía, cursadas automáticas y reintentos con `allow_project_joins`. |
 | `test_me_project.py` | Mi proyecto (`GET /me/project`): permisos, equipo donde el alumno es miembro (overview completo, `restricted` en `false`) y solicitudes de ingreso (`pending_approval`/`rejected`, ordenadas). |
-| `test_me_section_year.py` | Mi curso lectivo actual (`GET /me/section-year` y `/me/section-year/projects`): año actual del profesor y del alumno, fallback al grupo, sin curso actual, visibilidad por privacidad, orden y paginación. |
+| `test_me_section_year.py` | Mi curso lectivo actual (`GET /me/section-year` y `/me/section-year/projects`): año actual del profesor y del alumno, fallback al grupo, sin curso actual, visibilidad por privacidad, orden, paginación y exposición de `allow_student_submissions`. |
 | `test_technologies.py` | Tecnologías: permisos, alta con unicidad case-insensitive, consulta con `q` y paginación, edición (incluye limpiar la descripción), borrado bloqueado en uso (409) e imagen (subida en multipart, `id_image`, `PUT`/`DELETE`, reemplazo que borra la anterior). |
 | `test_images.py` | Imágenes: permisos, subida con conversión a WebP y archivo en disco, límites de tamaño (413) y formato (422), saneado del nombre y borrado de fila + archivo. |
 | `test_project_technologies.py` | Tecnologías del proyecto: permisos, asociar (individual y en lote todo o nada), regla de estado final, visibilidad según privacidad, quitado y cascada al borrar el proyecto. |

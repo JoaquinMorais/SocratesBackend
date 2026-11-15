@@ -69,7 +69,7 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_regular_professor_cannot_list_users`: testear que un profesor que no es super admin no puede listar (403).
 - `test_super_admin_lists_users`: testear que un super admin ve todos los usuarios ordenados por apellido.
 - `test_list_exposes_only_public_data`: testear que nunca se expone la contraseña, que los alumnos muestran `birth_date`, `age` y `enrollment_year` pero no `is_super_admin`, y los profesores muestran `birth_date` y `age` pero no `enrollment_year`.
-- `test_list_filter_by_role`: testear el filtro por rol y que un rol inválido se rechaza.
+- `test_list_filter_by_role`: testear el filtro por `student`, `professor` (incluye super admins) y `super_admin`, y que un rol inválido se rechaza.
 - `test_list_search`: testear la búsqueda por nombre, legajo y mail de profesor.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
@@ -286,9 +286,14 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 
 **Configuración**
 - `test_allow_project_joins_defaults_to_false`: testear que un curso lectivo nuevo trae `allow_project_joins` en `false`.
+- `test_allow_student_submissions_defaults_to_false`: testear que un curso lectivo nuevo trae `allow_student_submissions` en `false`.
+- `test_create_section_year_with_student_submissions_enabled`: testear que se puede crear un curso lectivo con `allow_student_submissions=true`.
+- `test_settings_can_set_student_submissions_alone`: testear que `PATCH /section-years/{id}/settings` acepta solo `allow_student_submissions` sin exigir `allow_project_joins`.
 - `test_settings_permissions`: testear que sin login responde 401, alumno y profesor no asignado 403, y profesor asignado/super admin 200.
-- `test_patch_settings_invalid_body`: testear body vacío, booleano inválido y campos desconocidos (422).
+- `test_student_submissions_settings_permissions`: testear los mismos permisos al cambiar solo `allow_student_submissions`.
+- `test_patch_settings_invalid_body`: testear body vacío, booleanos inválidos y campos desconocidos (422).
 - `test_super_admin_can_set_flag_with_general_patch`: testear que el super admin también puede cambiar `allow_project_joins` con `PATCH /section-years/{id}`.
+- `test_super_admin_can_set_student_submissions_with_general_patch`: testear que el super admin también puede cambiar `allow_student_submissions` con `PATCH /section-years/{id}`.
 
 **Eliminar**
 - `test_delete_section_year`: testear que se elimina (204) y luego ya no existe ni figura en el listado.
@@ -517,6 +522,7 @@ Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH 
 - `test_delivery_submit_requires_link_only_when_activity_requires_it`: testear que el submit exige link solo si `Activity.link_required=true`.
 - `test_delivery_actions_permissions`: testear que alumnos ajenos no pueden submit/withdraw/approve/reject y que el staff sí.
 - `test_delivery_final_project_student_cannot_update`: testear que un alumno no modifica el link de un proyecto final (409) y que el staff sí puede.
+- `test_student_submissions_disabled_blocks_student_writes`: testear que con `allow_student_submissions=false` el alumno puede consultar pero recibe 403 al editar el link, entregar, retirar o crear una entrega faltante, y que el profesor asignado no se ve afectado.
 
 **Campos y fechas**
 - `test_delivery_fields_validation_and_timestamps`: testear notas 1-100, URL inválida, body vacío/campos desconocidos (422), `submitted_at` null antes del link y seteado al enviarlo, `updated_at`, y limpiar el link.
@@ -947,7 +953,7 @@ Mi proyecto (`GET /me/project`): el equipo donde el alumno es miembro y sus soli
 
 ## `tests/test_me_section_year.py`
 
-Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/section-year/projects`): el año actual del profesor (por asignaciones) o del alumno (`attending`, luego la última `finished_*`, luego la última `registered`, con fallback a su grupo), con la privacidad de siempre.
+Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/section-year/projects`): el año actual del profesor (por asignaciones) o del alumno (`attending`, luego la última `finished_*`, luego la última `registered`, con fallback a su grupo), con la privacidad de siempre. La respuesta de cada curso lectivo incluye `allow_student_submissions`.
 
 **Permisos**
 - `test_requires_authentication`: testear que ambos endpoints responden 401 sin login.
@@ -1098,6 +1104,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 
 - `test_seed_key_counts`: testear los conteos clave: 4 comisiones, 10 cursos lectivos, 16 profesores, 200 alumnos, 30 asignaciones, 32 proyectos, 10 calendarios, 30 actividades, 20 tecnologías y 95 vínculos proyecto-tecnología.
 - `test_seed_section_years_allow_project_joins`: testear que `allow_project_joins` está activo solo en `3K2` 2025 y `3K3` 2026.
+- `test_seed_section_years_disallow_student_submissions`: testear que todos los cursos lectivos del seed tienen `allow_student_submissions=false`.
 - `test_seed_group_size_ranges_and_years`: testear que `3K4` solo existe en 2024, que los cursos lectivos son 2024-2026 y que todos los grupos tienen entre 5 y 10 miembros.
 - `test_seed_three_distinct_professors_per_section_year`: testear que cada curso lectivo tiene exactamente 3 profesores distintos.
 - `test_seed_projects_have_unique_group_numbers_per_section_year`: testear que los números de grupo son únicos y consecutivos por curso lectivo, con 2 a 4 grupos.

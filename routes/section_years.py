@@ -60,6 +60,8 @@ async def create_section_year_route(
       puede existir en distintos años, y un mismo año en distintas comisiones.
     - `allow_project_joins` (por defecto `false`) permite que un alumno con
       cursada `finished_failed` vuelva a unirse a un grupo de este curso.
+    - `allow_student_submissions` (por defecto `false`) habilita que los alumnos
+      entreguen actividades de este curso lectivo.
     """
     return await create_section_year(db, data)
 
@@ -114,7 +116,7 @@ async def get_section_year_route(
         401: {"description": "Token ausente, inválido o vencido"},
         403: {"description": "El usuario no es profesor del curso lectivo ni super admin"},
         **_NOT_FOUND,
-        422: {"description": "Body vacío, falta `allow_project_joins` o hay campos desconocidos"},
+        422: {"description": "Body vacío, falta al menos un setting o hay campos desconocidos"},
     },
 )
 async def update_section_year_settings_route(
@@ -132,6 +134,9 @@ async def update_section_year_settings_route(
       `finished_failed` en ese curso puede volver a unirse a un grupo de la misma
       comisión/año y su cursada se reactiva como `attending`. Si es `false`
       (valor por defecto), el intento responde 409.
+    - `allow_student_submissions`: si es `true`, los alumnos pueden cargar el
+      link, entregar, retirar y crear entregas de este curso lectivo. Si es
+      `false` (valor por defecto), esas acciones responden 403.
     - Las cursadas `finished_approved` no se pueden reintentar con esta opción.
     - El resto de los datos del curso lectivo se siguen modificando con
       `PATCH /section-years/{id}` (solo super admin).
@@ -171,7 +176,8 @@ async def update_section_year_route(
     (entre 1 y 100 y `max_students >= min_students`), por lo que si se envía solo
     uno se compara con el valor actual del otro. Aplica la misma regla de
     unicidad que al crear: reenviar los valores actuales no da error.
-    También puede incluir `allow_project_joins`.
+    También puede incluir `allow_project_joins` y
+    `allow_student_submissions`.
     """
     return await update_section_year(db, id_section_year, data)
 

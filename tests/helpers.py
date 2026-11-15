@@ -34,7 +34,12 @@ async def set_password(client, outbox, mail: str, new_password: str) -> None:
     assert r.status_code == 204, r.text
 
 async def section_year(
-    client, headers: dict, name: str = "3K1", year: int = 2025
+    client,
+    headers: dict,
+    name: str = "3K1",
+    year: int = 2025,
+    *,
+    allow_student_submissions: bool = True,
 ) -> int:
     """Crea una comisión y su curso lectivo; devuelve el id del curso."""
     r = await client.post("/sections", json={"name": name}, headers=headers)
@@ -46,6 +51,7 @@ async def section_year(
             "id_section": r.json()["id_section"],
             "min_students": 1,
             "max_students": 10,
+            "allow_student_submissions": allow_student_submissions,
         },
         headers=headers,
     )

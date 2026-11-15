@@ -20,16 +20,26 @@ async def _section(client, headers, name: str) -> int:
 
 
 async def _create(
-    client, headers, id_section: int, year: int, min_students: int = 1, max_students: int = 10
+    client,
+    headers,
+    id_section: int,
+    year: int,
+    min_students: int = 1,
+    max_students: int = 10,
+    *,
+    allow_student_submissions: bool | None = None,
 ) -> dict:
+    payload = {
+        "year": year,
+        "id_section": id_section,
+        "min_students": min_students,
+        "max_students": max_students,
+    }
+    if allow_student_submissions is not None:
+        payload["allow_student_submissions"] = allow_student_submissions
     r = await client.post(
         "/section-years",
-        json={
-            "year": year,
-            "id_section": id_section,
-            "min_students": min_students,
-            "max_students": max_students,
-        },
+        json=payload,
         headers=headers,
     )
     assert r.status_code == 201, r.text
@@ -315,6 +325,38 @@ async def test_allow_project_joins_defaults_to_false(client, login):
     assert got.json()["allow_project_joins"] is False
 
 
+async def test_allow_student_submissions_defaults_to_false(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    assert created["allow_student_submissions"] is False
+    got = await client.get(f"/section-years/{created['id_section_year']}", headers=admin)
+    assert got.json()["allow_student_submissions"] is False
+
+
+async def test_create_section_year_with_student_submissions_enabled(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(
+        client,
+        admin,
+        await _section(client, admin, "3K1"),
+        2025,
+        allow_student_submissions=True,
+    )
+    assert created["allow_student_submissions"] is True
+
+
+async def test_settings_can_set_student_submissions_alone(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}/settings"
+    r = await client.patch(
+        url, json={"allow_student_submissions": True}, headers=admin
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["allow_student_submissions"] is True
+    assert r.json()["allow_project_joins"] is False
+
+
 async def test_settings_permissions(client, login, make_professor):
     admin = await login(SUPER_ADMIN)
     created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
@@ -351,11 +393,47 @@ async def test_settings_permissions(client, login, make_professor):
     assert r.status_code == 200 and r.json()["allow_project_joins"] is False
 
 
+async def test_student_submissions_settings_permissions(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}/settings"
+
+    body = {"allow_student_submissions": True}
+    assert (await client.patch(url, json=body)).status_code == 401
+    assert (
+        await client.patch(url, json=body, headers=await login(STUDENT))
+    ).status_code == 403
+
+    other = await make_professor("prof-submissions-otro@frc.utn.edu.ar")
+    assert (
+        await client.patch(url, json=body, headers=await login(other))
+    ).status_code == 403
+
+    assigned = await make_professor("prof-submissions@frc.utn.edu.ar", legajo=300004)
+    await assign_professor(
+        client, admin, assigned, created["id_section_year"]
+    )
+    headers = await login(assigned)
+    r = await client.patch(url, json=body, headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["allow_student_submissions"] is True
+
+    r = await client.patch(
+        url, json={"allow_student_submissions": False}, headers=admin
+    )
+    assert r.status_code == 200 and r.json()["allow_student_submissions"] is False
+
+
 async def test_patch_settings_invalid_body(client, login):
     admin = await login(SUPER_ADMIN)
     created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
     url = f"/section-years/{created['id_section_year']}/settings"
-    for body in ({}, {"allow_project_joins": "not-a-bool"}, {"allow_project_joins": True, "extra": 1}):
+    for body in (
+        {},
+        {"allow_project_joins": "not-a-bool"},
+        {"allow_student_submissions": "not-a-bool"},
+        {"allow_project_joins": True, "extra": 1},
+    ):
         r = await client.patch(url, json=body, headers=admin)
         assert r.status_code == 422, body
 
@@ -366,6 +444,16 @@ async def test_super_admin_can_set_flag_with_general_patch(client, login):
     url = f"/section-years/{created['id_section_year']}"
     r = await client.patch(url, json={"allow_project_joins": True}, headers=admin)
     assert r.status_code == 200 and r.json()["allow_project_joins"] is True
+
+
+async def test_super_admin_can_set_student_submissions_with_general_patch(client, login):
+    admin = await login(SUPER_ADMIN)
+    created = await _create(client, admin, await _section(client, admin, "3K1"), 2025)
+    url = f"/section-years/{created['id_section_year']}"
+    r = await client.patch(
+        url, json={"allow_student_submissions": True}, headers=admin
+    )
+    assert r.status_code == 200 and r.json()["allow_student_submissions"] is True
 
 
 # ---------- eliminar ----------

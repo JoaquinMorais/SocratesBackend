@@ -110,12 +110,18 @@ async def test_list_exposes_only_public_data(client, login):
     assert "age" in professor and "birth_date" in professor
 
 
-async def test_list_filter_by_role(client, login):
+async def test_list_filter_by_role(client, login, make_professor):
+    await make_professor("prof@frc.utn.edu.ar")
     headers = await login(SUPER_ADMIN)
     students = (await client.get("/users?role=student", headers=headers)).json()
     assert students["total"] == 2
     professors = (await client.get("/users?role=professor", headers=headers)).json()
-    assert professors["total"] == 1
+    assert professors["total"] == 2
+    assert {u["is_super_admin"] for u in professors["items"]} == {True, False}
+    super_admins = (await client.get("/users?role=super_admin", headers=headers)).json()
+    assert super_admins["total"] == 1
+    assert super_admins["items"][0]["role"] == "professor"
+    assert super_admins["items"][0]["is_super_admin"] is True
     assert (await client.get("/users?role=otro", headers=headers)).status_code == 422
 
 

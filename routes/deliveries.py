@@ -34,7 +34,12 @@ _PROJECT_READ_ERRORS = {
 }
 _DELIVERY_ERRORS = {
     **_AUTH_ERRORS,
-    403: {"description": "El usuario no es miembro del proyecto ni staff del curso"},
+    403: {
+        "description": (
+            "El usuario no es miembro del proyecto ni staff del curso, o las "
+            "entregas de alumnos están deshabilitadas para el curso lectivo"
+        )
+    },
     404: {"description": "No existe la entrega"},
 }
 
@@ -114,7 +119,10 @@ async def update_delivery_route(
     `active`/`finished` del proyecto o staff del curso.**
 
     - El alumno solo puede enviar/corregir `link`, y solo mientras el proyecto no
-      sea final (`approved`/`cancelled`). Si envía notas, responde **403**.
+      sea final (`approved`/`cancelled`) y el curso lectivo tenga
+      `allow_student_submissions=true`. Si envía notas, responde **403**.
+    - Si `allow_student_submissions=false`, cualquier escritura del alumno
+      responde **403**.
     - El profesor del curso o super admin puede modificar `link`,
       `activity_grade` y `development_grade`, incluso con el proyecto final.
     - Las notas van de 1 a 100. El link debe ser una URL `http` o `https`.
@@ -155,6 +163,8 @@ async def submit_delivery_route(
 
     - Solo desde `requested` o `pending_modification`; pasa a
       `pending_approval`.
+    - Si `allow_student_submissions=false`, el alumno recibe **403**. El profesor
+      del curso y el super admin no se ven afectados.
     - Si `Activity.link_required` es `true`, debe existir un link (**409**).
     - Mientras está `pending_approval`, los integrantes no pueden modificar la
       entrega: deben usar `/withdraw` para volver a `requested`.
@@ -177,6 +187,8 @@ async def withdraw_delivery_route(
     """
     Vuelve una entrega de `pending_approval` a `requested` para que el grupo
     pueda seguir modificándola. **Integrantes `active`/`finished` o staff.**
+
+    Si `allow_student_submissions=false`, el alumno recibe **403**.
     """
     return await _delivery_action(db, user, id_delivery, withdraw_delivery)
 
@@ -227,6 +239,12 @@ async def reject_delivery_route(
     summary="Reparar una entrega faltante",
     responses={
         **_PROJECT_READ_ERRORS,
+        403: {
+            "description": (
+                "El usuario no es miembro del proyecto ni staff, o las entregas "
+                "de alumnos están deshabilitadas para el curso lectivo"
+            )
+        },
         409: {"description": "El proyecto ya tiene una entrega para esa actividad"},
         404: {"description": "No existe el proyecto o la actividad"},
         422: {"description": "Actividad de otro curso, sin datos o campos desconocidos"},
@@ -243,6 +261,7 @@ async def create_delivery_route(
     reparación/backfill**: lo normal es que las entregas ya estén pre-creadas.
 
     - El alumno puede crear únicamente con `link` y con proyecto no final.
+    - Si `allow_student_submissions=false`, el alumno recibe **403**.
     - El profesor del curso o super admin puede crear con link y/o notas.
     - La actividad debe pertenecer al mismo curso lectivo que el proyecto.
     - Si la fila ya existe responde **409**.

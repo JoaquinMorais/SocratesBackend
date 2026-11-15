@@ -212,6 +212,64 @@ async def test_delivery_permissions(client, login, make_professor):
     assert r.json()["development_grade"] == 90
 
 
+async def test_student_submissions_disabled_blocks_student_writes(
+    client, login, make_professor
+):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(
+        client, admin, "3K1", 2026, allow_student_submissions=False
+    )
+    project = await _project(client, admin, sy)
+    activity = await _activity(client, admin, sy)
+    await _membership(project["id_project"], ANA_ID, "active", leader=True)
+    delivery_id = await _delivery_id(project["id_project"], activity["id_activity"])
+
+    assigned = await make_professor("prof-submissions-del@frc.utn.edu.ar", legajo=300006)
+    await assign_professor(client, admin, assigned, sy)
+    ana = await login("100001@sistemas.frc.utn.edu.ar")
+
+    assert (
+        await client.get(f"/deliveries/{delivery_id}", headers=ana)
+    ).status_code == 200
+    assert (
+        await _patch(client, ana, delivery_id, link="https://example.com/ana")
+    ).status_code == 403
+    assert (await _action(client, ana, delivery_id, "submit")).status_code == 403
+    assert (await _action(client, ana, delivery_id, "withdraw")).status_code == 403
+
+    headers = await login(assigned)
+    r = await _patch(
+        client, headers, delivery_id, link="https://example.com/staff"
+    )
+    assert r.status_code == 200, r.text
+    assert (await _action(client, headers, delivery_id, "submit")).status_code == 200
+    assert (await _action(client, headers, delivery_id, "withdraw")).status_code == 200
+
+    async with SessionLocal() as session:
+        delivery = await session.get(Delivery, delivery_id)
+        await session.delete(delivery)
+        await session.commit()
+
+    payload = {
+        "id_activity": activity["id_activity"],
+        "link": "https://example.com/missing",
+    }
+    assert (
+        await client.post(
+            f"/projects/{project['id_project']}/deliveries",
+            json=payload,
+            headers=ana,
+        )
+    ).status_code == 403
+    assert (
+        await client.post(
+            f"/projects/{project['id_project']}/deliveries",
+            json=payload,
+            headers=headers,
+        )
+    ).status_code == 201
+
+
 async def test_delivery_fields_validation_and_timestamps(client, login):
     admin = await login(SUPER_ADMIN)
     sy = await section_year(client, admin, "3K1", 2026)

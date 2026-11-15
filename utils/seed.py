@@ -131,6 +131,7 @@ async def _load_section_years(
             min_students=item["min_students"],
             max_students=item["max_students"],
             allow_project_joins=item.get("allow_project_joins", False),
+            allow_student_submissions=item.get("allow_student_submissions", False),
         )
         session.add(sy)
         section_years[(name, item["year"])] = sy

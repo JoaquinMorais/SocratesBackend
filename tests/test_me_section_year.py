@@ -72,6 +72,7 @@ async def test_professor_gets_latest_section_year(client, login, make_professor)
     body = (await client.get(URL, headers=headers)).json()
     assert [s["id_section_year"] for s in body["section_years"]] == [sy_2026]
     assert body["section_years"][0]["year"] == 2026
+    assert body["section_years"][0]["allow_student_submissions"] is True
 
     listing = (await client.get(PROJECTS, headers=headers)).json()
     assert [p["id_project"] for p in listing["items"]] == [p_2026["id_project"]]
