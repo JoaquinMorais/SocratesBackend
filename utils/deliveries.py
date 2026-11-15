@@ -9,6 +9,7 @@ from models import (
     Activity,
     Calendar,
     Delivery,
+    DeliveryComment,
     DeliveryGrade,
     Project,
     Score,
@@ -578,4 +579,5 @@ def _has_data_condition():
     return or_(
         Delivery.link.is_not(None),
         Delivery.id_delivery.in_(select(DeliveryGrade.id_delivery)),
+        Delivery.id_delivery.in_(select(DeliveryComment.id_delivery)),
     )

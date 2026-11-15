@@ -46,6 +46,7 @@ socrates-backend/
 │   ├── activity.py
 │   ├── delivery.py
 │   ├── delivery_grade.py
+│   ├── delivery_comment.py
 │   ├── score.py
 │   ├── attendance_session.py
 │   ├── attendance.py
@@ -74,6 +75,7 @@ socrates-backend/
 │   ├── calendar_bulk.py
 │   ├── activity.py
 │   ├── delivery.py
+│   ├── delivery_comment.py
 │   ├── score.py
 │   ├── attendance.py
 │   ├── attendance_transcript.py
@@ -92,6 +94,7 @@ socrates-backend/
 │       ├── __init__.py
 │       ├── base.py
 │       ├── delivery.py
+│       ├── delivery_comment.py
 │       ├── state_project.py
 │       ├── state_student_project.py
 │       └── student_section_year.py
@@ -109,6 +112,7 @@ socrates-backend/
 │   ├── calendar_classes.py
 │   ├── activities.py
 │   ├── deliveries.py
+│   ├── delivery_comments.py
 │   ├── attendance.py
 │   ├── professor_section_years.py
 │   ├── student_section_years.py
@@ -138,6 +142,7 @@ socrates-backend/
 │   ├── calendar_bulk.py
 │   ├── activities.py
 │   ├── deliveries.py
+│   ├── delivery_comments.py
 │   ├── attendance.py
 │   ├── attendance_stats.py
 │   ├── project_attendance.py
@@ -156,6 +161,7 @@ socrates-backend/
 │       ├── __init__.py
 │       ├── base.py
 │       ├── delivery.py
+│       ├── delivery_comment.py
 │       ├── state_project.py
 │       ├── state_student_project.py
 │       └── student_section_year.py
@@ -174,6 +180,7 @@ socrates-backend/
     ├── test_calendar_bulk_load.py
     ├── test_activities.py
     ├── test_deliveries.py
+    ├── test_delivery_comments.py
     ├── test_scores.py
     ├── test_attendance.py
     ├── test_attendance_transcript.py
@@ -257,6 +264,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `activity.py` | `activities` | Actividad/entrega del curso lectivo: título, descripción, fecha y hora de entrega y `link_required`. |
 | `delivery.py` | `deliveries` | Entrega de un proyecto por actividad: link, fechas de envío/modificación, estado canónico y par único proyecto + actividad. |
 | `delivery_grade.py` | `delivery_grades` | Nota histórica de una entrega: categoría, referencia al puntaje del curso y fecha de calificación. |
+| `delivery_comment.py` | `delivery_comments` | Comentario de una entrega: autor profesor, tipo (`feedback`/`annotation`), contenido, estado y fechas. El feedback lo ve el grupo; las anotaciones solo el staff. |
 | `score.py` | `scores`, `section_year_scores` | Catálogo global de etiquetas y valor configurable (1-100) por curso lectivo. |
 | `attendance_session.py` | `attendance_sessions` | Toma de asistencia de una clase: código hasheado, apertura, vencimiento y cierre. |
 | `attendance.py` | `attendances` | Asistencia de un alumno (cursada) a una clase: método (`code`/`manual`/`transcript`) y fecha; solo presentes, con el par único. |
@@ -273,13 +281,14 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `state/state_project.py` | — | `ProjectState` y sus estados (`Uninsured`, `InIdea`, `InProgress`, `PendingApprovalProject`, `RejectedProject`, `Approved`, `Cancelled`), con transiciones y efectos (incluye cerrar las cursadas al aprobar/cancelar). |
 | `state/student_section_year.py` | — | `StudentSectionYearState` y sus estados (`Registered`, `Attending`, `Abandoned`, `FinishedApproved`, `FinishedFailed`), con transiciones. |
 | `state/delivery.py` | — | `DeliveryState` y sus estados (`RequestedDelivery`, `PendingApprovalDelivery`, `PendingModificationDelivery`, `ApprovedDelivery`), con transiciones. |
+| `state/delivery_comment.py` | — | `DeliveryCommentState` y sus estados (`RequestedComment`, `CorrectedComment`, `Annotation`), con transiciones. |
 | `state/state_student_project.py` | — | `StudentProjectState` y sus estados (`Active`, `PendingApprovalMember`, `Abandoned`, `Finished`, `Expelled`, `RejectedMember`), con transiciones y efectos sobre la cursada. |
 | `token.py` | `refresh_tokens` | Refresh tokens vigentes, guardados hasheados. |
 | `email_verification.py` | `email_verifications` | Códigos de verificación por mail (OTP), hasheados. |
 
 ## `schemas/`
 
-Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `calendar`, `calendar_class`, `calendar_bulk`, `activity`, `delivery`, `score`, `attendance`, `attendance_transcript`, `me_calendar`, `professor_section_year`, `project`, `project_status`, `student_project`, `student_section_year`, `me_project`, `me_section_year`, `status`, `technology` e `image`.
+Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `calendar`, `calendar_class`, `calendar_bulk`, `activity`, `delivery`, `delivery_comment`, `score`, `attendance`, `attendance_transcript`, `me_calendar`, `professor_section_year`, `project`, `project_status`, `student_project`, `student_section_year`, `me_project`, `me_section_year`, `status`, `technology` e `image`.
 
 ## `routes/`
 
@@ -296,6 +305,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `calendar_classes.py` | `/calendar-classes` | Consulta, edición y borrado de una clase concreta. |
 | `activities.py` | `/section-years/{id}/activities` y `/activities` | Actividades/entregas del curso lectivo: alta, listado, consulta, edición y baja. |
 | `deliveries.py` | `/projects/{id}/deliveries`, `/deliveries/{id}` y `/activities/{id}/deliveries` | Entregas pre-creadas por proyecto/actividad: listado, consulta, edición de link, notas históricas, `submit`/`withdraw`/`approve`/`reject` y reparación de filas faltantes; las escrituras del alumno requieren `allow_student_submissions`. |
+| `delivery_comments.py` | `/deliveries/{id}/comments`, `/delivery-comments`, `/projects/{id}/annotations`, `/activities/{id}/annotations` y `/delivery-comments/{id}` | Feedback y anotaciones: crear, listar por entrega/proyecto/actividad, buscar con filtros y `q`, consultar, editar y marcar feedback como corregido. |
 | `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase con porcentaje por alumno, hacer check-in con código e importar desde el chat/CSV. |
 | `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state`, `status` y porcentaje de asistencia; las cursadas son de solo lectura (409). |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
@@ -327,6 +337,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `calendar_classes.py` | Lógica de clases: CRUD puntual, alta en lote por patrón de días, modificación/borrado en lote por ids o filtro, choques y solapamientos (409). |
 | `activities.py` | Lógica de actividades: CRUD, `link_required`, validación de fecha dentro del año, listado con filtros y paginación. |
 | `deliveries.py` | Lógica de entregas: pre-creación proyecto × actividad, listados, edición de link, notas históricas, transiciones de estado, fechas, bloqueos de borrado y bloqueo de escrituras de alumnos cuando `allow_student_submissions=false`. |
+| `delivery_comments.py` | Lógica de comentarios: feedback visible al grupo (`requested`/`corrected`) y anotaciones internas del staff (`annotation`); permisos de autor, visibilidad, listados agregados por proyecto/actividad, búsqueda y transición. |
 | `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno. |
 | `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo; cuenta como clase con toma la que tiene sesión de código o alguna asistencia manual/importada y respeta rangos. |
 | `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango y datos públicos del alumno. |
@@ -347,6 +358,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `state/base.py` | Motor `apply_transition`: resuelve el estado actual, valida el destino y ejecuta el efecto de entrada; no hace commit. |
 | `state/student_section_year.py` | Transiciones de cursada: valida `next_codes`, maneja `allow_project_joins` y sincroniza `state` con `status.code`. |
 | `state/delivery.py` | Transiciones de entrega: `submit`, `withdraw`, `approve` y `reject`, sin efectos laterales. |
+| `state/delivery_comment.py` | Transición de comentario: `requested → corrected`, sin efectos laterales. |
 | `state/state_project.py` | Efectos de proyecto (`ProjectEffector`): memoria del subestado al desasegurar y cierre de membresías/cursadas al aprobar (`finished_approved`) o cancelar (`finished_failed`). |
 | `state/state_student_project.py` | Efectos de membresía (`MembershipEffector`): rechazo de otras solicitudes pendientes, alta/reactivación de la cursada `attending`, cierre como `abandoned`/`finished_approved` y sucesión de jefe (`enrolled_at`). |
 
@@ -366,6 +378,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_calendar_bulk_load.py` | Carga masiva del calendario: permisos, clases/actividades, dry_run, límites, validaciones, solapamientos internos y contra existentes, y todo o nada. |
 | `test_activities.py` | Actividades: permisos, alta, `link_required`, validaciones, consulta con filtros/paginación, edición, baja y cascada. |
 | `test_deliveries.py` | Entregas: pre-creación, permisos, estados, submit/withdraw/approve/reject, historial de notas, fechas, reparación, bloqueo de escrituras de alumnos y bloqueos de borrado. |
+| `test_delivery_comments.py` | Comentarios de entrega: feedback y anotaciones, permisos, visibilidad, listados por proyecto/actividad, búsqueda, edición del staff, corrección y bloqueos de borrado. |
 | `test_scores.py` | Puntajes por curso lectivo: permisos, valores por defecto, actualización y validaciones. |
 | `test_attendance.py` | Asistencia: permisos, abrir/rotar/cerrar, check-in, código inválido/vencido, marcado solo `attending`, lista con `state` y porcentaje, historial y cascadas. |
 | `test_attendance_transcript.py` | Importación desde el chat: parseo, tolerancia de nombres, preview/confirmación, CSV/texto, errores, permisos y exclusión de `finished_*`. |

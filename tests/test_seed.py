@@ -179,6 +179,9 @@ async def test_seed_statuses_are_loaded():
         ("delivery", "pending_approval"),
         ("delivery", "pending_modification"),
         ("delivery", "approved"),
+        ("delivery_comment", "requested"),
+        ("delivery_comment", "corrected"),
+        ("delivery_comment", "annotation"),
     }
     final = {(s.ambito, s.code) for s in statuses if s.is_final}
     assert final == {
@@ -190,6 +193,8 @@ async def test_seed_statuses_are_loaded():
         ("student_section_year", "registered"),
         ("student_section_year", "finished_approved"),
         ("delivery", "approved"),
+        ("delivery_comment", "corrected"),
+        ("delivery_comment", "annotation"),
     }
 
 

@@ -9,6 +9,7 @@ def _subject(ambito: str) -> str:
         "project": "project",
         "student_section_year": "enrollment",
         "delivery": "delivery",
+        "delivery_comment": "comment",
     }.get(ambito, "membership")
 
 

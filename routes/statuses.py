@@ -29,7 +29,7 @@ async def get_statuses(
     """
     Lista los estados disponibles. **Cualquier usuario logueado.**
 
-    Cada estado pertenece a un `ambito` (`project`, `student_project`, `student_section_year` o `delivery`)
+    Cada estado pertenece a un `ambito` (`project`, `student_project`, `student_section_year`, `delivery` o `delivery_comment`)
     y tiene un `code` (identificador), un `name` y una `description` para mostrar.
     `is_final` indica que es un estado terminal (no admite más transiciones) e
     `is_insured` que el estado de proyecto cuenta como "asegurado" (los cuatro

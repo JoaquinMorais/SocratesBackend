@@ -538,7 +538,37 @@ Entregas de proyecto por actividad (`GET /projects/{id}/deliveries`, `GET/PATCH 
 - `test_delivery_repair_endpoint`: testear que `POST` repara una fila faltante, responde 409 si ya existe y 422 si la actividad es de otro curso lectivo.
 
 **Borrado**
-- `test_delivery_deletion_rules`: testear que actividad/proyecto/curso lectivo se pueden borrar con entregas vacías, pero responden 409 cuando hay link o notas.
+- `test_delivery_deletion_rules`: testear que actividad/proyecto/curso lectivo se pueden borrar con entregas vacías, pero responden 409 cuando hay link, notas o comentarios.
+
+## `tests/test_delivery_comments.py`
+
+Comentarios de entrega (`/deliveries/{id}/comments`, `/delivery-comments`, `/projects/{id}/annotations`, `/activities/{id}/annotations` y `/delivery-comments/{id}`): feedback para el grupo, anotaciones internas del staff, búsqueda agregada, edición y corrección.
+
+**Permisos**
+- `test_requires_authentication`: testear que crear, listar, consultar, editar y corregir sin login responde 401.
+- `test_student_and_unassigned_professor_cannot_create`: testear que un alumno y un profesor no asignado no pueden crear comentarios (403).
+- `test_assigned_professor_and_super_admin_can_create`: testear que el profesor del curso y el super admin crean feedback y anotaciones.
+
+**Consultar**
+- `test_student_only_sees_feedback`: testear que el alumno ve solo feedback, que no puede listar ni consultar anotaciones (403), y que el staff ve ambos tipos.
+- `test_list_order_filters_and_pagination`: testear el orden más nuevo primero, `kind`, `limit`/`offset`, `total` y que `limit=0` responde 422.
+- `test_annotations_by_project_and_activity`: testear el listado de anotaciones por proyecto (todas las actividades), por actividad (todos los proyectos), el endpoint global con filtros, la búsqueda `q`, el contexto de proyecto/actividad y la paginación.
+- `test_annotation_list_scope`: testear que un profesor no asignado recibe 403 al filtrar por proyecto/actividad/entrega y que el listado global sin filtros solo trae sus cursos (o queda vacío).
+
+**Crear**
+- `test_create_validation`: testear contenido vacío o demasiado largo, `kind` inválido, campos desconocidos (422) y entrega inexistente (404).
+
+**Editar**
+- `test_author_edits_requested_feedback_only`: testear que el autor edita mientras está `requested`, que otro profesor/super admin/alumno recibe 403, y que un feedback corregido responde 409.
+- `test_annotation_editable_by_author`: testear que una anotación la edita cualquier profesor del curso o el super admin, y que un profesor no asignado recibe 403.
+
+**Corregir**
+- `test_correct_feedback_permissions`: testear que un integrante activo, el profesor y el super admin corrigen feedback; repetir, corregir una anotación o un comentario fuera del proyecto responde 409/403.
+- `test_finished_member_and_staff_can_read_and_correct`: testear que un integrante `finished` lee feedback y que tanto él como el profesor autor pueden marcarlo corregido.
+
+**Efectos**
+- `test_comments_block_resource_deletion`: testear que actividad, proyecto y curso lectivo con comentarios no se pueden borrar (409).
+- `test_professor_with_comments_cannot_be_deleted`: testear que un profesor autor de comentarios no se puede eliminar (409).
 
 ## `tests/test_attendance.py`
 
@@ -1138,7 +1168,7 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_projects_cover_all_states`: testear que hay al menos un proyecto en cada estado (`uninsured`, `in_idea`, `in_progress`, `pending_approval`, `rejected`, `approved` y `cancelled`).
 - `test_seed_memberships_cover_all_states`: testear que hay membresías en todos los estados (`active`, `pending_approval`, `abandoned`, `finished`, `expelled` y `rejected`).
 - `test_seed_privacy_values_are_valid`: testear que la privacidad de todos los proyectos es `public`, `protected` o `private`.
-- `test_seed_statuses_are_loaded`: testear que quedan cargados los 22 estados base (7 de `project`, 6 de `student_project`, 5 de `student_section_year` y 4 de `delivery`) y sus estados finales.
+- `test_seed_statuses_are_loaded`: testear que quedan cargados los 25 estados base (7 de `project`, 6 de `student_project`, 5 de `student_section_year`, 4 de `delivery` y 3 de `delivery_comment`) y sus estados finales.
 - `test_seed_each_project_with_members_has_exactly_one_leader`: testear que cada proyecto con integrantes tiene exactamente un jefe.
 - `test_seed_membership_statuses_are_valid_and_consistent`: testear que cada membresía tiene un estado de su ámbito y que los jefes no quedan en estados de solicitud.
 - `test_seed_cancelled_projects_have_failed_cursadas`: testear que los integrantes de proyectos cancelados quedan `abandoned`/`rejected` y sus cursadas `finished_failed`.
@@ -1175,11 +1205,11 @@ Puntajes por curso lectivo (`GET/PATCH /section-years/{id}/scores`): etiquetas g
 
 **Permisos y lectura (`GET /statuses`)**
 - `test_requires_authentication`: testear que listar estados sin login responde 401.
-- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 22 estados (7 de `project`, 6 de `student_project`, 5 de `student_section_year` y 4 de `delivery`).
+- `test_any_user_can_list_statuses`: testear que un alumno, un super admin y un profesor común pueden listar los 25 estados (7 de `project`, 6 de `student_project`, 5 de `student_section_year`, 4 de `delivery` y 3 de `delivery_comment`).
 - `test_list_returns_public_fields`: testear que la respuesta expone solo `id_status`, `ambito`, `code`, `name`, `description`, `is_final` e `is_insured`.
 
 **Consultar**
-- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae sus 7 estados, `student_project` sus 6 y `student_section_year` sus 5 (`registered`, `attending`, `abandoned`, `finished_approved`, `finished_failed`) y `delivery` sus 4 (`requested`, `pending_approval`, `pending_modification`, `approved`).
+- `test_filter_by_ambito`: testear el filtro `ambito`: `project` trae sus 7 estados, `student_project` sus 6, `student_section_year` sus 5 (`registered`, `attending`, `abandoned`, `finished_approved`, `finished_failed`), `delivery` sus 4 (`requested`, `pending_approval`, `pending_modification`, `approved`) y `delivery_comment` sus 3 (`requested`, `corrected`, `annotation`).
 - `test_invalid_ambito_rejected`: testear que un `ambito` fuera de los permitidos responde 422.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 
