@@ -121,9 +121,10 @@ async def get_my_section_year_route(db: db_dependency, user: user_dependency):
 
     - **Profesor**: sus cursos lectivos asignados (`/professor-section-years`).
       Puede haber más de uno si dicta varias comisiones de ese año.
-    - **Alumno**: su cursada `attending`; si no tiene, la última `finished_*`; si
-      no, la última inscripción `registered`. Si no tiene filas, usa el curso
-      lectivo de su grupo actual (`active`/`finished`).
+    - **Alumno**: la fila más nueva por año entre su cursada `attending`, la
+      última `finished_*` y la última inscripción `registered`; en un empate de
+      año manda `attending`, luego `finished_*` y por último `registered`. Si no
+      tiene filas, usa el curso lectivo de su grupo actual (`active`/`finished`).
 
     Sin cursos (por ejemplo, un profesor sin asignaciones o un super admin que no
     dicta) devuelve `{"section_years": []}`. Cada curso incluye año, comisión y
@@ -211,11 +212,12 @@ async def get_my_calendar_route(
 
     - Los cursos actuales son los del **año actual** del usuario, igual que
       `GET /me/section-year`: un profesor puede tener varias comisiones de ese año;
-      un alumno usa su cursada `attending`, luego la última `finished_*`, luego la
-      última inscripción `registered` y, si no tiene filas, el curso de su grupo
-      actual. Si el alumno solo está inscripto, este endpoint muestra el
-      calendario de esa inscripción; los endpoints directos de calendario y
-      actividades no lo permiten.
+      un alumno usa la fila más nueva por año entre su cursada `attending`, la
+      última `finished_*` y la última inscripción `registered` (en un empate de
+      año manda `attending`, luego `finished_*` y por último `registered`) y, si
+      no tiene filas, el curso de su grupo actual. Si el alumno solo está
+      inscripto, este endpoint muestra el calendario de esa inscripción; los
+      endpoints directos de calendario y actividades no lo permiten.
     - Sin cursos actuales devuelve `section_years`, `classes` y `activities` vacíos.
     - `from`/`to` son opcionales (ambos o ninguno, máximo 366 días) y filtran por
       fecha de clase o de entrega.

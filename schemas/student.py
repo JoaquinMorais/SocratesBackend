@@ -56,6 +56,16 @@ class StudentGroupPublic(SQLModel):
     status: StatusPublic
 
 
+class StudentSectionYearSummary(SQLModel):
+    id_student_section_year: int
+    id_section_year: int
+    year: int
+    id_section: int
+    section_name: str
+    state: str
+    status: StatusPublic
+
+
 class StudentListItem(SQLModel):
     id_student: int
     first_name: str
@@ -64,6 +74,7 @@ class StudentListItem(SQLModel):
     email: str
     enrollment_year: int
     groups: list[StudentGroupPublic]
+    section_years: list[StudentSectionYearSummary]
 
 
 class StudentList(SQLModel):

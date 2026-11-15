@@ -20,11 +20,12 @@ from schemas.student import (
     StudentCreate,
     StudentGroupPublic,
     StudentListItem,
+    StudentSectionYearSummary,
     StudentPublic,
     StudentUpdate,
 )
 from models.state import STUDENT_PROJECT_ORDER
-from models.state.student_section_year import REGISTERED
+from models.state.student_section_year import ATTENDING, REGISTERED
 from utils.statuses import get_status
 
 # Membresías que impiden eliminar a un alumno (participación vigente o en espera).
@@ -222,7 +223,11 @@ async def delete_student(db, id_student: int) -> None:
         )
 
 
-def to_list_item(student: Student, groups: list[StudentGroupPublic]) -> StudentListItem:
+def to_list_item(
+    student: Student,
+    groups: list[StudentGroupPublic],
+    section_years: list[StudentSectionYearSummary],
+) -> StudentListItem:
     user = student.user
     return StudentListItem(
         id_student=student.id_student,
@@ -232,6 +237,7 @@ def to_list_item(student: Student, groups: list[StudentGroupPublic]) -> StudentL
         email=Student.mail_from_legajo(user.legajo),
         enrollment_year=student.enrollment_year,
         groups=groups,
+        section_years=section_years,
     )
 
 
@@ -330,6 +336,78 @@ async def _groups_by_student(
             )
         )
     return groups
+
+
+async def _section_years_by_student(
+    db,
+    student_ids: list[int],
+    *,
+    id_section_year: int | None,
+    year: int | None,
+    id_section: int | None,
+) -> dict[int, list[StudentSectionYearSummary]]:
+    """Inscripciones y cursada actual por alumno, en una sola consulta."""
+    if not student_ids:
+        return {}
+
+    conditions = [
+        StudentSectionYear.id_student.in_(student_ids),
+        StudentSectionYear.state.in_((REGISTERED, ATTENDING)),
+    ]
+    if id_section_year is not None:
+        conditions.append(StudentSectionYear.id_section_year == id_section_year)
+    if year is not None:
+        conditions.append(SectionYear.year == year)
+    if id_section is not None:
+        conditions.append(SectionYear.id_section == id_section)
+
+    state_priority = case(
+        {ATTENDING: 0, REGISTERED: 1},
+        value=StudentSectionYear.state,
+        else_=2,
+    )
+    rows = (
+        await db.exec(
+            select(StudentSectionYear, Status, SectionYear, Section)
+            .join(Status, Status.id_status == StudentSectionYear.id_status)
+            .join(
+                SectionYear,
+                SectionYear.id_section_year
+                == StudentSectionYear.id_section_year,
+            )
+            .join(Section, Section.id_section == SectionYear.id_section)
+            .where(*conditions)
+            .order_by(
+                col(StudentSectionYear.id_student),
+                state_priority,
+                col(SectionYear.year).desc(),
+                col(Section.name),
+                col(StudentSectionYear.id_student_section_year),
+            )
+        )
+    ).all()
+
+    result: dict[int, list[StudentSectionYearSummary]] = {}
+    for enrollment, enrollment_status, section_year, section in rows:
+        result.setdefault(enrollment.id_student, []).append(
+            StudentSectionYearSummary(
+                id_student_section_year=enrollment.id_student_section_year,
+                id_section_year=section_year.id_section_year,
+                year=section_year.year,
+                id_section=section.id_section,
+                section_name=section.name,
+                state=enrollment.state,
+                status=StatusPublic(
+                    id_status=enrollment_status.id_status,
+                    ambito=enrollment_status.ambito,
+                    code=enrollment_status.code,
+                    name=enrollment_status.name,
+                    description=enrollment_status.description,
+                    is_final=enrollment_status.is_final,
+                ),
+            )
+        )
+    return result
 
 
 async def list_students(
@@ -458,6 +536,21 @@ async def list_students(
         )
     ).all()
 
-    groups = await _groups_by_student(db, [s.id_student for s in students], sy_scope, statuses)
-    items = [to_list_item(s, groups.get(s.id_student, [])) for s in students]
+    student_ids = [s.id_student for s in students]
+    groups = await _groups_by_student(db, student_ids, sy_scope, statuses)
+    section_years = await _section_years_by_student(
+        db,
+        student_ids,
+        id_section_year=id_section_year,
+        year=year,
+        id_section=id_section,
+    )
+    items = [
+        to_list_item(
+            s,
+            groups.get(s.id_student, []),
+            section_years.get(s.id_student, []),
+        )
+        for s in students
+    ]
     return items, total

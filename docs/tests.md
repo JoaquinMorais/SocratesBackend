@@ -145,6 +145,10 @@ docker compose exec backend pytest tests/test_auth.py -k refresh   # solo alguno
 - `test_list_search`: testear la búsqueda por nombre, apellido, legajo (prefijo) y nombre de proyecto (sin distinguir mayúsculas), y que al buscar por proyecto solo cuentan las membresías en los estados pedidos y el alcance.
 - `test_professor_cannot_filter_foreign_section_year`: testear que un profesor que filtra un curso lectivo que no dicta recibe 403.
 - `test_list_does_not_expose_private_data`: testear que no se expone la fecha de nacimiento ni campos del detalle del proyecto, solo el id, nombre y número del grupo, los datos del curso lectivo, si el alumno es jefe y el estado de la membresía.
+- `test_list_includes_registered_and_attending_section_years`: testear que cada alumno incluye sus inscripciones `registered` y su cursada `attending`, con `state`/`status`, y que la cursada va primero.
+- `test_list_includes_registration_and_cursada_in_same_section_year`: testear que la inscripción y la cursada del mismo curso lectivo aparecen como dos filas.
+- `test_list_section_year_filters`: testear que los filtros `year`, `id_section_year` e `id_section` también acotan los `section_years`.
+- `test_professor_sees_all_student_section_years`: testear que un profesor común ve todos los cursos lectivos de un alumno listado, aunque no los dicte.
 - `test_list_pagination`: testear `limit` y `offset`, y que `limit=0` se rechaza.
 - `test_list_kind_invalid`: testear que un `kind` desconocido responde 422.
 - `test_list_kind_project`: testear que `kind=project` lista solo alumnos con membresía de proyecto en los `status` pedidos.
@@ -315,6 +319,8 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 **Crear inscripción**
 - `test_create_enrollment`: testear el alta de la inscripción, que nace `registered`, que incluye `status` y que la respuesta aplana los datos del alumno y del curso lectivo.
 - `test_create_duplicate_rejected`: testear que no se puede repetir una inscripción para el mismo alumno y curso lectivo (409).
+- `test_create_enrollment_rejected_after_approved`: testear que un alumno con la última cursada `finished_approved` no puede crear una nueva inscripción (409).
+- `test_create_enrollment_allowed_after_failed`: testear que un alumno con la última cursada `finished_failed` sí puede reinscribirse para recursar.
 - `test_create_unknown_references`: testear que un alumno o un curso lectivo inexistente responde 404.
 - `test_create_invalid_rejected`: testear ids faltantes, ids no positivos y campos desconocidos (422).
 - `test_many_to_many`: testear un alumno con dos inscripciones y un curso lectivo con dos alumnos.
@@ -335,6 +341,7 @@ Inscripciones y cursadas: qué alumno está inscripto o cursa qué curso lectivo
 - `test_patch_same_values_is_ok`: testear que reenviar los mismos valores no da error.
 - `test_patch_duplicate_pair_rejected`: testear que dejar una inscripción ya existente responde 409.
 - `test_patch_to_existing_year_rejected`: testear que mover una inscripción a un alumno que ya tiene otra en ese año responde 409, y que moverla a otro año funciona.
+- `test_update_enrollment_rejected_after_approved`: testear que no se puede mover la inscripción de un alumno con la última cursada `finished_approved` (409).
 - `test_patch_invalid_and_not_found`: testear body vacío, campos desconocidos (422), referencias inexistentes e inscripción inexistente (404).
 - `test_delete_enrollment`: testear que se borra la inscripción (204) y que el alumno y el curso lectivo siguen existiendo.
 - `test_delete_not_found`: testear que eliminar una inscripción inexistente responde 404.
@@ -460,7 +467,7 @@ Mi calendario (`GET /me/calendar`): clases y actividades de los cursos actuales 
 - `test_super_admin_with_assignments_gets_calendar`: testear que un super admin que también dicta ve las clases y actividades de sus cursos.
 
 **Alumnos**
-- `test_student_gets_current_cursada_year`: testear que con una cursada finalizada en 2025 y una actual en 2026 devuelve solo 2026, con sus clases y actividades.
+- `test_student_gets_current_cursada_year`: testear que con una cursada desaprobada en 2025 y una nueva inscripción/cursada en 2026 devuelve solo 2026, con sus clases y actividades.
 - `test_student_falls_back_to_current_group`: testear que un alumno sin filas previas que se une a un grupo usa el curso lectivo de ese grupo (la cursada se crea automáticamente).
 - `test_registered_student_sees_inscribed_calendar`: testear que un alumno solo inscripto ve por `/me/calendar` el curso, clases y actividades de su inscripción.
 - `test_student_prefers_attending_over_registered_for_calendar`: testear que, dentro del mismo año, el calendario corresponde a la cursada `attending` y no a la inscripción `registered`.
@@ -781,6 +788,15 @@ Aseguramiento de un proyecto (`POST /projects/{id}/insure`).
 - `test_insure_with_exactly_min_students`: testear que con exactamente `min_students` integrantes `active` se puede asegurar.
 - `test_insure_rejects_more_than_max_students`: testear que con más de `max_students` integrantes `active` responde 409.
 
+**Forzado de cantidad**
+- `test_force_insure_requires_staff`: testear que el jefe/alumno que envía `force=true` recibe 403.
+- `test_professor_can_force_insure_below_min`: testear que el profesor del curso asegura con menos de `min_students` usando `force=true`.
+- `test_super_admin_can_force_insure_above_max`: testear que el super admin asegura superando `max_students` usando `force=true`.
+- `test_force_insure_requires_at_least_one_active`: testear que no se puede forzar el asegurado de un grupo sin integrantes `active` (409).
+- `test_force_insure_with_one_active_below_min`: testear que un solo integrante `active` alcanza para forzar el asegurado.
+- `test_force_insure_still_requires_uninsured`: testear que el forzado no permite asegurar un proyecto ya asegurado (409).
+- `test_force_query_must_be_boolean`: testear que un valor inválido de `force` responde 422.
+
 **Efectos**
 - `test_insure_records_history`: testear que el aseguramiento agrega la transición `uninsured → in_idea` al historial.
 - `test_cannot_join_after_insure`: testear que después de asegurar ya no se puede unir un integrante nuevo (409).
@@ -900,6 +916,8 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_add_reactivates_abandoned_membership`: testear que una membresía `abandoned` previa se reactiva como `active` (200).
 - `test_add_reactivates_pending_membership`: testear que una membresía `pending_approval` previa se reactiva como `active` (200).
 - `test_add_rejects_other_pending_requests`: testear que al añadir se rechazan las otras solicitudes `pending_approval` del alumno.
+- `test_add_member_with_registration_in_other_section_same_year`: testear que se puede añadir directamente a un alumno inscripto en otra comisión del mismo año, creando la cursada `attending` y conservando la inscripción original.
+- `test_add_member_does_not_create_registration`: testear que el alta directa de un alumno sin filas crea solo la cursada `attending` y no una inscripción `registered`.
 
 **Delegar jefatura**
 - `test_leader_can_transfer_leadership`: testear que el jefe delega la jefatura en otro integrante `active` (200) y deja de ser jefe.
@@ -927,7 +945,9 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_abandon_and_rejoin_reactivates_cursada`: testear que abandonar deja la cursada `abandoned` y reincorporarse a la misma comisión reactiva la misma fila.
 - `test_changing_section_year_abandons_previous_cursada`: testear que al pasar a otra comisión del mismo año la cursada anterior queda `abandoned` y se crea la nueva `attending`.
 - `test_expel_abandons_cursada`: testear que expulsar a un integrante deja su cursada `abandoned`.
-- `test_join_uses_attending_year_over_newer_registration`: testear que el año del proyecto se valida contra la cursada `attending` y no contra una inscripción más nueva.
+- `test_join_uses_new_registration_over_attending_year`: testear que el año del proyecto se valida contra una inscripción más nueva que una cursada `attending` anterior, y que el proyecto del año viejo responde 409.
+- `test_join_after_reenrollment_uses_new_registration_year`: testear que tras recursar (cursada `finished_failed` y nueva inscripción) el alumno puede unirse al proyecto del año nuevo.
+- `test_add_member_after_reenrollment_uses_new_registration_year`: testear que el alta directa del profesor también usa el año de la nueva inscripción.
 - `test_join_ignores_newer_abandoned_cursada`: testear que una cursada abandonada de un año más nuevo no bloquea unirse al año actual.
 - `test_finished_failed_rejoin_blocked_by_default`: testear que un proyecto cancelado bloquea volver a la misma comisión si `allow_project_joins=false` (409).
 - `test_finished_failed_rejoin_allowed_with_flag`: testear que con `allow_project_joins=true` se reactiva la cursada `attending`.
@@ -954,7 +974,7 @@ Mi proyecto (`GET /me/project`): el equipo donde el alumno es miembro y sus soli
 
 ## `tests/test_me_section_year.py`
 
-Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/section-year/projects`): el año actual del profesor (por asignaciones) o del alumno (`attending`, luego la última `finished_*`, luego la última `registered`, con fallback a su grupo), con la privacidad de siempre. La respuesta de cada curso lectivo incluye `allow_student_submissions`.
+Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/section-year/projects`): el año actual del profesor (por asignaciones) o del alumno (la fila más nueva por año entre `attending`, la última `finished_*` y la última `registered`, con prioridad `attending` > `finished_*` > `registered` ante un empate y fallback a su grupo), con la privacidad de siempre. La respuesta de cada curso lectivo incluye `allow_student_submissions`.
 
 **Permisos**
 - `test_requires_authentication`: testear que ambos endpoints responden 401 sin login.
@@ -965,10 +985,11 @@ Mi curso lectivo actual (`GET /me/section-year`) y sus proyectos (`GET /me/secti
 - `test_super_admin_with_assignments_gets_courses`: testear que un super admin que también dicta ve sus cursos y proyectos.
 
 **Alumnos**
-- `test_student_gets_latest_enrolled_year`: testear que con una cursada finalizada en 2025 y una cursada actual en 2026 devuelve solo 2026 y sus proyectos.
+- `test_student_gets_latest_enrolled_year`: testear que con una cursada desaprobada en 2025 y una cursada actual en 2026 devuelve solo 2026 y sus proyectos.
 - `test_student_prefers_attending_over_registered`: testear que dentro del mismo año prevalece la cursada `attending` sobre la inscripción `registered`.
-- `test_student_attending_wins_over_newer_registration`: testear que una cursada `attending` de un año anterior prevalece sobre una inscripción de un año más nuevo.
-- `test_student_finished_wins_over_newer_registration`: testear que una cursada `finished_*` prevalece sobre una inscripción de un año más nuevo.
+- `test_student_newer_registration_wins_over_attending`: testear que una inscripción de un año más nuevo prevalece sobre una cursada `attending` anterior.
+- `test_student_newer_registration_wins_over_finished`: testear que una inscripción de un año más nuevo prevalece sobre una cursada terminada anterior.
+- `test_student_finished_wins_over_older_registration`: testear que una inscripción de un año anterior no desplaza una cursada terminada más nueva.
 - `test_student_uses_registration_when_no_cursada`: testear que, sin cursadas, se usa la última inscripción `registered`.
 - `test_student_uses_finished_when_no_newer`: testear que una cursada `finished_approved` se devuelve si no hay una más nueva.
 - `test_student_ignores_abandoned_cursada`: testear que una cursada `abandoned` no se considera curso actual.

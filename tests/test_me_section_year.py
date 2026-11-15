@@ -108,7 +108,7 @@ async def test_student_gets_latest_enrolled_year(client, login):
     sy_2025 = await section_year(client, admin, "3K1", 2025)
     sy_2026 = await section_year(client, admin, "3K2", 2026)
     await _enroll(client, admin, ANA_ID, sy_2025)
-    await create_cursada(ANA_ID, sy_2025, state="finished_approved")
+    await create_cursada(ANA_ID, sy_2025, state="finished_failed")
     await _enroll(client, admin, ANA_ID, sy_2026)
     p_2025 = await _project(client, admin, sy_2025)
     p_2026 = await _project(client, admin, sy_2026)
@@ -251,7 +251,7 @@ async def test_student_prefers_attending_over_registered(client, login):
     assert project_a["id_project"] not in ids
 
 
-async def test_student_attending_wins_over_newer_registration(client, login):
+async def test_student_newer_registration_wins_over_attending(client, login):
     admin = await login(SUPER_ADMIN)
     sy_2025 = await section_year(client, admin, "3K1", 2025)
     sy_2026 = await section_year(client, admin, "3K2", 2026)
@@ -260,16 +260,27 @@ async def test_student_attending_wins_over_newer_registration(client, login):
 
     headers = await login(STUDENT)
     body = (await client.get(URL, headers=headers)).json()
-    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2025]
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2026]
 
 
-async def test_student_finished_wins_over_newer_registration(client, login):
+async def test_student_newer_registration_wins_over_finished(client, login):
     admin = await login(SUPER_ADMIN)
     sy_2025 = await section_year(client, admin, "3K1", 2025)
     sy_2026 = await section_year(client, admin, "3K2", 2026)
     await _enroll(client, admin, ANA_ID, sy_2025)
-    await create_cursada(ANA_ID, sy_2025, state="finished_approved")
+    await create_cursada(ANA_ID, sy_2025, state="finished_failed")
     await _register(client, admin, ANA_ID, sy_2026)
+
+    body = (await client.get(URL, headers=await login(STUDENT))).json()
+    assert [section["id_section_year"] for section in body["section_years"]] == [sy_2026]
+
+
+async def test_student_finished_wins_over_older_registration(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2024 = await section_year(client, admin, "3K1", 2024)
+    sy_2025 = await section_year(client, admin, "3K2", 2025)
+    await _register(client, admin, ANA_ID, sy_2024)
+    await create_cursada(ANA_ID, sy_2025, state="finished_approved")
 
     body = (await client.get(URL, headers=await login(STUDENT))).json()
     assert [section["id_section_year"] for section in body["section_years"]] == [sy_2025]

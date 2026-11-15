@@ -459,20 +459,35 @@ async def update_project_route(
         403: {
             "description": (
                 "El usuario no es el jefe del grupo, ni profesor del curso lectivo, "
-                "ni super admin"
+                "ni super admin; o envió `force=true` sin ser profesor del curso o "
+                "super admin"
             )
         },
         404: {"description": "No existe el proyecto"},
         409: {
             "description": (
                 "El proyecto no está `uninsured` (ya se aseguró o está en un estado "
-                "final), o la cantidad de integrantes `active` está fuera del rango "
-                "`min_students`-`max_students` del curso lectivo"
+                "final), la cantidad de integrantes `active` está fuera del rango "
+                "`min_students`-`max_students` del curso lectivo, o se forzó el "
+                "asegurado con cero integrantes `active`"
             )
         },
     },
 )
-async def insure_project_route(id_project: int, db: db_dependency, user: user_dependency):
+async def insure_project_route(
+    id_project: int,
+    db: db_dependency,
+    user: user_dependency,
+    force: Annotated[
+        bool,
+        Query(
+            description=(
+                "Solo profesor del curso lectivo o super admin: ignora `min_students` "
+                "y `max_students` al asegurar"
+            )
+        ),
+    ] = False,
+):
     """
     Asegura un grupo: lo saca de `uninsured` (Desasegurado) y lo pasa a un estado
     asegurado, dejando el equipo confirmado. Lo puede hacer **el jefe del grupo**,
@@ -483,6 +498,10 @@ async def insure_project_route(id_project: int, db: db_dependency, user: user_de
       `cancelled`), responde **409**.
     - La cantidad de integrantes `active` debe estar entre `min_students` y
       `max_students` del curso lectivo; si no, responde **409**.
+    - Con `force=true`, **solo un profesor del curso lectivo o un super admin**
+      omiten los límites de cantidad; igualmente se exige al menos un integrante
+      `active` (**409** si el grupo está vacío). El jefe que envía `force=true`
+      recibe **403**.
     - El estado destino es el subestado asegurado recordado (la última vez que
       estuvo asegurado) o, si el grupo nunca lo estuvo, `in_idea`.
     - Al asegurar, todas las solicitudes `pending_approval` del grupo pasan a
@@ -490,7 +509,13 @@ async def insure_project_route(id_project: int, db: db_dependency, user: user_de
       tratarse como público). A partir de acá **no se pueden unir** integrantes
       nuevos.
     """
-    return await insure_project(db, await build_access(db, user), user.id_user, id_project)
+    return await insure_project(
+        db,
+        await build_access(db, user),
+        user.id_user,
+        id_project,
+        force=force,
+    )
 
 
 @projects_router.delete(

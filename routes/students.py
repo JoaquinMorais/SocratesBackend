@@ -93,6 +93,11 @@ async def get_students(
       (si el alumno es jefe del grupo), su `status` de membresía y los datos del
       curso lectivo (año, comisión). Nunca expone datos privados del alumno (como
       la fecha de nacimiento) ni el detalle del proyecto.
+    - `section_years` incluye todas las inscripciones (`registered`) y la cursada
+      actual (`attending`) del alumno, con su `state` y `status`; no incluye
+      cursadas `abandoned` ni `finished_*`. Los filtros de curso/año/comisión
+      también acotan esta lista. Un profesor común ve todos los cursos lectivos
+      del alumno, aunque no los dicte.
     - Filtros: `status` (repetible; por defecto `active` y `finished`),
       `id_section_year`, `year`, `id_section`, `kind` y `q` (nombre, apellido,
       legajo (prefijo) o nombre de alguno de sus proyectos en los estados pedidos).
@@ -111,8 +116,9 @@ async def get_students(
 
     Orden: apellido, nombre. Dentro de cada alumno, los grupos van por estado
     (`active`, `pending_approval`, `finished`, `abandoned`, `expelled`,
-    `rejected`) y después del curso más reciente al más viejo. Está paginado:
-    `total` es la cantidad que cumple los filtros.
+    `rejected`) y después del curso más reciente al más viejo; los
+    `section_years` van con la cursada `attending` primero y luego por año
+    descendente. Está paginado: `total` es la cantidad que cumple los filtros.
     """
     access = await build_access(db, user)
     items, total = await list_students(

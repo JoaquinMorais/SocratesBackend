@@ -306,11 +306,24 @@ async def update_project(db, access: Access, id_project: int, data: ProjectUpdat
     return to_public(project)
 
 
-async def insure_project(db, access: Access, id_user: int, id_project: int) -> ProjectPublic:
+async def insure_project(
+    db,
+    access: Access,
+    id_user: int,
+    id_project: int,
+    *,
+    force: bool = False,
+) -> ProjectPublic:
     """Asegura un grupo: pasa de `uninsured` a un estado asegurado."""
     project = await get_project(db, id_project)
     is_leader = await _is_leader(db, id_user, id_project)
-    if not (is_leader or access.can_manage(project.id_section_year)):
+    can_manage = access.can_manage(project.id_section_year)
+    if force and not can_manage:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only a professor of this section year or a super admin can force insurance",
+        )
+    if not (is_leader or can_manage):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "Only the group leader, a professor of this section year or a super admin "
@@ -321,14 +334,18 @@ async def insure_project(db, access: Access, id_user: int, id_project: int) -> P
 
     count = await _active_count(db, id_project)
     sy = project.section_year
-    if count < sy.min_students:
-        raise _conflict(
-            f"At least {sy.min_students} active members are required to insure this group"
-        )
-    if count > sy.max_students:
-        raise _conflict(
-            f"At most {sy.max_students} active members are allowed to insure this group"
-        )
+    if force:
+        if count < 1:
+            raise _conflict("At least one active member is required to force insurance")
+    else:
+        if count < sy.min_students:
+            raise _conflict(
+                f"At least {sy.min_students} active members are required to insure this group"
+            )
+        if count > sy.max_students:
+            raise _conflict(
+                f"At most {sy.max_students} active members are allowed to insure this group"
+            )
 
     if project.id_status_insured is not None:
         remembered = await db.get(Status, project.id_status_insured)
@@ -510,9 +527,10 @@ async def current_section_years(db, user: User, access: Access) -> list[SectionY
     """Los cursos lectivos "actuales" del usuario: los de su año actual.
 
     - Profesor: sus cursos asignados; puede haber varias comisiones del mismo año.
-    - Alumno: su cursada `attending`; si no tiene, la última `finished_*`; si no,
-      la última inscripción `registered`. Si no tiene filas, usa el curso lectivo
-      de su grupo actual (membresía `active`/`finished`).
+    - Alumno: la fila más nueva por año entre `attending`, la última `finished_*`
+      y la última inscripción `registered`; en un empate de año manda `attending`,
+      luego `finished_*` y por último `registered`. Si no tiene filas, usa el
+      curso lectivo de su grupo actual (membresía `active`/`finished`).
     - Sin cursos (incluido un super admin que no dicta) devuelve `[]`.
 
     Orden: comisión (nombre) y luego id.

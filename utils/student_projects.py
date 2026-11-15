@@ -149,7 +149,9 @@ async def add_member(
 
     El alumno entra siempre como `active` (y como jefe si el grupo no tenía uno);
     solo mientras el proyecto está `uninsured`. Aplica la regla de un solo
-    `member` y la cascada de solicitudes pendientes.
+    `member` y la cascada de solicitudes pendientes. No requiere inscripción en
+    ese curso lectivo: crea la cursada `attending`; solo exige que el año del
+    proyecto coincida con el año actual del alumno.
     """
     project = await get_project(db, id_project)
     if not access.can_manage(project.id_section_year):

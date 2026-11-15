@@ -734,3 +734,115 @@ async def test_delete_student_with_enrollments(client, login):
         "/student-section-years", params={"id_student": id_student}, headers=headers
     )
     assert listing.json()["total"] == 0  # las cursadas se borraron con el alumno
+
+
+# ---------- cursos lectivos del alumno ----------
+async def test_list_includes_registered_and_attending_section_years(client, login):
+    admin = await login(SUPER_ADMIN)
+    registered = await section_year(client, admin, "3K1", 2025)
+    attending = await section_year(client, admin, "3K2", 2026)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": registered},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    await create_cursada(ANA_ID, attending)
+
+    ana = _find((await client.get(URL, headers=admin)).json(), ANA_ID)
+    assert [(item["state"], item["year"]) for item in ana["section_years"]] == [
+        ("attending", 2026),
+        ("registered", 2025),
+    ]
+    first = ana["section_years"][0]
+    assert first["id_section_year"] == attending
+    assert first["section_name"] == "3K2"
+    assert first["status"]["code"] == "attending"
+
+
+async def test_list_includes_registration_and_cursada_in_same_section_year(
+    client, login
+):
+    admin = await login(SUPER_ADMIN)
+    sy = await section_year(client, admin, "3K1", 2026)
+    r = await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy},
+        headers=admin,
+    )
+    assert r.status_code == 201, r.text
+    await create_cursada(ANA_ID, sy)
+
+    ana = _find((await client.get(URL, headers=admin)).json(), ANA_ID)
+    assert len(ana["section_years"]) == 2
+    assert {item["state"] for item in ana["section_years"]} == {
+        "registered",
+        "attending",
+    }
+
+
+async def test_list_section_year_filters(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, admin, "3K1", 2025)
+    sy_2026 = await section_year(client, admin, "3K2", 2026)
+    first_project = await _create_project(client, admin, sy_2025)
+    second_project = await _create_project(client, admin, sy_2026)
+    await _add_student(first_project["id_project"], ANA_ID)
+    await _add_student(second_project["id_project"], ANA_ID)
+    await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy_2025},
+        headers=admin,
+    )
+    await create_cursada(ANA_ID, sy_2026)
+
+    by_year = _find(
+        (await client.get(URL, params={"year": 2025}, headers=admin)).json(),
+        ANA_ID,
+    )
+    assert [item["year"] for item in by_year["section_years"]] == [2025]
+    by_section_year = _find(
+        (
+            await client.get(
+                URL, params={"id_section_year": sy_2026}, headers=admin
+            )
+        ).json(),
+        ANA_ID,
+    )
+    assert [item["state"] for item in by_section_year["section_years"]] == [
+        "attending"
+    ]
+    id_section = by_section_year["section_years"][0]["id_section"]
+    by_section = _find(
+        (
+            await client.get(
+                URL, params={"id_section": id_section}, headers=admin
+            )
+        ).json(),
+        ANA_ID,
+    )
+    assert [item["id_section_year"] for item in by_section["section_years"]] == [
+        sy_2026
+    ]
+
+
+async def test_professor_sees_all_student_section_years(
+    client, login, make_professor
+):
+    admin = await login(SUPER_ADMIN)
+    sy_own = await section_year(client, admin, "3K1", 2025)
+    sy_other = await section_year(client, admin, "3K2", 2026)
+    project = await _create_project(client, admin, sy_own)
+    await _add_student(project["id_project"], ANA_ID)
+    await client.post(
+        "/student-section-years",
+        json={"id_student": ANA_ID, "id_section_year": sy_other},
+        headers=admin,
+    )
+    await create_cursada(ANA_ID, sy_other)
+
+    mail = await make_professor("prof-lista-secciones@frc.utn.edu.ar")
+    await assign_professor(client, admin, mail, sy_own)
+    ana = _find((await client.get(URL, headers=await login(mail))).json(), ANA_ID)
+    assert {item["id_section_year"] for item in ana["section_years"]} == {sy_other}
+    assert len(ana["section_years"]) == 2

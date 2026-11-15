@@ -36,8 +36,10 @@ async def _create(client, headers, id_section_year: int) -> dict:
     return r.json()
 
 
-async def _insure(client, headers, id_project: int):
-    return await client.post(f"{URL}/{id_project}/insure", headers=headers)
+async def _insure(client, headers, id_project: int, **params):
+    return await client.post(
+        f"{URL}/{id_project}/insure", params=params, headers=headers
+    )
 
 
 async def _patch(client, admin, id_project: int, **fields) -> None:
@@ -230,6 +232,74 @@ async def test_insure_rejects_more_than_max_students(client, login):
     await _add_membership(p["id_project"], LUIS_ID, "active")
     await _add_membership(p["id_project"], extra, "active")
     assert (await _insure(client, admin, p["id_project"])).status_code == 409
+
+
+# ---------- forzado de cantidad ----------
+async def test_force_insure_requires_staff(client, login):
+    admin = await login(SUPER_ADMIN)
+    p = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(p["id_project"], ANA_ID, "active", is_leader=True)
+    r = await _insure(client, await login(STUDENT), p["id_project"], force=True)
+    assert r.status_code == 403
+
+
+async def test_professor_can_force_insure_below_min(client, login, make_professor):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin, min_students=3, max_students=10)
+    p = await _create(client, admin, sy)
+    await _add_membership(p["id_project"], ANA_ID, "active", is_leader=True)
+    await _add_membership(p["id_project"], LUIS_ID, "active")
+    mail = await make_professor("prof-force@frc.utn.edu.ar")
+    await _assign_professor(client, admin, mail, sy)
+    r = await _insure(client, await login(mail), p["id_project"], force=True)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["code"] == "in_idea"
+
+
+async def test_super_admin_can_force_insure_above_max(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin, min_students=1, max_students=2)
+    p = await _create(client, admin, sy)
+    extra = await _make_student(900003)
+    await _add_membership(p["id_project"], ANA_ID, "active", is_leader=True)
+    await _add_membership(p["id_project"], LUIS_ID, "active")
+    await _add_membership(p["id_project"], extra, "active")
+    r = await _insure(client, admin, p["id_project"], force=True)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"]["is_insured"] is True
+
+
+async def test_force_insure_requires_at_least_one_active(client, login):
+    admin = await login(SUPER_ADMIN)
+    p = await _create(client, admin, await _section_year(client, admin))
+    r = await _insure(client, admin, p["id_project"], force=True)
+    assert r.status_code == 409
+    assert "one active member" in r.json()["detail"]
+
+
+async def test_force_insure_with_one_active_below_min(client, login):
+    admin = await login(SUPER_ADMIN)
+    p = await _create(
+        client, admin, await _section_year(client, admin, min_students=3, max_students=10)
+    )
+    await _add_membership(p["id_project"], ANA_ID, "active", is_leader=True)
+    assert (await _insure(client, admin, p["id_project"], force=True)).status_code == 200
+
+
+async def test_force_insure_still_requires_uninsured(client, login):
+    admin = await login(SUPER_ADMIN)
+    p = await _create(client, admin, await _section_year(client, admin))
+    await _add_membership(p["id_project"], ANA_ID, "active", is_leader=True)
+    await _set_project_status(p["id_project"], "in_progress")
+    assert (await _insure(client, admin, p["id_project"], force=True)).status_code == 409
+
+
+async def test_force_query_must_be_boolean(client, login):
+    admin = await login(SUPER_ADMIN)
+    p = await _create(client, admin, await _section_year(client, admin))
+    assert (
+        await _insure(client, admin, p["id_project"], force="nope")
+    ).status_code == 422
 
 
 # ---------- efectos ----------

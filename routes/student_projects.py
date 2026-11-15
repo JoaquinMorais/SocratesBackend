@@ -267,6 +267,10 @@ async def add_member_route(
       alumno añadido pasa a ser el jefe.
     - Aplica la regla de un solo `member` (`active`/`finished`) por alumno en
       todo el sistema: si ya pertenece a otro grupo responde **409**.
+    - El alumno no necesita una inscripción (`registered`) en ese curso lectivo:
+      la cursada `attending` se crea o reactiva automáticamente. Su inscripción
+      puede ser de otra comisión **del mismo año**; el año debe coincidir con el
+      del proyecto (**409** si no). No se crea una inscripción nueva.
     - Si el alumno tenía una solicitud `rejected`, `pending_approval`, `abandoned`
       o `expelled` en este grupo, se reactiva como `active` (responde **200**); si
       ya es `active` o `finished`, responde **409**.

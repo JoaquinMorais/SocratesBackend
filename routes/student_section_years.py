@@ -43,7 +43,12 @@ _NOT_FOUND = {404: {"description": "No existe la cursada"}}
     responses={
         **_WRITE_ERRORS,
         404: {"description": "No existe el alumno o el curso lectivo"},
-        409: {"description": "El alumno ya tiene una inscripción para ese año"},
+        409: {
+            "description": (
+                "El alumno ya tiene una inscripción para ese año, o su última "
+                "cursada está `finished_approved` y no puede reinscribirse"
+            )
+        },
         422: {"description": "Ids inválidos, campos faltantes o desconocidos"},
     },
 )
@@ -59,6 +64,9 @@ async def create_enrollment_route(
     - Un alumno tiene **una sola inscripción por año** (409 si ya tiene otra en
       ese año). Puede tener además una **cursada** en otra comisión del mismo año,
       que se crea automáticamente al unirse a un proyecto.
+    - Un alumno cuya última cursada terminó **`finished_approved`** no puede
+      reinscribirse (**409**); sí puede hacerlo si terminó `finished_failed` o
+      no tiene cursadas.
     - La fila nace en estado `registered`.
     """
     return await create_enrollment(db, data)
@@ -146,8 +154,9 @@ async def get_enrollment_route(
         },
         409: {
             "description": (
-                "El alumno ya tiene una inscripción para ese año, o la fila es una "
-                "cursada administrada automáticamente"
+                "El alumno ya tiene una inscripción para ese año, su última "
+                "cursada está `finished_approved`, o la fila es una cursada "
+                "administrada automáticamente"
             )
         },
         422: {"description": "Ids inválidos, body vacío o campos desconocidos"},
@@ -164,9 +173,10 @@ async def update_enrollment_route(
 
     Se envían solo los campos que cambian (`id_student`, `id_section_year`); un
     body vacío responde 422. Reenviar los mismos valores no da error. Si el
-    alumno ya tiene otra inscripción en el año resultante, responde 409. Las
-    cursadas son administradas automáticamente por la membresía al proyecto y no
-    se editan desde acá (409).
+    alumno ya tiene otra inscripción en el año resultante, responde 409. Si su
+    última cursada está `finished_approved`, tampoco se puede mover la
+    inscripción (**409**). Las cursadas son administradas automáticamente por la
+    membresía al proyecto y no se editan desde acá (409).
     """
     return await update_enrollment(db, id_student_section_year, data)
 

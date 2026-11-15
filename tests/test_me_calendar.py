@@ -120,7 +120,7 @@ async def test_student_gets_current_cursada_year(client, login):
     sy_old = await _sy(client, admin, "3K1", 2025)
     sy_now = await _sy(client, admin, "3K2", 2026)
     await _enroll(client, admin, ANA_ID, sy_old)
-    await create_cursada(ANA_ID, sy_old, state="finished_approved")
+    await create_cursada(ANA_ID, sy_old, state="finished_failed")
     await _enroll(client, admin, ANA_ID, sy_now)
     class_old = await _class(client, admin, sy_old, date="2025-03-04")
     class_now = await _class(client, admin, sy_now)

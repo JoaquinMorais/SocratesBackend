@@ -88,6 +88,44 @@ async def test_create_duplicate_rejected(client, login):
     assert r.status_code == 409
 
 
+async def test_create_enrollment_rejected_after_approved(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, headers, "3K1", 2025)
+    sy_2026 = await section_year(client, headers, "3K2", 2026)
+    await _enroll(client, headers, ANA, sy_2025)
+    await create_cursada(ANA, sy_2025, state="finished_approved")
+
+    r = await client.post(URL, json=_pair(ANA, sy_2026), headers=headers)
+    assert r.status_code == 409
+    assert "approved" in r.json()["detail"]
+
+
+async def test_create_enrollment_allowed_after_failed(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, headers, "3K1", 2025)
+    sy_2026 = await section_year(client, headers, "3K2", 2026)
+    await _enroll(client, headers, ANA, sy_2025)
+    await create_cursada(ANA, sy_2025, state="finished_failed")
+
+    r = await client.post(URL, json=_pair(ANA, sy_2026), headers=headers)
+    assert r.status_code == 201, r.text
+
+
+async def test_update_enrollment_rejected_after_approved(client, login):
+    headers = await login(SUPER_ADMIN)
+    sy_2025 = await section_year(client, headers, "3K1", 2025)
+    sy_2026 = await section_year(client, headers, "3K2", 2026)
+    enrollment = await _enroll(client, headers, ANA, sy_2025)
+    await create_cursada(ANA, sy_2025, state="finished_approved")
+
+    r = await client.patch(
+        f"{URL}/{enrollment['id_student_section_year']}",
+        json={"id_section_year": sy_2026},
+        headers=headers,
+    )
+    assert r.status_code == 409
+
+
 async def test_create_unknown_references(client, login):
     headers = await login(SUPER_ADMIN)
     sy = await section_year(client, headers)

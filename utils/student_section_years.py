@@ -109,11 +109,35 @@ async def _registration_year_taken(
     return (await db.exec(stmt)).first() is not None
 
 
+async def _ensure_can_register(db, id_student: int) -> None:
+    """Un alumno con la última cursada aprobada no puede volver a inscribirse."""
+    latest = (
+        await db.exec(
+            select(StudentSectionYear)
+            .where(
+                StudentSectionYear.id_student == id_student,
+                StudentSectionYear.state.in_((FINISHED_APPROVED, FINISHED_FAILED)),
+            )
+            .order_by(
+                col(StudentSectionYear.year).desc(),
+                col(StudentSectionYear.id_student_section_year).desc(),
+            )
+            .limit(1)
+        )
+    ).first()
+    if latest is not None and latest.state == FINISHED_APPROVED:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "A student with an approved cursada cannot enroll again",
+        )
+
+
 async def create_enrollment(
     db, data: StudentSectionYearCreate
 ) -> StudentSectionYearPublic:
     student = await _get_student(db, data.id_student)
     sy = await get_section_year(db, data.id_section_year)
+    await _ensure_can_register(db, data.id_student)
     if await _registration_year_taken(db, data.id_student, sy.year):
         raise _duplicate_registration()
 
@@ -152,6 +176,7 @@ async def update_enrollment(
 
     if id_student == ssy.id_student and id_section_year == ssy.id_section_year:
         return to_public(ssy, student, sy)
+    await _ensure_can_register(db, id_student)
     if await _registration_year_taken(
         db, id_student, sy.year, exclude_id=id_enrollment
     ):
@@ -258,8 +283,10 @@ async def enrollment_public_with_attendance(db, row: StudentSectionYear):
 async def student_current_row(db, id_student: int) -> StudentSectionYear | None:
     """La fila que define el año actual del alumno.
 
-    Prioridad: cursada `attending`; si no hay, la última `finished_*`; si no, la
-    última inscripción `registered`. Las cursadas `abandoned` no cuentan.
+    Se elige la fila más nueva por año entre la cursada `attending`, la última
+    `finished_*` y la última inscripción `registered`. En un empate de año manda
+    `attending`, luego `finished_*` y por último `registered`. Las cursadas
+    `abandoned` no cuentan.
     """
     rows = (
         await db.exec(
@@ -270,21 +297,36 @@ async def student_current_row(db, id_student: int) -> StudentSectionYear | None:
     ).all()
 
     attending = [row for row in rows if row.state == ATTENDING]
-    if attending:
-        return attending[0]
-
     finished = [
         row
         for row in rows
         if row.state in (FINISHED_APPROVED, FINISHED_FAILED)
     ]
-    if finished:
-        return max(finished, key=lambda row: (row.year, row.id_student_section_year))
-
     registered = [row for row in rows if row.state == REGISTERED]
+
+    candidates: list[tuple[int, int, int, StudentSectionYear]] = []
+    if attending:
+        row = max(
+            attending,
+            key=lambda item: (item.year, item.id_student_section_year or 0),
+        )
+        candidates.append((row.year, 2, row.id_student_section_year or 0, row))
+    if finished:
+        row = max(
+            finished,
+            key=lambda item: (item.year, item.id_student_section_year or 0),
+        )
+        candidates.append((row.year, 1, row.id_student_section_year or 0, row))
     if registered:
-        return max(registered, key=lambda row: (row.year, row.id_student_section_year))
-    return None
+        row = max(
+            registered,
+            key=lambda item: (item.year, item.id_student_section_year or 0),
+        )
+        candidates.append((row.year, 0, row.id_student_section_year or 0, row))
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: item[:3])[3]
 
 
 async def student_current_year(db, id_student: int) -> int | None:
@@ -337,6 +379,11 @@ async def ensure_attending(
     row = await _cursada_row(db, id_student, id_section_year)
     current = await _current_attending(db, id_student)
 
+    # Se cierra la cursada anterior antes de activar otra: el índice parcial
+    # permite una sola fila `attending` por alumno.
+    if current is not None and current is not row:
+        await apply_cursada_transition(db, current, ABANDONED)
+
     if row is not None:
         if row.state != ATTENDING:
             await apply_cursada_transition(
@@ -359,9 +406,6 @@ async def ensure_attending(
             state=ATTENDING,
         )
         db.add(row)
-
-    if current is not None and current is not row:
-        await apply_cursada_transition(db, current, ABANDONED)
 
     await db.flush()
     return row
