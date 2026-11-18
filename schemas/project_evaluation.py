@@ -4,7 +4,10 @@ from schemas.attendance import AttendanceStatsPublic
 from schemas.delivery import DeliveryPublic
 from schemas.project import ProjectPublic
 from schemas.section_year import SectionYearPublic
-from schemas.student_project import StudentProjectAttendancePublic
+from schemas.student_evaluation import (
+    StudentEvaluationMemberPublic,
+    StudentEvaluationSummaryPublic,
+)
 
 
 class ProjectEvaluationStatsPublic(SQLModel):
@@ -21,13 +24,14 @@ class ProjectEvaluationStatsPublic(SQLModel):
     members_total: int
     members_active: int
     members_finished: int
+    student_evaluations: StudentEvaluationSummaryPublic
 
 
 class ProjectEvaluationPublic(SQLModel):
     project: ProjectPublic
     activities: list[DeliveryPublic]
     statistics: ProjectEvaluationStatsPublic
-    members: list[StudentProjectAttendancePublic]
+    members: list[StudentEvaluationMemberPublic]
 
 
 class SectionYearEvaluationsPublic(SQLModel):

@@ -16,9 +16,10 @@ Administra alumnos, profesores, comisiones, cursos lectivos, proyectos, entregas
 - Autenticación con access token JWT y refresh token en cookie `HttpOnly`.
 - Alta individual y masiva de alumnos, y alta de profesores.
 - Comisiones, cursos lectivos, inscripciones y cursadas.
-- Proyectos/grupos con privacidad, jefatura, integrantes y estados.
+- Proyectos/grupos con privacidad, jefatura, integrantes, estados, enlaces manuales y logo.
 - Calendario, clases, actividades y entregas por proyecto.
 - Notas históricas, corrección/eliminación de notas y comentarios de entrega.
+- Evaluaciones/parciales con notas numéricas 1-10 por alumno.
 - Feedback para alumnos y anotaciones internas del staff.
 - Asistencia por código, manual, en lote o importada desde el chat.
 - Catálogo de tecnologías con imágenes y asociación a proyectos.

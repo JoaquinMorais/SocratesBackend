@@ -408,6 +408,9 @@ async def ensure_attending(
         db.add(row)
 
     await db.flush()
+    from utils.student_evaluations import backfill_grades_for_cursada
+
+    await backfill_grades_for_cursada(db, id_student, id_section_year)
     return row
 
 

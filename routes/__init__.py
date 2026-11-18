@@ -12,8 +12,10 @@ from routes.calendar_classes import calendar_classes_router
 from routes.activities import activities_router, section_activities_router
 from routes.deliveries import deliveries_router
 from routes.delivery_comments import delivery_comments_router
+from routes.student_evaluations import student_evaluations_router
 from routes.attendance import attendance_router
 from routes.projects import projects_router
+from routes.project_logos import project_logos_router
 from routes.student_projects import student_projects_router
 from routes.technologies import technologies_router
 from routes.images import images_router
@@ -36,8 +38,10 @@ __all__ = [
     "section_activities_router",
     "deliveries_router",
     "delivery_comments_router",
+    "student_evaluations_router",
     "attendance_router",
     "projects_router",
+    "project_logos_router",
     "student_projects_router",
     "technologies_router",
     "images_router",

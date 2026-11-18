@@ -9,6 +9,7 @@ from models import (
     Section,
     SectionYear,
     Status,
+    StudentEvaluation,
     StudentProject,
     StudentSectionYear,
 )
@@ -238,6 +239,18 @@ async def delete_section_year(db, id_section_year: int) -> None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
             "The generic section year cannot be deleted",
+        )
+    has_evaluations = (
+        await db.exec(
+            select(StudentEvaluation.id_student_evaluation)
+            .where(StudentEvaluation.id_section_year == id_section_year)
+            .limit(1)
+        )
+    ).first()
+    if has_evaluations is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Section year has student evaluations and cannot be deleted",
         )
     if await has_delivery_data_for_section_year(db, id_section_year):
         raise HTTPException(

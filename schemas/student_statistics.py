@@ -4,6 +4,7 @@ from sqlmodel import SQLModel
 
 from schemas.attendance import AttendanceStatsPublic
 from schemas.status import StatusPublic
+from schemas.student_evaluation import StudentEvaluationGradeSummaryPublic
 
 StudentStatisticsPopulation = Literal["registered", "attending"]
 
@@ -61,6 +62,8 @@ class StudentStatisticsSectionYearRowPublic(SQLModel):
     state: str
     status: StatusPublic
     attendance: AttendanceStatsPublic | None = None
+    student_evaluations: list[StudentEvaluationGradeSummaryPublic] = []
+    average_student_evaluation: float | None = None
 
 
 class StudentStatisticsItemPublic(SQLModel):

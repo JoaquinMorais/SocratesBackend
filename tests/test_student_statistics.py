@@ -215,6 +215,20 @@ async def test_filters_and_professor_scope(client, login, make_professor):
     assert filtered["items"][0]["id_student"] == LUIS_ID
 
 
+async def test_project_counts_only_same_section_year(client, login):
+    admin = await login(SUPER_ADMIN)
+    sy_a = await section_year(client, admin, "3K1", 2026)
+    sy_b = await section_year(client, admin, "3K2", 2026)
+    project_b = await _project(client, admin, sy_b)
+    await _membership(project_b["id_project"], ANA_ID, "active")
+    assert (await _register(client, admin, ANA_ID, sy_a)).status_code == 201
+
+    body = (await _stats(client, admin, "registered", id_section_year=sy_a)).json()
+    assert body["statistics"]["with_project"] == 0
+    assert body["statistics"]["without_project"] == 1
+    assert body["items"][0]["project_memberships"] == []
+
+
 async def test_unknown_section_year(client, login):
     assert (
         await _stats(

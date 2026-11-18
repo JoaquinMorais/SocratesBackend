@@ -1,6 +1,7 @@
 from config.database import SessionLocal
 from models import Project, StudentProject
 from tests.helpers import STUDENT, SUPER_ADMIN
+from tests.test_images import PNG
 from utils.statuses import get_status
 
 LUIS = "100002@sistemas.frc.utn.edu.ar"
@@ -13,6 +14,7 @@ DATA = {
     "objective": "Objetivo",
     "problem": "Problemática",
     "drive_folder_url": "https://drive.google.com/drive/folders/example",
+    "user_link": "https://example.com/project",
 }
 
 ENDPOINTS = [
@@ -160,8 +162,15 @@ async def test_create_project_defaults(client, login):
     assert p["status"]["ambito"] == "project"
     assert [
         p[k]
-        for k in ("name", "description", "objective", "problem", "drive_folder_url")
-    ] == [None] * 5
+        for k in (
+            "name",
+            "description",
+            "objective",
+            "problem",
+            "drive_folder_url",
+            "user_link",
+        )
+    ] == [None] * 6
 
 
 async def test_create_assigns_first_free_group_number(client, login):
@@ -570,6 +579,7 @@ async def test_patch_each_field(client, login):
             "objective": "Obj",
             "problem": "Prob",
             "drive_folder_url": "https://drive.google.com/drive/folders/abc",
+            "user_link": "https://example.com/project",
             "privacy": "protected",
         },
         headers=admin,
@@ -582,6 +592,7 @@ async def test_patch_each_field(client, login):
         body["objective"],
         body["problem"],
         body["drive_folder_url"],
+        body["user_link"],
         body["privacy"],
     ] == [
         "Nombre",
@@ -589,6 +600,7 @@ async def test_patch_each_field(client, login):
         "Obj",
         "Prob",
         "https://drive.google.com/drive/folders/abc",
+        "https://example.com/project",
         "protected",
     ]
     assert body["status"]["code"] == "in_idea"  # el estado no cambia
@@ -639,6 +651,163 @@ async def test_patch_can_clear_optional_fields(client, login):
     assert body["name"] is None
     assert body["description"] is None
     assert body["drive_folder_url"] is None
+
+
+async def test_drive_folder_url_validation(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    url = f"{URL}/{project['id_project']}"
+
+    for value in (
+        "not-a-url",
+        "ftp://drive.google.com/folder",
+        "https://",
+        "x" * 1001,
+    ):
+        r = await client.patch(url, json={"drive_folder_url": value}, headers=admin)
+        assert r.status_code == 422, (value, r.text)
+    r = await client.patch(
+        url,
+        json={"drive_folder_url": "https://drive.google.com/drive/folders/ok"},
+        headers=admin,
+    )
+    assert r.status_code == 200
+    assert r.json()["drive_folder_url"].startswith("https://drive.google.com/")
+
+    r = await client.patch(url, json={"drive_folder_url": ""}, headers=admin)
+    assert r.status_code == 200
+    assert r.json()["drive_folder_url"] is None
+
+    assert (
+        await client.patch(
+            url, json={"user_link": "not-a-url"}, headers=admin
+        )
+    ).status_code == 422
+    assert (
+        await client.patch(
+            url, json={"user_link": "https://example.com/user"}, headers=admin
+        )
+    ).status_code == 200
+    assert (
+        await client.post(
+            URL,
+            json={
+                "id_section_year": await _section_year(client, admin, "3K2"),
+                "drive_folder_url": "https://drive.google.com/folders/x",
+            },
+            headers=admin,
+        )
+    ).status_code == 422
+
+
+async def _upload_logo(client, headers, id_project: int, data: bytes = PNG):
+    return await client.put(
+        f"{URL}/{id_project}/logo",
+        files={"file": ("logo.png", data, "image/png")},
+        headers=headers,
+    )
+
+
+async def test_project_logo_upload_replace_and_delete(client, login):
+    admin = await login(SUPER_ADMIN)
+    project = await _create(client, admin, await _section_year(client, admin))
+    pid = project["id_project"]
+
+    r = await _upload_logo(client, admin, pid)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    first_id = body["logo"]["id_image"]
+    assert body["logo"]["url"]
+    assert (await client.delete(f"/images/{first_id}", headers=admin)).status_code == 409
+
+    second = (await _upload_logo(client, admin, pid)).json()
+    second_id = second["logo"]["id_image"]
+    assert second_id != first_id
+    assert (await client.get(f"/images/{first_id}", headers=admin)).status_code == 404
+    assert (await client.get(f"/images/{second_id}", headers=admin)).status_code == 200
+
+    assert (await client.delete(f"{URL}/{pid}/logo", headers=admin)).status_code == 204
+    assert (await client.get(f"/images/{second_id}", headers=admin)).status_code == 404
+    assert (await client.get(f"{URL}/{pid}", headers=admin)).json()["logo"] is None
+    assert (await client.delete(f"{URL}/{pid}/logo", headers=admin)).status_code == 404
+
+
+async def test_project_logo_reuses_existing_image_and_is_exclusive(
+    client, login
+):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    first = await _create(client, admin, sy)
+    second = await _create(client, admin, sy)
+    image = (
+        await client.post(
+            "/images",
+            files={"file": ("logo.png", PNG, "image/png")},
+            headers=admin,
+        )
+    ).json()
+
+    r = await client.put(
+        f"{URL}/{first['id_project']}/logo",
+        json={"id_image": image["id_image"]},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["logo"]["id_image"] == image["id_image"]
+    assert (
+        await client.put(
+            f"{URL}/{second['id_project']}/logo",
+            json={"id_image": image["id_image"]},
+            headers=admin,
+        )
+    ).status_code == 409
+    assert (
+        await client.delete(f"/images/{image['id_image']}", headers=admin)
+    ).status_code == 409
+
+
+async def test_project_logo_permissions_and_protected_visibility(
+    client, login, make_professor
+):
+    admin = await login(SUPER_ADMIN)
+    sy = await _section_year(client, admin)
+    project = await _create(client, admin, sy)
+    pid = project["id_project"]
+    await _set_status(pid, "in_idea")
+    await _set(pid, privacy="protected")
+
+    r = await client.put(
+        f"{URL}/{pid}/logo",
+        files={"file": ("logo.png", PNG, "image/png")},
+        headers=admin,
+    )
+    assert r.status_code == 200, r.text
+    outsider = await login(STUDENT)
+    body = (await client.get(f"{URL}/{pid}", headers=outsider)).json()
+    assert body["restricted"] is True
+    assert body["logo"] is not None
+    assert body["drive_folder_url"] is None
+    assert body["user_link"] is None
+
+    unassigned = await login(
+        await make_professor("prof-logo-unassigned@frc.utn.edu.ar")
+    )
+    assert (
+        await client.put(
+            f"{URL}/{pid}/logo",
+            json={"id_image": body["logo"]["id_image"]},
+            headers=unassigned,
+        )
+    ).status_code == 403
+    await _set_status(pid, "approved")
+    assert (
+        await client.put(
+            f"{URL}/{pid}/logo",
+            json={"id_image": body["logo"]["id_image"]},
+            headers=admin,
+        )
+    ).status_code == 409
+    await _set_status(pid, "in_idea")
 
 
 async def test_patch_privacy_null_rejected(client, login):

@@ -155,6 +155,7 @@ async def build_project_statistics(db, project) -> ProjectStatisticsPublic:
         ),
         comments=comments,
         technologies_total=len(technologies),
+        student_evaluations=evaluation_stats.student_evaluations,
     )
 
     return ProjectStatisticsPublic(

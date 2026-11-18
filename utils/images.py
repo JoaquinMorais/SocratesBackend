@@ -11,7 +11,7 @@ from PIL.Image import DecompressionBombError
 from sqlmodel import select
 
 from config.settings import settings
-from models import Image, Technology
+from models import Image, ProjectImage, Technology
 from schemas.image import ImagePublic
 from utils import storage
 
@@ -142,12 +142,26 @@ def image_in_use(db, id_image: int, *, exclude_technology: int | None = None):
     )
 
 
+def project_logo_in_use(db, id_image: int, *, exclude_project: int | None = None):
+    conditions = [ProjectImage.id_image == id_image]
+    if exclude_project is not None:
+        conditions.append(ProjectImage.id_project != exclude_project)
+    return select(ProjectImage.id_project).where(*conditions).limit(1)
+
+
+async def image_is_used(db, id_image: int) -> bool:
+    technology = (await db.exec(image_in_use(db, id_image))).first()
+    if technology is not None:
+        return True
+    project = (await db.exec(project_logo_in_use(db, id_image))).first()
+    return project is not None
+
+
 async def delete_image(db, image: Image) -> None:
     """Borra la fila y el archivo; el archivo se borra tras el commit."""
-    taken = (await db.exec(image_in_use(db, image.id_image))).first()
-    if taken is not None:
+    if await image_is_used(db, image.id_image):
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "Image is in use by a technology"
+            status.HTTP_409_CONFLICT, "Image is in use and cannot be deleted"
         )
     await db.delete(image)
     await db.commit()

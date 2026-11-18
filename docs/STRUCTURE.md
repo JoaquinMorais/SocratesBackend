@@ -53,8 +53,11 @@ socrates-backend/
 │   ├── professor_section_year.py
 │   ├── student_section_year.py
 │   ├── project.py
+│   ├── project_image.py
 │   ├── project_status.py
 │   ├── student_project.py
+│   ├── student_evaluation.py
+│   ├── student_grade.py
 │   ├── technology.py
 │   ├── project_technology.py
 │   ├── image.py
@@ -85,6 +88,7 @@ socrates-backend/
 │   ├── project.py
 │   ├── project_status.py
 │   ├── student_project.py
+│   ├── student_evaluation.py
 │   ├── me_project.py
 │   ├── me_section_year.py
 │   ├── technology.py
@@ -117,7 +121,9 @@ socrates-backend/
 │   ├── professor_section_years.py
 │   ├── student_section_years.py
 │   ├── projects.py
+│   ├── project_logos.py
 │   ├── student_projects.py
+│   ├── student_evaluations.py
 │   ├── technologies.py
 │   ├── images.py
 │   ├── project_technologies.py
@@ -151,6 +157,7 @@ socrates-backend/
 │   ├── student_section_years.py
 │   ├── project_statuses.py
 │   ├── projects.py
+│   ├── project_logos.py
 │   ├── student_projects.py
 │   ├── technologies.py
 │   ├── images.py
@@ -199,6 +206,7 @@ socrates-backend/
     ├── test_project_transitions.py
     ├── test_projects.py
     ├── test_student_projects.py
+    ├── test_student_evaluations.py
     ├── test_me_project.py
     ├── test_me_section_year.py
     ├── test_technologies.py
@@ -277,9 +285,12 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | `attendance.py` | `attendances` | Asistencia de un alumno (cursada) a una clase: método (`code`/`manual`/`transcript`) y fecha; solo presentes, con el par único. |
 | `student_section_year.py` | `student_section_years` | Inscripción (`registered`) y cursada (`attending`/`abandoned`/`finished_approved`/`finished_failed`) de un alumno en un curso lectivo; `id_status`/`status` es canónico y `state` un espejo para índices. Una inscripción por alumno y año, una cursada actual por alumno y una fila de cursada por comisión (índices parciales); `year` copiado del curso lectivo. |
 | `professor_section_year.py` | `professor_section_years` | Asignación de un profesor a un curso lectivo. |
-| `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad (se crea `public`; mientras está `uninsured` se trata como público) y la memoria del subestado asegurado (`id_status_insured`). |
+| `project.py` | `projects` | Proyecto (grupo) de un curso lectivo, con su privacidad (se crea `public`; mientras está `uninsured` se trata como público), `drive_folder_url`, `user_link` y la memoria del subestado asegurado (`id_status_insured`). |
+| `project_image.py` | `project_images` | Logo 1:1 del proyecto: una imagen exclusiva por proyecto mediante tabla intermedia. |
 | `project_status.py` | `project_statuses` | Historial de transiciones de estado de un proyecto (estado anterior, nuevo y cuándo ocurrió). |
 | `student_project.py` | `student_projects` | Alumnos que integran un proyecto (con `is_leader`, un jefe por grupo como máximo, y `enrolled_at` para la antigüedad). |
+| `student_evaluation.py` | `student_evaluations` | Evaluación/parcial de un curso lectivo: nombre único por curso, descripción, fecha y fecha de creación. |
+| `student_grade.py` | `student_grades` | Nota entera `0..10` de una cursada en una evaluación; `0` es pendiente y el par evaluación-cursada es único. |
 | `technology.py` | `technologies` | Tecnología del catálogo (nombre único sin distinguir mayúsculas, descripción opcional e imagen opcional 1 a 1 vía `id_image`). |
 | `image.py` | `images` | Archivo de imagen guardado en el almacenamiento (hoy local): `key`, nombre original saneado, content-type (siempre WebP), tamaño, checksum y fecha. |
 | `project_technology.py` | `project_technologies` | Vínculo proyecto–tecnología con clave compuesta `(id_project, id_technology)`: se borra con el proyecto (CASCADE) y no permite borrar una tecnología en uso (RESTRICT). |
@@ -295,7 +306,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 
 ## `schemas/`
 
-Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `calendar`, `calendar_class`, `calendar_bulk`, `activity`, `delivery`, `delivery_comment`, `score`, `attendance`, `attendance_transcript`, `me_calendar`, `professor_section_year`, `project`, `project_evaluation`, `project_statistics`, `project_status`, `project_technology_statistics`, `student_project`, `student_section_year`, `student_statistics`, `me_project`, `me_section_year`, `status`, `technology` e `image`.
+Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respuestas públicas y listados paginados). Hay un archivo por recurso: `auth`, `user`, `student`, `professor`, `section`, `section_year`, `calendar`, `calendar_class`, `calendar_bulk`, `activity`, `delivery`, `delivery_comment`, `score`, `attendance`, `attendance_transcript`, `me_calendar`, `professor_section_year`, `project`, `project_evaluation`, `project_statistics`, `project_status`, `project_technology_statistics`, `student_evaluation`, `student_project`, `student_section_year`, `student_statistics`, `me_project`, `me_section_year`, `status`, `technology` e `image`.
 
 ## `routes/`
 
@@ -316,10 +327,12 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `attendance.py` | `/calendar-classes/{id}/attendance` | Abrir/cerrar la toma, marcar/quitar asistencia a mano (de a uno o en lote), listar la clase con porcentaje por alumno, hacer check-in con código e importar desde el chat/CSV. |
 | `student_section_years.py` | `/student-section-years` | Inscripciones y cursadas de alumnos: alta, consulta, edición y baja de la **inscripción** (lectura: profesores y super admin; escritura: super admin); lista las cursadas con su `state`, `status` y porcentaje de asistencia; las cursadas son de solo lectura (409). |
 | `professor_section_years.py` | `/professor-section-years` | CRUD de asignaciones de profesores a cursos lectivos. |
-| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos, asegurarlos (con `force` para omitir el mínimo/máximo), cambiar su estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`), consultar su historial de estados, su overview (integrantes y responsables), la asistencia de sus integrantes, sus evaluaciones consolidadas y sus estadísticas completas. |
+| `projects.py` | `/projects` | Crear (individual y masivo), listar, consultar, modificar, eliminar proyectos, subir/reemplazar/quitar el logo, asegurarlos (con `force` para omitir el mínimo/máximo), cambiar su estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`), consultar su historial de estados, su overview (integrantes y responsables), la asistencia de sus integrantes, sus evaluaciones consolidadas y sus estadísticas completas. |
+| `student_evaluations.py` | `/section-years/{id}/student-evaluations`, `/student-evaluations`, `/student-grades` y `/me/student-evaluations` | CRUD de parciales y notas por cursada, actualización masiva y consulta de las notas propias. |
 | `student_projects.py` | `/projects/{id}/members` | Unirse y abandonar (alumno), aceptar/rechazar (jefe, profesor del curso lectivo o super admin), delegar jefatura (jefe), expulsar, añadir y finalizar (profesor del curso lectivo o super admin) y listar integrantes (privilegiados). |
 | `technologies.py` | `/technologies` | Alta, edición, consulta y baja de tecnologías (consulta: cualquier usuario; escritura: profesores y super admin), con la imagen en multipart o `id_image` y `PUT`/`DELETE` de la imagen. |
 | `images.py` | `/images` | Subida (multipart, profesores y super admin), consulta de datos (cualquier usuario logueado) y borrado de imágenes; el archivo se sirve públicamente en `/media`. |
+| `project_logos.py` | `/projects/{id}/logo` | Subir, reemplazar o quitar el logo 1:1 del proyecto (multipart `file` o JSON `id_image`). |
 | `project_technologies.py` | `/projects/{id}/technologies` y `/project-technologies/statistics` | Asociar tecnologías a un proyecto (de a una o en lote) y quitarlas (privilegiados, mientras el proyecto no sea final), listarlas (según la privacidad del proyecto) y consultar estadísticas agregadas por ciclo para cualquier usuario. |
 | `statuses.py` | `/statuses` | Consulta de estados por ámbito. |
 
@@ -349,6 +362,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `attendance.py` | Lógica de asistencia: sesión con código hasheado y vencimiento, check-in idempotente, marcado manual (individual y en lote), listado de la clase con porcentaje e historial del alumno, y reporte de un alumno para staff con alcance por curso. |
 | `attendance_stats.py` | Estadísticas reutilizables de asistencia por cursada y curso lectivo; cuenta como clase con toma la que tiene sesión de código o alguna asistencia manual/importada y respeta rangos. |
 | `project_attendance.py` | Asistencia de los integrantes de un proyecto, con filtro por estado, rango, datos públicos del alumno y estadísticas agregadas de todos los miembros. |
+| `project_logos.py` | Lógica del logo 1:1 del proyecto: asociar archivo o imagen existente, reemplazar, quitar y limpiar imágenes no reutilizadas. |
 | `project_evaluations.py` | Evaluación consolidada: entregas y notas, promedios por categoría, asistencia agregada, desglose de integrantes y evaluaciones de todos los proyectos de un curso lectivo. |
 | `project_statistics.py` | Estadísticas completas de un proyecto: estados de entregas e integrantes, promedios, asistencia, comentarios, tecnologías y resúmenes compactos. |
 | `attendance_transcript.py` | Importación desde el chat: parseo de texto/CSV, matching legajo exacto + nombre tolerante, reporte preview/confirmación y creación con `method=transcript`. |
@@ -358,10 +372,11 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `student_section_years.py` | Lógica de inscripciones y cursadas: alta/edición/baja de la inscripción, unicidad de una por año, listado con filtro por estado, y helpers de cursada (`ensure_attending`, `close_attending`, `validate_project_year`, `student_current_row`, `student_current_year`) usados por proyectos, seed, asistencia y `/me`. |
 | `professor_section_years.py` | Lógica de asignaciones de profesores, con el listado de los profesores de un curso lectivo (`list_section_year_professors`, usado por el overview de proyectos). |
 | `project_statuses.py` | Lógica del historial de estados de un proyecto: registro de transiciones y listado cronológico. |
-| `projects.py` | Lógica de proyectos: creación (incluye el curso genérico para cualquier profesor), modificación de atributos, resolución del curso lectivo actual del usuario (`current_section_years`) y sus proyectos (`list_my_section_year_projects`), aseguramiento (`insure_project`: jefe, profesor del curso lectivo o super admin; valida `min_students`/`max_students` y rechaza las solicitudes pendientes; con `force=true` el staff omite los límites pero exige al menos un `active`), transiciones de estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry` y `cancel`, solo profesor del curso lectivo o super admin; delega la validación y los efectos en `utils/state/state_project.py`), eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin; los `uninsured` se tratan como públicos). |
+| `projects.py` | Lógica de proyectos: creación (incluye el curso genérico para cualquier profesor), modificación de atributos (incluye `user_link`), resolución del curso lectivo actual del usuario (`current_section_years`) y sus proyectos (`list_my_section_year_projects`), aseguramiento (`insure_project`: jefe, profesor del curso lectivo o super admin; valida `min_students`/`max_students` y rechaza las solicitudes pendientes; con `force=true` el staff omite los límites pero exige al menos un `active`), transiciones de estado (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry` y `cancel`, solo profesor del curso lectivo o super admin; delega la validación y los efectos en `utils/state/state_project.py`), eliminación, listado y reglas de visibilidad según privacidad (los privilegiados son las membresías `active`/`finished`, el profesor del curso lectivo y el super admin; los `uninsured` se tratan como públicos). |
+| `student_evaluations.py` | Lógica de parciales y notas: CRUD de evaluaciones, precreación/backfill de notas 0, actualización individual y masiva, permisos del staff y consulta de notas propias. |
 | `student_projects.py` | Lógica de membresías: unirse, aceptar/rechazar, abandonar, expulsar, finalizar y delegar jefatura, listar integrantes (paginado y completo), obtener el jefe del grupo (`get_leader`), armar el overview (`build_overview`, también lo usa `GET /me/project`) y las reglas de un solo `member` por alumno; valida el año del proyecto y sincroniza la cursada (`attending`/`abandoned`/`finished_approved`); el alta directa no requiere inscripción y acepta otra comisión del mismo año; las transiciones y sus efectos viven en `utils/state/state_student_project.py`. |
 | `technologies.py` | Lógica de tecnologías: CRUD, unicidad del nombre sin distinguir mayúsculas (índice sobre `lower(name)` + captura de `IntegrityError`), listado con `q` y paginación, bloqueo de borrado de una tecnología en uso (409) y ciclo de vida de su imagen (subir, reemplazar, quitar). |
-| `images.py` | Lógica de imágenes: lectura con límite de tamaño (413), validación de formato y conversión a WebP (EXIF y transparencia), guardado de fila + archivo, borrado con bloqueo si está en uso (409) y respuesta pública con `url`. |
+| `images.py` | Lógica de imágenes: lectura con límite de tamaño (413), validación de formato y conversión a WebP (EXIF y transparencia), guardado de fila + archivo, borrado con bloqueo si está en uso por tecnología o logo de proyecto (409) y respuesta pública con `url`. |
 | `storage.py` | Capa de almacenamiento (hoy local): clave única, `url` pública, ruta con chequeo de traversal, escritura atómica y borrado tolerante. Una futura nube solo reemplaza este archivo. |
 | `project_technologies.py` | Lógica del vínculo proyecto–tecnología: asociar de a una o en lote (todo o nada con detalle por fila), quitar y listar, con los chequeos de privilegiados, estado final y visibilidad según privacidad (reutiliza `Access` de `utils/projects.py`). |
 | `project_technology_statistics.py` | Estadísticas agregadas de tecnologías por año y curso lectivo, con porcentajes y totales globales, sin datos de proyectos. |
@@ -406,7 +421,8 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_section_year_evaluations.py` | Evaluaciones de todos los proyectos de un curso lectivo: permisos, proyectos vacíos, orden y contenido consolidado. |
 | `test_project_insure.py` | Aseguramiento de un proyecto: permisos, reglas (memoria del subestado, rango de integrantes, forzado de cantidad), efectos (historial, rechazo de pendientes, privacidad) y 409/404. |
 | `test_project_transitions.py` | Transiciones de estado del proyecto (`uninsure`, `start`, `submit`, `approve`, `reject`, `retry`, `cancel`): permisos, transiciones válidas e inválidas, estados finales, memoria del subestado, efectos en las membresías e historial. |
-| `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación y eliminación. |
+| `test_projects.py` | Proyectos: permisos, creación, listado, visibilidad, modificación, `user_link`, logo y eliminación. |
+| `test_student_evaluations.py` | Evaluaciones/parciales y notas por alumno: permisos, precreación, backfill, CRUD, actualización masiva, notas propias y presencia en estadísticas. |
 | `test_student_projects.py` | Integrantes del proyecto: unirse, aceptar/rechazar (jefe), abandonar, expulsar, finalizar, delegar jefatura, listar, reglas de membresía, alta directa sin inscripción, cursadas automáticas, recursado con nueva inscripción y reintentos con `allow_project_joins`. |
 | `test_me_project.py` | Mi proyecto (`GET /me/project`): permisos, equipo donde el alumno es miembro (overview completo, `restricted` en `false`) y solicitudes de ingreso (`pending_approval`/`rejected`, ordenadas). |
 | `test_me_section_year.py` | Mi curso lectivo actual (`GET /me/section-year` y `/me/section-year/projects`): año actual del profesor y del alumno (incluye recursado), fallback al grupo, sin curso actual, visibilidad por privacidad, orden, paginación y exposición de `allow_student_submissions`. |

@@ -35,6 +35,7 @@ from models.state.state_student_project import PendingApprovalMember, RejectedMe
 from utils.project_statuses import record_status_change
 from utils.section_years import get_section_year
 from utils.deliveries import ensure_deliveries_for_section_year, has_delivery_data_for_project
+from utils.images import to_public as image_public
 from utils.state import ProjectEffector, apply_transition
 from utils.student_section_years import student_current_row
 from utils.statuses import get_status
@@ -141,6 +142,13 @@ def to_public(project: Project, restricted: bool = False) -> ProjectPublic:
         objective=None if restricted else project.objective,
         problem=None if restricted else project.problem,
         drive_folder_url=None if restricted else project.drive_folder_url,
+        user_link=None if restricted else project.user_link,
+        logo=(
+            image_public(project.__dict__["logo"].image)
+            if project.__dict__.get("logo") is not None
+            and project.__dict__["logo"].image is not None
+            else None
+        ),
     )
 
 

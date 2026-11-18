@@ -27,6 +27,7 @@ from schemas.student_statistics import (
 )
 from utils.attendance_stats import attendance_stats_for_cursadas
 from utils.section_years import get_section_year
+from utils.student_evaluations import evaluation_average, grades_for_cursadas
 from utils.statuses import to_public as status_public
 
 MEMBER_STATUSES = frozenset({"active", "finished"})
@@ -175,6 +176,9 @@ async def build_student_statistics(
     if target_state == ATTENDING:
         cursadas = [row for row, *_ in rows]
         stats_by_row = await attendance_stats_for_cursadas(db, cursadas)
+    student_grades = await grades_for_cursadas(
+        db, [row.id_student_section_year for row, *_ in rows]
+    )
 
     def memberships_for(
         ids: set[int] | list[int], id_section_year_value: int | None = None
@@ -276,6 +280,12 @@ async def build_student_statistics(
                         state=row.state,
                         status=status_public(row_status),
                         attendance=stats_by_row.get(row.id_student_section_year),
+                        student_evaluations=student_grades.get(
+                            row.id_student_section_year, []
+                        ),
+                        average_student_evaluation=evaluation_average(
+                            student_grades.get(row.id_student_section_year, [])
+                        ),
                     )
                     for row, section_year, section, row_status in student_rows
                 ],

@@ -5,7 +5,10 @@ from sqlmodel import SQLModel
 from schemas.delivery import DeliveryGradePublic
 from schemas.project import ProjectPublic
 from schemas.status import StatusPublic
-from schemas.student_project import StudentProjectAttendancePublic
+from schemas.student_evaluation import (
+    StudentEvaluationMemberPublic,
+    StudentEvaluationSummaryPublic,
+)
 
 
 class DeliveryStatusCountsPublic(SQLModel):
@@ -52,6 +55,7 @@ class ProjectStatisticsSummaryPublic(SQLModel):
     attendance: AttendanceStatisticsPublic
     comments: CommentStatisticsPublic
     technologies_total: int
+    student_evaluations: StudentEvaluationSummaryPublic
 
 
 class ActivityStatisticsPublic(SQLModel):
@@ -76,5 +80,5 @@ class ProjectStatisticsPublic(SQLModel):
     project: ProjectPublic
     statistics: ProjectStatisticsSummaryPublic
     activity_statistics: list[ActivityStatisticsPublic]
-    member_statistics: list[StudentProjectAttendancePublic]
+    member_statistics: list[StudentEvaluationMemberPublic]
     technologies: list[ProjectTechnologyStatisticsPublic]

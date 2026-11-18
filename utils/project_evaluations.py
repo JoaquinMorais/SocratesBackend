@@ -1,7 +1,8 @@
 from sqlmodel import select
 
-from models import Activity, Delivery, DeliveryGrade, Project
+from models import Activity, Delivery, DeliveryGrade, Project, StudentSectionYear
 from models.state import MEMBER_CODES
+from schemas.student_evaluation import StudentEvaluationMemberPublic
 from schemas.attendance import AttendanceStatsPublic
 from schemas.project_evaluation import (
     ProjectEvaluationPublic,
@@ -12,6 +13,11 @@ from utils.deliveries import to_public as delivery_public
 from utils.project_attendance import list_project_attendance
 from utils.projects import to_public as project_public
 from utils.section_years import to_public as section_year_public
+from utils.student_evaluations import (
+    evaluation_average,
+    evaluation_summary,
+    grades_for_cursadas,
+)
 
 
 def _average(values: list[int]) -> float | None:
@@ -84,6 +90,47 @@ async def build_project_evaluation(db, project) -> ProjectEvaluationPublic:
         limit=100,
         offset=0,
     )
+    member_ids = [item.id_student for item in attendance.items]
+    cursadas = (
+        (
+            await db.exec(
+                select(StudentSectionYear).where(
+                    StudentSectionYear.id_section_year == project.id_section_year,
+                    StudentSectionYear.id_student.in_(member_ids),
+                    StudentSectionYear.state != "registered",
+                )
+            )
+        ).all()
+        if member_ids
+        else []
+    )
+    cursada_by_student = {row.id_student: row for row in cursadas}
+    student_grades = await grades_for_cursadas(
+        db, [row.id_student_section_year for row in cursadas]
+    )
+    members = [
+        StudentEvaluationMemberPublic(
+            **item.model_dump(),
+            student_evaluations=student_grades.get(
+                cursada_by_student[item.id_student].id_student_section_year, []
+            )
+            if item.id_student in cursada_by_student
+            else [],
+            average_student_evaluation=(
+                evaluation_average(
+                    student_grades.get(
+                        cursada_by_student[item.id_student].id_student_section_year,
+                        [],
+                    )
+                )
+                if item.id_student in cursada_by_student
+                else None
+            ),
+        )
+        for item in attendance.items
+    ]
+    student_evaluation_summary = evaluation_summary(student_grades)
+
     attended = sum(
         item.attendance.attended_classes
         for item in attendance.items
@@ -120,13 +167,14 @@ async def build_project_evaluation(db, project) -> ProjectEvaluationPublic:
         members_finished=sum(
             1 for item in attendance.items if item.status.code == "finished"
         ),
+        student_evaluations=student_evaluation_summary,
     )
 
     return ProjectEvaluationPublic(
         project=project_public(project),
         activities=activities,
         statistics=statistics,
-        members=attendance.items,
+        members=members,
     )
 
 

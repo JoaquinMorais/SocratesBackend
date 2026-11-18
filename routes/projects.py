@@ -318,8 +318,8 @@ async def get_project_evaluations_route(
     - `activities`: todas las entregas del proyecto (actividad, estado, link,
       fechas, historial de notas y últimas notas por categoría).
     - `statistics`: conteos y promedios de notas, más la asistencia agregada.
-    - `members`: integrantes `active`/`finished` con su condición, jefatura y
-      porcentaje de asistencia individual.
+    - `members`: integrantes `active`/`finished` con su condición, jefatura,
+      porcentaje de asistencia individual y notas de parciales.
 
     Los promedios de notas usan el valor vigente de cada `SectionYearScore`.
     `average_latest` promedia la última nota de cada entrega y categoría;
@@ -358,8 +358,8 @@ async def get_project_statistics_route(
 
     - `project`: datos y estado actual.
     - `statistics`: conteos de entregas e integrantes por estado, notas totales
-      y promedios latest/all por categoría, asistencia agregada, comentarios y
-      cantidad de tecnologías.
+      y promedios latest/all por categoría, asistencia agregada, comentarios,
+      tecnologías y notas de parciales.
     - `activity_statistics`: resumen por actividad con última nota de cada
       categoría y promedios.
     - `member_statistics`: integrantes `active`/`finished` con condición,

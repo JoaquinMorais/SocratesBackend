@@ -331,7 +331,8 @@ Estadísticas de alumnos inscriptos y cursando (`GET /students/statistics/regist
 
 **Estadísticas**
 - `test_registered_statistics`: testear totales, desglose, con/sin proyecto, membresías y que la asistencia de `registered` sea `null`; incluye paginación.
-- `test_attending_statistics`: testear totales, proyectos, asistencia agregada e individual de los alumnos cursando.
+- `test_attending_statistics`: testear totales, proyectos, asistencia agregada e individual de los alumnos cursando, incluidas sus notas de parciales.
+- `test_project_counts_only_same_section_year`: testear que un proyecto de otro curso lectivo no cuenta como proyecto del alumno en el reporte filtrado.
 
 ## `tests/test_student_section_years.py`
 
@@ -711,7 +712,8 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_super_admin_manages_any_section_year`: testear que un super admin puede crear y eliminar proyectos en cualquier curso lectivo.
 
 **Crear**
-- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo, problemática y `drive_folder_url` en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
+- `test_create_project_defaults`: testear que se crea vacío (nombre, descripción, objetivo, problemática, `drive_folder_url` y `user_link` en `null`), público, con el grupo 1 y con el estado inicial `uninsured` (Desasegurado) del ámbito `project`.
+- `test_drive_folder_url_validation`: testear URLs inválidas, limpieza con vacío y que no se pueda enviar en el alta.
 - `test_create_assigns_first_free_group_number`: testear que sin `group_number` toma el primer hueco libre (no el mayor + 1), también después de números explícitos, y que sin huecos continúa después del mayor.
 - `test_create_duplicate_group_number_rejected`: testear que no se repite el número de grupo dentro del curso lectivo (409).
 - `test_same_group_number_in_other_section_year_is_ok`: testear que el mismo número puede existir en otro curso lectivo.
@@ -750,13 +752,16 @@ Asistencia por clase (`/calendar-classes/{id}/attendance`): abrir/rotar/cerrar l
 - `test_finished_member_can_patch`: testear que un miembro con membresía `finished` puede modificar el proyecto.
 - `test_assigned_professor_can_patch`: testear que un profesor del curso lectivo puede modificar el proyecto.
 - `test_super_admin_can_patch`: testear que un super admin puede modificar cualquier proyecto.
-- `test_patch_each_field`: testear que se editan `name`, `description`, `objective`, `problem`, `drive_folder_url` y `privacy`, y que el estado no cambia.
+- `test_patch_each_field`: testear que se editan `name`, `description`, `objective`, `problem`, `drive_folder_url`, `user_link` y `privacy`, y que el estado no cambia.
 - `test_patch_only_changes_sent_fields`: testear que lo no enviado no cambia.
 - `test_patch_same_values_is_ok`: testear que reenviar los mismos valores no da error.
 - `test_patch_can_clear_optional_fields`: testear que enviar `null` en un campo de texto lo limpia.
 - `test_patch_privacy_null_rejected`: testear que `privacy` con `null` responde 422.
 - `test_patch_empty_body_rejected`: testear que un body vacío responde 422.
 - `test_patch_invalid_rejected`: testear que un `name` en blanco, una `privacy` inválida o un campo no permitido (`group_number`) responden 422.
+- `test_project_logo_upload_replace_and_delete`: testear subida multipart, reemplazo con limpieza de la imagen anterior, bloqueo de borrado de imagen y quitado del logo.
+- `test_project_logo_reuses_existing_image_and_is_exclusive`: testear asociación por `id_image` y exclusividad entre proyectos.
+- `test_project_logo_permissions_and_protected_visibility`: testear permisos, visibilidad en proyecto protegido y bloqueo en proyecto final.
 - `test_patch_not_found`: testear que un proyecto inexistente responde 404.
 - `test_cannot_patch_final_project`: testear que un proyecto en estado final (`approved`/`cancelled`) no se puede modificar (409).
 
@@ -842,7 +847,7 @@ Evaluación consolidada de un proyecto (`GET /projects/{id}/evaluations`): estad
 - `test_unknown_project`: testear que un proyecto inexistente responde 404.
 
 **Resultado**
-- `test_evaluation_includes_activities_grades_members_and_statistics`: testear las actividades con sus entregas y notas, los promedios de la última nota y de todo el historial, la asistencia agregada y el desglose por integrante con condición, jefatura y asistencia individual.
+- `test_evaluation_includes_activities_grades_members_and_statistics`: testear las actividades con sus entregas y notas, los promedios de la última nota y de todo el historial, la asistencia agregada y el desglose por integrante con condición, jefatura, asistencia y notas de parciales.
 - `test_evaluation_without_grades_or_attendance`: testear que sin notas los promedios son `null` y que sin clases computadas la asistencia agregada también es `null`.
 
 ## `tests/test_project_statistics.py`
@@ -857,7 +862,7 @@ Estadísticas completas de un proyecto (`GET /projects/{id}/statistics`): métri
 
 **Contenido**
 - `test_empty_project_statistics`: testear que un proyecto vacío devuelve conteos en cero, promedios y asistencia `null`, y arrays vacíos.
-- `test_complete_project_statistics`: testear distribución de estados de entrega, integrantes por estado, promedios globales y por actividad, asistencia agregada e individual, comentarios/anotaciones, tecnologías y resúmenes compactos.
+- `test_complete_project_statistics`: testear distribución de estados de entrega, integrantes por estado, promedios globales y por actividad, asistencia agregada e individual, notas de parciales, comentarios/anotaciones, tecnologías y resúmenes compactos.
 
 ## `tests/test_section_year_evaluations.py`
 
@@ -1068,6 +1073,28 @@ Integrantes del proyecto: unirse a un grupo (`POST /projects/{id}/members`), ace
 - `test_finished_failed_rejoin_blocked_by_default`: testear que un proyecto cancelado bloquea volver a la misma comisión si `allow_project_joins=false` (409).
 - `test_finished_failed_rejoin_allowed_with_flag`: testear que con `allow_project_joins=true` se reactiva la cursada `attending`.
 - `test_finished_approved_rejoin_blocked_even_with_flag`: testear que `finished_approved` no se puede reintentar aunque el flag esté activo (409).
+
+## `tests/test_student_evaluations.py`
+
+Evaluaciones/parciales y notas por alumno (`/section-years/{id}/student-evaluations`, `/student-evaluations`, `/student-grades` y `/me/student-evaluations`).
+
+**Permisos**
+- `test_evaluation_permissions`: testear que alumno y profesor no asignado no crean ni listan evaluaciones (403).
+- Los endpoints de staff aceptan al profesor del curso y al super admin.
+
+**Evaluaciones**
+- `test_assigned_professor_can_manage_evaluation`: testear que el profesor asignado crea, lista, consulta, edita y elimina evaluaciones.
+- `test_create_evaluation_precreates_zero_grades`: testear la creación, la precreación de notas 0 para cursadas `attending`, la unicidad case-insensitive, la fecha fuera del año y los campos desconocidos.
+- `test_update_and_delete_evaluation`: testear la edición de nombre/descripción/fecha, la limpieza de descripción con `null`, el body vacío y el borrado.
+- `test_evaluation_update_validation`: testear nombre duplicado (409), nombre/fecha nulos, campos desconocidos y 404.
+- `test_delete_evaluation_cascades_grades_and_blocks_section_year`: testear el borrado en cascada y que el curso con evaluaciones no se elimina (409).
+
+**Notas**
+- `test_student_grades_crud_and_bulk`: testear el listado, la actualización individual 1-10, el rechazo de 0/11, la actualización masiva todo o nada, la creación manual y el duplicado.
+- `test_create_grade_validation`: testear notas fuera de rango, body inválido, cursada `registered`, cursada de otro año y nota inexistente.
+- `test_bulk_grade_validation_is_all_or_nothing`: testear duplicados, valores fuera de rango y que no se modifica ninguna nota si falla.
+- `test_student_sees_only_own_grades_and_backfill`: testear la creación automática al incorporarse un alumno después, múltiples evaluaciones, la consulta propia y que un alumno no accede a endpoints de staff.
+- `test_statistics_include_student_evaluation_grades`: testear las notas/promedios en evaluación de proyecto, estadísticas del proyecto, estadísticas de alumnos y evaluaciones por curso lectivo, incluyendo que los `0` no bajen el promedio.
 
 ## `tests/test_me_project.py`
 

@@ -30,8 +30,15 @@ class Project(SQLModel, table=True):
     objective: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     problem: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     drive_folder_url: str | None = Field(default=None, max_length=1000)
+    user_link: str | None = Field(default=None, max_length=1000)
 
     section_year: SectionYear = Relationship(sa_relationship_kwargs={"lazy": "selectin"})
+    logo: "ProjectImage" = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"lazy": "selectin", "uselist": False},
+    )
     status: Status = Relationship(
         sa_relationship_kwargs={"lazy": "selectin", "foreign_keys": "[Project.id_status]"}
     )
+
+from models.project_image import ProjectImage  # noqa: E402
