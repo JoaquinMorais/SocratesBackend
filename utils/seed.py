@@ -688,10 +688,14 @@ async def _load_attendance(
 
 
 async def _fill_seed_deliveries(
-    session: AsyncSession, statuses: dict[tuple[str, str], Status]
+    session: AsyncSession,
+    statuses: dict[tuple[str, str], Status],
+    config: dict | None = None,
 ) -> None:
     """Completa una parte de las entregas pre-creadas para el seed de demo."""
-    cutoff = date(2026, 10, 30)
+    config = config or {}
+    cutoff = date.fromisoformat(config.get("cutoff", "2026-10-30"))
+    fill_percentage = int(config.get("fill_percentage", 75))
     deliveries = (await session.exec(select(Delivery))).all()
     score_rows = (
         await session.exec(
@@ -713,7 +717,7 @@ async def _fill_seed_deliveries(
         if activity.due_date > cutoff:
             continue
         bucket = (delivery.id_project * 17 + delivery.id_activity * 31) % 100
-        if bucket >= 75:
+        if bucket >= fill_percentage:
             continue
         submitted = datetime.combine(
             activity.due_date, time(12, 0), tzinfo=timezone.utc
@@ -857,7 +861,9 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
     projects = await _load_projects(session, data, section_years, statuses)
     for sy in section_years.values():
         await ensure_deliveries_for_section_year(session, sy.id_section_year)
-    await _fill_seed_deliveries(session, statuses)
+    await _fill_seed_deliveries(
+        session, statuses, data.get("delivery_simulation")
+    )
     await _load_project_technologies(session, data, projects, technologies)
     await _load_student_projects(session, data, students, projects, statuses)
     await _load_student_cursadas(session, statuses)

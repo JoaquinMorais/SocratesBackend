@@ -1334,6 +1334,8 @@ Carga `data/seed_real.json` una vez por módulo y restaura `data/seed_test.json`
 - `test_seed_real_group_18_has_only_leonardo`: testear que el grupo 18 tiene solo a Leonardo Ludueña (29886) y que el grupo 10 no lo contiene.
 - `test_seed_real_3k4_students_registered_there_and_attending_3k1`: testear que los 5 alumnos marcados “(3K4)” están inscriptos en 3K4 2026 y además tienen una cursada `attending` en 3K1 2026.
 - `test_seed_real_calendar_classes`: testear que el calendario de 3K1 2026 tiene 33 clases entre el 1/8 y el 28/11: 17 martes presenciales de 18:30 a 21:30 y 16 miércoles virtuales de 18:30 a 21:00, sin el feriado del 18/11 y sin aula ni link.
+- `test_seed_real_activities`: testear las 6 actividades de 3K1 2026 con sus títulos, fechas, horas, `link_required=true`, sin descripción y dentro del curso lectivo correcto.
+- `test_seed_real_deliveries`: testear que se precrean las 108 entregas (18 proyectos × 6 actividades), que están los cuatro estados, que hay entregas con y sin link, notas de actividad y seguimiento, patrones distintos por grupo y que el Sprint 4 tiene entregas simuladas.
 
 ## `tests/test_scores.py`
 

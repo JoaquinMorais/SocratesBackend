@@ -2411,5 +2411,59 @@
       "modality": "virtual",
       "title": "Clase virtual"
     }
-  ]
+  ],
+  "activities": [
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Primera entrega: Informe/Estudio Inicial",
+      "due_date": "2026-09-02",
+      "due_time": "23:00",
+      "link_required": true
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Planificación y Seguimiento del Proyecto: Sprint 0",
+      "due_date": "2026-09-16",
+      "due_time": "23:00",
+      "link_required": true
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Planificación y Seguimiento del Proyecto: Sprint 1 + Definición del producto",
+      "due_date": "2026-09-30",
+      "due_time": "23:00",
+      "link_required": true
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Planificación y Seguimiento del Proyecto: Sprint 2 + Definición del producto",
+      "due_date": "2026-10-14",
+      "due_time": "23:00",
+      "link_required": true
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Planificación y Seguimiento del Proyecto: Sprint 3",
+      "due_date": "2026-10-30",
+      "due_time": "18:00",
+      "link_required": true
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "title": "Planificación y Seguimiento del Proyecto: Sprint 4",
+      "due_date": "2026-11-13",
+      "due_time": "18:00",
+      "link_required": true
+    }
+  ],
+  "delivery_simulation": {
+    "cutoff": "2026-11-28",
+    "fill_percentage": 75
+  }
 }

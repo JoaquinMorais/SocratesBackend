@@ -6,8 +6,11 @@ from sqlmodel import SQLModel, func, select
 
 from config.database import SessionLocal
 from models import (
+    Activity,
     Calendar,
     CalendarClass,
+    Delivery,
+    DeliveryGrade,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -314,4 +317,109 @@ async def test_seed_real_calendar_classes():
             expected_dates.add(day)
         day += timedelta(days=1)
     assert {calendar_class.date for calendar_class in classes} == expected_dates
+
+
+async def test_seed_real_activities():
+    expected = {
+        "Primera entrega: Informe/Estudio Inicial": (
+            date(2026, 9, 2),
+            time(23, 0),
+        ),
+        "Planificación y Seguimiento del Proyecto: Sprint 0": (
+            date(2026, 9, 16),
+            time(23, 0),
+        ),
+        "Planificación y Seguimiento del Proyecto: Sprint 1 + Definición del producto": (
+            date(2026, 9, 30),
+            time(23, 0),
+        ),
+        "Planificación y Seguimiento del Proyecto: Sprint 2 + Definición del producto": (
+            date(2026, 10, 14),
+            time(23, 0),
+        ),
+        "Planificación y Seguimiento del Proyecto: Sprint 3": (
+            date(2026, 10, 30),
+            time(18, 0),
+        ),
+        "Planificación y Seguimiento del Proyecto: Sprint 4": (
+            date(2026, 11, 13),
+            time(18, 0),
+        ),
+    }
+    activities = {activity.title: activity for activity in await _all(Activity)}
+    assert set(activities) == set(expected)
+    for title, (due_date, due_time) in expected.items():
+        activity = activities[title]
+        assert activity.due_date == due_date
+        assert activity.due_time == due_time
+        assert activity.link_required is True
+        assert activity.description is None
+
+    calendars = {calendar.id_calendar: calendar for calendar in await _all(Calendar)}
+    section_years = {
+        section_year.id_section_year: section_year
+        for section_year in await _all(SectionYear)
+    }
+    for activity in activities.values():
+        section_year = section_years[calendars[activity.id_calendar].id_section_year]
+        assert (section_year.section.name, section_year.year) == ("3K1", 2026)
+
+
+async def test_seed_real_deliveries():
+    deliveries = await _all(Delivery)
+    projects = await _all(Project)
+    activities = await _all(Activity)
+
+    assert len(deliveries) == len(projects) * len(activities) == 108
+    assert len({(d.id_project, d.id_activity) for d in deliveries}) == 108
+    assert {delivery.status.code for delivery in deliveries} == {
+        "requested",
+        "pending_approval",
+        "pending_modification",
+        "approved",
+    }
+
+    with_link = [delivery for delivery in deliveries if delivery.link]
+    without_link = [delivery for delivery in deliveries if not delivery.link]
+    assert with_link
+    assert without_link
+    assert all(
+        delivery.submitted_at is not None and delivery.updated_at is not None
+        for delivery in with_link
+    )
+
+    for activity in activities:
+        linked = [
+            delivery
+            for delivery in deliveries
+            if delivery.id_activity == activity.id_activity and delivery.link
+        ]
+        empty = [
+            delivery
+            for delivery in deliveries
+            if delivery.id_activity == activity.id_activity and not delivery.link
+        ]
+        assert linked
+        assert empty
+
+    patterns: dict[int, set[str]] = {}
+    for delivery in deliveries:
+        patterns.setdefault(delivery.id_project, set()).add(delivery.status.code)
+    assert len({frozenset(codes) for codes in patterns.values()}) > 1
+
+    sprint_4 = next(
+        activity
+        for activity in activities
+        if activity.title.endswith("Sprint 4")
+    )
+    assert any(
+        delivery.id_activity == sprint_4.id_activity and delivery.link
+        for delivery in deliveries
+    )
+
+    grades = await _all(DeliveryGrade)
+    delivery_ids = {delivery.id_delivery for delivery in deliveries}
+    assert {"activity", "follow_up"} <= {grade.category for grade in grades}
+    assert all(grade.id_delivery in delivery_ids for grade in grades)
+
 

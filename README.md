@@ -174,7 +174,7 @@ Los alumnos usan el patrón `{legajo}@sistemas.frc.utn.edu.ar`. Las cuentas nuev
 
 El seed realista incluye 200 alumnos, 16 profesores, 10 cursos lectivos reales (2024-2026), el curso genérico `PRESOCRATICO` (2000), proyectos con estados e historial, entregas, tecnologías, calendarios y asistencias.
 
-`data/seed_real.json` es la comisión real 3K1 2026: 97 alumnos en 18 grupos, 5 alumnos inscriptos en 3K4 que cursan en 3K1, Marta y María Cecilia como super admin, Daniel, María Cecilia y Rita asignados a 3K1, proyectos en `in_progress` y calendario de clases de agosto a noviembre (martes presencial y miércoles virtual). Para usarla, definir `SEED_FILE=seed_real.json` y recrear la base con `docker compose down -v`.
+`data/seed_real.json` es la comisión real 3K1 2026: 97 alumnos en 18 grupos, 5 alumnos inscriptos en 3K4 que cursan en 3K1, Marta y María Cecilia como super admin, Daniel, María Cecilia y Rita asignados a 3K1, proyectos en `in_progress`, calendario de clases de agosto a noviembre (martes presencial y miércoles virtual), 6 actividades y entregas simuladas con estados y notas variados. Para usarla, definir `SEED_FILE=seed_real.json` y recrear la base con `docker compose down -v`.
 
 Para volver a la base inicial:
 
