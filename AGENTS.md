@@ -103,7 +103,7 @@ docker compose down -v                # borra la BD (necesario si cambian column
 
 ## Datos del seed (útiles para los tests)
 
-Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed realista `data/seed.json` (200 alumnos, 10 cursos lectivos 2024-2026, proyectos con estados e historial, entregas, tecnologías, calendarios con feriados, inscripciones, cursadas y asistencias). Los ids de abajo corresponden a `seed_test.json`.
+Los tests cargan `data/seed_test.json` (mínimo y fijo); la app, al arrancar con la BD vacía, carga el seed indicado por `SEED_FILE` (por defecto `data/seed.json`, realista con 200 alumnos, 10 cursos lectivos 2024-2026, proyectos con estados e historial, entregas, tecnologías, calendarios con feriados, inscripciones, cursadas y asistencias). También existe `data/seed_real.json` con la comisión real 3K1 2026 (97 alumnos, 18 grupos y Daniel, María Cecilia y Rita asignados a 3K1), que se activa con `SEED_FILE=seed_real.json`. Los ids de abajo corresponden a `seed_test.json`.
 
 | Quién | Mail | Contraseña | id |
 |---|---|---|---|

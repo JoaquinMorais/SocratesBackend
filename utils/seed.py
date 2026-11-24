@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from config.settings import settings
 from models import (
     Activity,
     Attendance,
@@ -62,7 +63,17 @@ from utils.statuses import (
 )
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-DEFAULT_SEED_PATH = DATA_DIR / "seed.json"
+
+
+def default_seed_path() -> Path:
+    """Ruta del seed configurado en `SEED_FILE` (relativa a `data/`)."""
+    value = (settings.SEED_FILE or "seed.json").strip()
+    path = Path(value)
+    if not path.is_absolute():
+        path = DATA_DIR / path
+    if not path.is_file():
+        raise FileNotFoundError(f"Seed: no existe el archivo {path}")
+    return path
 
 
 def _build_user(item: dict) -> User:
@@ -817,7 +828,7 @@ async def load_seed(session: AsyncSession, seed_path: Path | None = None) -> Non
         await session.commit()
         return
 
-    path = Path(seed_path) if seed_path is not None else DEFAULT_SEED_PATH
+    path = Path(seed_path) if seed_path is not None else default_seed_path()
     data = json.loads(path.read_text(encoding="utf-8"))
     statuses = await ensure_statuses(session, data.get("statuses", []))
 

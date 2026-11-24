@@ -5,6 +5,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
+
+    # Archivo de seed que se carga al arrancar con la BD vacía.
+    SEED_FILE: str = "seed.json"
     ACCESS_MINUTES: int = 15
     REFRESH_DAYS: int = 7
     COOKIE_SECURE: bool = False  # True en producción (HTTPS)

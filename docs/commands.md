@@ -56,6 +56,26 @@ docker compose exec db sh -c 'dropdb -U "$POSTGRES_USER" --force --if-exists soc
 # o directamente todas: docker compose down -v (borra el volumen entero)
 ```
 
+## Seeds
+
+La app carga la seed solo cuando la base está vacía. El archivo se elige con
+`SEED_FILE`, relativo a `data/`:
+
+```bash
+# seed realista de desarrollo (por defecto)
+SEED_FILE=seed.json
+
+# comisión real 3K1 2026 (97 alumnos, 18 grupos)
+SEED_FILE=seed_real.json
+```
+
+Para cambiar de seed hay que recrear la base vacía:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
 ## Extras
 ver logs en vivo
 `docker compose logs -f backend`   

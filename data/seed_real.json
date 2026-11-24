@@ -1,0 +1,2369 @@
+{
+  "students": [
+    {
+      "first_name": "María Valentina",
+      "last_name": "Correa",
+      "legajo": 400655,
+      "birth_date": "2002-09-18",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Pablo",
+      "last_name": "García Montaño",
+      "legajo": 401655,
+      "birth_date": "2005-04-27",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Leonardo Daniel",
+      "last_name": "Hasson",
+      "legajo": 98512,
+      "birth_date": "2005-06-23",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Francisco",
+      "last_name": "Gorostiaga",
+      "legajo": 91355,
+      "birth_date": "2002-07-12",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Fabrizio Gastón",
+      "last_name": "Martignoni Durán",
+      "legajo": 401552,
+      "birth_date": "2001-09-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Pilar",
+      "last_name": "López Morales",
+      "legajo": 400390,
+      "birth_date": "2001-10-24",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Raúl Lucas",
+      "last_name": "Callamullo",
+      "legajo": 77520,
+      "birth_date": "2003-04-15",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tomás Agustín",
+      "last_name": "Eggel",
+      "legajo": 98292,
+      "birth_date": "2003-10-28",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tadeo Fabián",
+      "last_name": "Quiroga",
+      "legajo": 81669,
+      "birth_date": "2005-11-19",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Luciana Lisette",
+      "last_name": "Montarce",
+      "legajo": 85441,
+      "birth_date": "2004-02-14",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Juan Cruz",
+      "last_name": "Morales",
+      "legajo": 87097,
+      "birth_date": "2000-06-02",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Paola Trinidad",
+      "last_name": "Piedrabuena Castellano",
+      "legajo": 90726,
+      "birth_date": "2002-05-20",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "León Ignacio",
+      "last_name": "Marin Font",
+      "legajo": 400517,
+      "birth_date": "2001-01-08",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ayelén",
+      "last_name": "Ferraro",
+      "legajo": 99149,
+      "birth_date": "2004-02-26",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Leandro",
+      "last_name": "Ruiz",
+      "legajo": 402586,
+      "birth_date": "2001-01-29",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago Tomás",
+      "last_name": "Pereyra",
+      "legajo": 404539,
+      "birth_date": "2004-05-30",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Juan Cruz",
+      "last_name": "Moyano",
+      "legajo": 90205,
+      "birth_date": "2000-06-06",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Alan",
+      "last_name": "Cabrera",
+      "legajo": 91301,
+      "birth_date": "2003-06-07",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Joaquín Andrés",
+      "last_name": "Cagliero Palma",
+      "legajo": 409233,
+      "birth_date": "2004-07-23",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Christopher",
+      "last_name": "Leyton",
+      "legajo": 414649,
+      "birth_date": "2001-04-18",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Francisco",
+      "last_name": "Canuto",
+      "legajo": 409087,
+      "birth_date": "2004-05-02",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "María Paula",
+      "last_name": "Aimar",
+      "legajo": 410534,
+      "birth_date": "2001-06-18",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Lautaro Adriel",
+      "last_name": "Verón Arguello",
+      "legajo": 95542,
+      "birth_date": "2001-02-26",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Valentín",
+      "last_name": "Gómez Pucheta",
+      "legajo": 95529,
+      "birth_date": "2002-01-15",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Fernando Marcos",
+      "last_name": "Rodríguez",
+      "legajo": 63903,
+      "birth_date": "2003-01-24",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ramiro",
+      "last_name": "Baudo",
+      "legajo": 78737,
+      "birth_date": "2003-08-06",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Sofía Magali",
+      "last_name": "Caporusso",
+      "legajo": 99261,
+      "birth_date": "2001-08-12",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Mateo Emanuel",
+      "last_name": "Fernández",
+      "legajo": 411626,
+      "birth_date": "2005-03-13",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Morais",
+      "legajo": 410911,
+      "birth_date": "2005-10-28",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Martín Gabriel",
+      "last_name": "Bertero",
+      "legajo": 999001,
+      "birth_date": "2000-07-20",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Manuel",
+      "last_name": "Fernández Parente",
+      "legajo": 410277,
+      "birth_date": "2005-02-04",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Matías",
+      "last_name": "Vallejos Arregui",
+      "legajo": 408433,
+      "birth_date": "2001-04-10",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Alan",
+      "last_name": "Toscano",
+      "legajo": 410429,
+      "birth_date": "2001-03-21",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Marcos Emanuel",
+      "last_name": "Prigioni",
+      "legajo": 95559,
+      "birth_date": "2005-07-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Levi",
+      "last_name": "Angelino",
+      "legajo": 409458,
+      "birth_date": "2000-10-17",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Andy",
+      "last_name": "Toscano",
+      "legajo": 410434,
+      "birth_date": "2001-10-20",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago Nahuel",
+      "last_name": "Ibáñez Ubeid",
+      "legajo": 999002,
+      "birth_date": "2001-11-13",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Lamberti",
+      "legajo": 409600,
+      "birth_date": "2001-10-02",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Emilia Celina",
+      "last_name": "Correa",
+      "legajo": 400623,
+      "birth_date": "2002-08-01",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Rafael",
+      "last_name": "Taschini",
+      "legajo": 400685,
+      "birth_date": "2000-03-18",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Iván Paolo",
+      "last_name": "Vaudagna",
+      "legajo": 409630,
+      "birth_date": "2005-04-02",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nahuel",
+      "last_name": "Peralta",
+      "legajo": 411132,
+      "birth_date": "2002-10-17",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Cristian Gabriel",
+      "last_name": "Girón",
+      "legajo": 83928,
+      "birth_date": "2004-02-05",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Milagros Valentina",
+      "last_name": "Cruz",
+      "legajo": 90930,
+      "birth_date": "2000-12-20",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Serena Soledad",
+      "last_name": "Brito",
+      "legajo": 84066,
+      "birth_date": "2005-10-15",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Joaquín",
+      "last_name": "Filsinger",
+      "legajo": 401742,
+      "birth_date": "2005-11-12",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Thiago",
+      "last_name": "Decalli",
+      "legajo": 97196,
+      "birth_date": "2000-10-27",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Francisco",
+      "last_name": "Sondon",
+      "legajo": 400055,
+      "birth_date": "2004-10-01",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Anahí Belén",
+      "last_name": "Tarrago",
+      "legajo": 81293,
+      "birth_date": "2002-11-03",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Martín Román",
+      "last_name": "Amuedo",
+      "legajo": 85736,
+      "birth_date": "2002-07-09",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Florencia del Valle",
+      "last_name": "Bazán",
+      "legajo": 88672,
+      "birth_date": "2004-01-28",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Octavio Benjamín",
+      "last_name": "Méndez",
+      "legajo": 97177,
+      "birth_date": "2005-10-22",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Carlos",
+      "last_name": "Bencivenga",
+      "legajo": 97244,
+      "birth_date": "2004-01-08",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "María Agustina",
+      "last_name": "Solá",
+      "legajo": 85287,
+      "birth_date": "2005-05-13",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Daniel Alejandro",
+      "last_name": "Dragun Carreras",
+      "legajo": 91910,
+      "birth_date": "2001-03-30",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Federico Javier",
+      "last_name": "Liaudat",
+      "legajo": 84046,
+      "birth_date": "2003-06-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Eduardo Francisco",
+      "last_name": "Pérez Laguinge",
+      "legajo": 63519,
+      "birth_date": "2001-06-27",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Milton Rodrigo",
+      "last_name": "Cáceres Barrero",
+      "legajo": 77135,
+      "birth_date": "2000-05-23",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Gonzalo",
+      "last_name": "Ramondelli",
+      "legajo": 94404,
+      "birth_date": "2002-11-10",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Alejo",
+      "last_name": "Galván",
+      "legajo": 408762,
+      "birth_date": "2002-06-09",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Francisco Leonel",
+      "last_name": "Roldán",
+      "legajo": 400986,
+      "birth_date": "2000-07-05",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Federico Emiliano",
+      "last_name": "Canova",
+      "legajo": 409515,
+      "birth_date": "2003-11-04",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Martina",
+      "last_name": "Reyes",
+      "legajo": 94216,
+      "birth_date": "2001-05-03",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Mayra",
+      "last_name": "Errigo",
+      "legajo": 402077,
+      "birth_date": "2002-12-05",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Jazmín",
+      "last_name": "Rearte Allende",
+      "legajo": 94308,
+      "birth_date": "2002-06-19",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nahir de los Ángeles",
+      "last_name": "Choque",
+      "legajo": 78057,
+      "birth_date": "2002-04-21",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Axel Alejandro",
+      "last_name": "Funes",
+      "legajo": 77041,
+      "birth_date": "2002-08-19",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Benjamín",
+      "last_name": "Leguizamón",
+      "legajo": 75991,
+      "birth_date": "2000-03-12",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Manuel Mateo",
+      "last_name": "Serrano",
+      "legajo": 95285,
+      "birth_date": "2004-10-15",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Briseida Valentina",
+      "last_name": "Taborda Bainotti",
+      "legajo": 400440,
+      "birth_date": "2001-08-23",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Julieta",
+      "last_name": "Marovich",
+      "legajo": 401572,
+      "birth_date": "2004-01-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Valentina Aylen",
+      "last_name": "Flores",
+      "legajo": 404573,
+      "birth_date": "2001-03-05",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Albaridia",
+      "last_name": "Casilla",
+      "legajo": 400859,
+      "birth_date": "2001-04-20",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Alana Paulina",
+      "last_name": "Gianello Vale",
+      "legajo": 401347,
+      "birth_date": "2001-10-21",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "María",
+      "last_name": "Fontana",
+      "legajo": 410051,
+      "birth_date": "2001-07-17",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Fermín",
+      "last_name": "Sturd Murua",
+      "legajo": 82336,
+      "birth_date": "2002-01-22",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Agustín",
+      "last_name": "Liendo",
+      "legajo": 90080,
+      "birth_date": "2003-11-09",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "María",
+      "last_name": "Cassinelli",
+      "legajo": 409705,
+      "birth_date": "2001-12-30",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Gastón",
+      "last_name": "Capellán",
+      "legajo": 80211,
+      "birth_date": "2000-04-09",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Bartolomé",
+      "last_name": "De La Colina",
+      "legajo": 409001,
+      "birth_date": "2005-02-08",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Juan Cruz",
+      "last_name": "Nemet Bulla",
+      "legajo": 409091,
+      "birth_date": "2003-08-08",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Carmignani",
+      "legajo": 409101,
+      "birth_date": "2004-10-07",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Ignacio",
+      "last_name": "Amor",
+      "legajo": 89507,
+      "birth_date": "2005-06-10",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Santiago",
+      "last_name": "Agüero",
+      "legajo": 93073,
+      "birth_date": "2002-06-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Bruno",
+      "last_name": "Astori",
+      "legajo": 409276,
+      "birth_date": "2001-03-04",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Tomás",
+      "last_name": "Rosales",
+      "legajo": 87338,
+      "birth_date": "2005-09-21",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Nicolás",
+      "last_name": "Artaz",
+      "legajo": 87508,
+      "birth_date": "2001-07-18",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Iván Fabricio",
+      "last_name": "Díaz",
+      "legajo": 87473,
+      "birth_date": "2003-06-19",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Thiago Augusto",
+      "last_name": "D'Andrea Escoda",
+      "legajo": 87381,
+      "birth_date": "2002-05-03",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Camila",
+      "last_name": "Carrizo",
+      "legajo": 90496,
+      "birth_date": "2005-07-25",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Matías Ezequiel",
+      "last_name": "Stern Pacífico",
+      "legajo": 400654,
+      "birth_date": "2001-05-25",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Agustín Ezequiel",
+      "last_name": "Gigena",
+      "legajo": 97344,
+      "birth_date": "2003-09-06",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Braian Alexander",
+      "last_name": "Andrada",
+      "legajo": 404606,
+      "birth_date": "2002-08-16",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Camila Alejandra",
+      "last_name": "Olivera",
+      "legajo": 78910,
+      "birth_date": "2003-05-15",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Iván",
+      "last_name": "Babiachuk Yaco",
+      "legajo": 410777,
+      "birth_date": "2003-05-26",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Matías",
+      "last_name": "Raimondi González",
+      "legajo": 431350,
+      "birth_date": "2005-12-06",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    },
+    {
+      "first_name": "Leonardo",
+      "last_name": "Ludueña",
+      "legajo": 29886,
+      "birth_date": "2000-01-31",
+      "password": "Pass1234",
+      "enrollment_year": 2024
+    }
+  ],
+  "professors": [
+    {
+      "first_name": "Marta",
+      "last_name": "Rodríguez",
+      "legajo": 200001,
+      "birth_date": "1980-11-05",
+      "mail": "marta.rodriguez@frc.utn.edu.ar",
+      "is_super_admin": true,
+      "password": "Pass1234"
+    },
+    {
+      "first_name": "Daniel",
+      "last_name": "Herrera",
+      "legajo": 200002,
+      "birth_date": "1990-07-07",
+      "mail": "dherrera68@gmail.com",
+      "is_super_admin": false,
+      "password": "Pass1234"
+    },
+    {
+      "first_name": "María Cecilia",
+      "last_name": "Ortiz",
+      "legajo": 200003,
+      "birth_date": "1975-06-07",
+      "mail": "ceciliaortiz76@gmail.com",
+      "is_super_admin": true,
+      "password": "Pass1234"
+    },
+    {
+      "first_name": "Rita",
+      "last_name": "Pérez",
+      "legajo": 200004,
+      "birth_date": "1981-05-07",
+      "mail": "ritamperezmacchi@gmail.com",
+      "is_super_admin": false,
+      "password": "Pass1234"
+    }
+  ],
+  "sections": [
+    {
+      "name": "3K1"
+    },
+    {
+      "name": "3K4"
+    }
+  ],
+  "section_years": [
+    {
+      "section": "3K1",
+      "year": 2026,
+      "min_students": 1,
+      "max_students": 10,
+      "allow_project_joins": false,
+      "allow_student_submissions": false
+    },
+    {
+      "section": "3K4",
+      "year": 2026,
+      "min_students": 1,
+      "max_students": 10,
+      "allow_project_joins": false,
+      "allow_student_submissions": false
+    }
+  ],
+  "student_section_years": [
+    {
+      "student": 400655,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 401655,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 98512,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 91355,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 401552,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400390,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 77520,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 98292,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 81669,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 85441,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 87097,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 90726,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400517,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 99149,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 402586,
+      "section": "3K4",
+      "year": 2026
+    },
+    {
+      "student": 404539,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 90205,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 91301,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409233,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 414649,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409087,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410534,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 95542,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 95529,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 63903,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 78737,
+      "section": "3K4",
+      "year": 2026
+    },
+    {
+      "student": 99261,
+      "section": "3K4",
+      "year": 2026
+    },
+    {
+      "student": 411626,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410911,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 999001,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410277,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 408433,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410429,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 95559,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409458,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410434,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 999002,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409600,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400623,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400685,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409630,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 411132,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 83928,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 90930,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 84066,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 401742,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 97196,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400055,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 81293,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 85736,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 88672,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 97177,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 97244,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 85287,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 91910,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 84046,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 63519,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 77135,
+      "section": "3K4",
+      "year": 2026
+    },
+    {
+      "student": 94404,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 408762,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400986,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409515,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 94216,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 402077,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 94308,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 78057,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 77041,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 75991,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 95285,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400440,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 401572,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 404573,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 400859,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 401347,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410051,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 82336,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 90080,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409705,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 80211,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409001,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409091,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409101,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 89507,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 93073,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 409276,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 87338,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 87508,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 87473,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 87381,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 90496,
+      "section": "3K4",
+      "year": 2026
+    },
+    {
+      "student": 400654,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 97344,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 404606,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 78910,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 410777,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 431350,
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "student": 29886,
+      "section": "3K1",
+      "year": 2026
+    }
+  ],
+  "projects": [
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Activos Mineros - SIGPROMIN"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Asistencia en Violencia de Género"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestor de Obras Pintura (GOP)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Integral Taller Automotriz"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Proyectos Académicos (SOCRATES)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Mantenimiento de Vehículos"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Pedidos y Optimización Logística (SmartPick Diesel)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Planificador Itinerario de Viaje \"ViajeZazo\""
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestor de Actividades y Recursos Polideportivo"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 10,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Flota de Automóviles"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Judicial Inteligente (AbogacIA)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Producciones Audiovisuales (EnFOCO)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Agenda Flota de Colectivos (iterBus)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestor Comunicación Formal (ATLAS)"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Clínica Dental"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión de Alquileres de Inmuebles \"RentART\""
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión y Auditoría de Inventario"
+    },
+    {
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 18,
+      "status": "in_progress",
+      "privacy": "public",
+      "name": "Gestión Hiperfoco"
+    }
+  ],
+  "student_projects": [
+    {
+      "student": 400655,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 401655,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 98512,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 91355,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 401552,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 400390,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 1,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 77520,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 98292,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 81669,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 85441,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 87097,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 90726,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 2,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 400517,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 99149,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 402586,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 404539,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 90205,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 91301,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 3,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 409233,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 414649,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 409087,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 410534,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 95542,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 95529,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 4,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 63903,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 78737,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 99261,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 411626,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 410911,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 5,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 999001,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 410277,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 408433,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 410429,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 95559,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 409458,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 410434,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 6,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:06:00+00:00"
+    },
+    {
+      "student": 999002,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 409600,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 400623,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 400685,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 409630,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 411132,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 7,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 83928,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 90930,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 84066,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 401742,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 97196,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 400055,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 8,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 81293,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 85736,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 88672,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 97177,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 97244,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 85287,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 9,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 91910,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 10,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 84046,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 10,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 63519,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 10,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 77135,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 10,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 94404,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 408762,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 400986,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 409515,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 94216,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 402077,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 11,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 94308,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 78057,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 77041,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 75991,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 95285,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 12,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 400440,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 401572,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 404573,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 400859,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 401347,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 13,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 410051,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 82336,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 90080,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 409705,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 80211,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 14,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 409001,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 409091,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 409101,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 89507,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 93073,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 409276,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 15,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 87338,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 87508,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 87473,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 87381,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 90496,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 16,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 400654,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    },
+    {
+      "student": 97344,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:01:00+00:00"
+    },
+    {
+      "student": 404606,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:02:00+00:00"
+    },
+    {
+      "student": 78910,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:03:00+00:00"
+    },
+    {
+      "student": 410777,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:04:00+00:00"
+    },
+    {
+      "student": 431350,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 17,
+      "status": "active",
+      "is_leader": false,
+      "enrolled_at": "2026-03-01T12:05:00+00:00"
+    },
+    {
+      "student": 29886,
+      "section": "3K1",
+      "year": 2026,
+      "group_number": 18,
+      "status": "active",
+      "is_leader": true,
+      "enrolled_at": "2026-03-01T12:00:00+00:00"
+    }
+  ],
+  "professor_section_years": [
+    {
+      "professor": "dherrera68@gmail.com",
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "professor": "ceciliaortiz76@gmail.com",
+      "section": "3K1",
+      "year": 2026
+    },
+    {
+      "professor": "ritamperezmacchi@gmail.com",
+      "section": "3K1",
+      "year": 2026
+    }
+  ]
+}

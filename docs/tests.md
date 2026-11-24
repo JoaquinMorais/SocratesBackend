@@ -1317,6 +1317,22 @@ Carga el seed real (`data/seed.json`) una sola vez por módulo y valida su volum
 - `test_seed_deliveries_are_precreated`: testear que existe una entrega por cada combinación proyecto × actividad del mismo curso lectivo, sin duplicados, con los cuatro estados representados y algunas enviadas/calificadas y otras vacías.
 - `test_seed_attendance_is_consistent`: testear asistencias únicas, solo sobre cursadas válidas y clases pasadas, sesiones cerradas, ~50-60% de clases con toma y que al menos el 80% de los alumnos tenga 60-100% de asistencia sobre esas clases.
 
+## `tests/test_seed_real.py`
+
+Carga `data/seed_real.json` una vez por módulo y restaura `data/seed_test.json` al terminar.
+
+**Conteos y datos generales**
+- `test_seed_real_key_counts`: testear que la seed real tiene 2 comisiones + la genérica, 2 cursos lectivos + el genérico, 97 alumnos, 4 profesores, 18 proyectos, 97 membresías, 194 filas de inscripción/cursada y 3 asignaciones de profesor.
+- `test_seed_real_professors`: testear que existen Marta, Daniel, María Cecilia y Rita con sus mails, legajos y contraseña `Pass1234`, y que Marta y María Cecilia son super admin.
+- `test_seed_real_professors_assigned_to_3k1`: testear que Daniel, María Cecilia y Rita están asignados a 3K1 2026 y que Marta no lo está.
+- `test_seed_real_students_normalized_and_without_duplicates`: testear que hay 97 legajos únicos, todos con ingreso 2024, fechas de nacimiento entre 2000 y 2005, nombres y apellidos completos y sin espacios sobrantes.
+- `test_seed_real_projects_in_progress_and_public`: testear que hay 18 proyectos públicos, todos `in_progress`, con nombre y números de grupo del 1 al 18.
+- `test_seed_real_one_leader_per_group`: testear que cada uno de los 18 grupos tiene exactamente un jefe y que todas las membresías están `active`.
+
+**Casos especiales del documento**
+- `test_seed_real_group_18_has_only_leonardo`: testear que el grupo 18 tiene solo a Leonardo Ludueña (29886) y que el grupo 10 no lo contiene.
+- `test_seed_real_3k4_students_registered_there_and_attending_3k1`: testear que los 5 alumnos marcados “(3K4)” están inscriptos en 3K4 2026 y además tienen una cursada `attending` en 3K1 2026.
+
 ## `tests/test_scores.py`
 
 Puntajes por curso lectivo (`GET/PATCH /section-years/{id}/scores`): etiquetas globales, valores configurables y permisos.

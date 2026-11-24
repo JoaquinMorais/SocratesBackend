@@ -220,7 +220,7 @@ Ambos exponen `get_mail()`: el alumno lo calcula y el profesor devuelve su atrib
 ## Estado actual
 
 **Hecho**
-- Base de datos, Docker y seed realista con 200 alumnos, 5 comisiones (incluye `PRESOCRATICO`), 11 cursos lectivos (10 reales 2024-2026 y el genérico 2000), 32 proyectos con estados variados e historial, entregas pre-creadas, 20 tecnologías, actividades, calendarios con feriados y asistencias históricas.
+- Base de datos, Docker y seed realista con 200 alumnos, 5 comisiones (incluye `PRESOCRATICO`), 11 cursos lectivos (10 reales 2024-2026 y el genérico 2000), 32 proyectos con estados variados e historial, entregas pre-creadas, 20 tecnologías, actividades, calendarios con feriados y asistencias históricas. También existe `seed_real.json` con la comisión real 3K1 2026 (97 alumnos, 18 grupos, 5 alumnos inscriptos en 3K4 que cursan en 3K1, con Daniel, María Cecilia y Rita asignados a 3K1), que se activa con `SEED_FILE=seed_real.json`.
 - Login, refresh, logout y flujo de contraseña por código (OTP).
 - Alta de alumnos (individual y masiva) y de profesores. Cada alumno puede indicar en qué curso lectivo cursa (`id_section_year` en `POST /students` o por fila en `/students/bulk`), lo que crea su **inscripción** (`registered`); la cursada se crea al integrar un proyecto.
 - Eliminación de un alumno (`DELETE /students/{id}`, solo super admin): pensada para altas erróneas; bloqueada si tiene alguna membresía `active`, `finished` o `pending_approval`, con solo restos viejos (`abandoned`, `expelled`, `rejected`) esos vínculos se borran con él; borra también sus inscripciones y cursadas, libera el legajo y cierra sus sesiones y códigos pendientes.

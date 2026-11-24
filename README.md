@@ -94,6 +94,7 @@ Variables principales:
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Credenciales de PostgreSQL |
 | `DATABASE_URL` | URL async hacia PostgreSQL; debe coincidir con las credenciales anteriores |
 | `SECRET_KEY` | Firma de los JWT; usar un valor largo y aleatorio |
+| `SEED_FILE` | Seed que se carga con la base vacía: `seed.json` (por defecto) o `seed_real.json` |
 | `EMAIL_BACKEND` | `console` para ver mails en logs o `smtp` para enviarlos |
 | `EMAIL_DEV_REDIRECT` | Redirige todos los mails a una dirección en desarrollo |
 | `MEDIA_DIR`, `MEDIA_BASE_URL` | Almacenamiento y URL pública de imágenes |
@@ -158,7 +159,7 @@ La documentación de qué prueba cada archivo está en [`docs/tests.md`](docs/te
 
 ## Usuarios del seed
 
-El seed solo se carga cuando la base está vacía. Todos los usuarios de prueba usan la contraseña `Test1234!`.
+El seed solo se carga cuando la base está vacía. El seed realista (`data/seed.json`) usa la contraseña `Test1234!` para todos sus usuarios de prueba; la comisión real (`data/seed_real.json`) usa `Pass1234` y se activa con `SEED_FILE=seed_real.json`.
 
 | Rol | Mail |
 |---|---|
@@ -172,6 +173,8 @@ Los alumnos usan el patrón `{legajo}@sistemas.frc.utn.edu.ar`. Las cuentas nuev
 > Estas credenciales son exclusivamente para desarrollo y pruebas.
 
 El seed realista incluye 200 alumnos, 16 profesores, 10 cursos lectivos reales (2024-2026), el curso genérico `PRESOCRATICO` (2000), proyectos con estados e historial, entregas, tecnologías, calendarios y asistencias.
+
+`data/seed_real.json` es la comisión real 3K1 2026: 97 alumnos en 18 grupos, 5 alumnos inscriptos en 3K4 que cursan en 3K1, Marta y María Cecilia como super admin, Daniel, María Cecilia y Rita asignados a 3K1, y los proyectos en `in_progress`. Para usarla, definir `SEED_FILE=seed_real.json` y recrear la base con `docker compose down -v`.
 
 Para volver a la base inicial:
 
@@ -227,7 +230,7 @@ El proyecto usa `create_all`, que crea tablas nuevas pero **no modifica tablas e
 ├── schemas/              # Validación de entrada y respuestas públicas
 ├── routes/               # Endpoints delgados
 ├── utils/                # Lógica de negocio y reglas
-├── data/                 # seed.json y seed_test.json
+├── data/                 # seed.json, seed_real.json y seed_test.json
 ├── tests/                # Suite de pytest
 ├── docs/                 # Documentación del proyecto
 ├── Dockerfile
