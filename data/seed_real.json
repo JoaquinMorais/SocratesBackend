@@ -1335,7 +1335,8 @@
       "group_number": 1,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Activos Mineros - SIGPROMIN"
+      "name": "SIGPROMIN",
+      "description": "Gestión de Activos Mineros"
     },
     {
       "section": "3K1",
@@ -1351,7 +1352,8 @@
       "group_number": 3,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestor de Obras Pintura (GOP)"
+      "name": "GOP",
+      "description": "Gestor de Obras de Pintura"
     },
     {
       "section": "3K1",
@@ -1359,7 +1361,7 @@
       "group_number": 4,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Integral Taller Automotriz"
+      "name": "Gestión Integral de Taller Automotriz"
     },
     {
       "section": "3K1",
@@ -1367,7 +1369,8 @@
       "group_number": 5,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión de Proyectos Académicos (SOCRATES)"
+      "name": "Socrates",
+      "description": "Gestión de Proyectos Académicos"
     },
     {
       "section": "3K1",
@@ -1383,7 +1386,8 @@
       "group_number": 7,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión de Pedidos y Optimización Logística (SmartPick Diesel)"
+      "name": "SmartPick Diesel",
+      "description": "Gestión de Pedidos y Optimización Logística"
     },
     {
       "section": "3K1",
@@ -1391,7 +1395,8 @@
       "group_number": 8,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Planificador Itinerario de Viaje \"ViajeZazo\""
+      "name": "ViajeZazo",
+      "description": "Planificador de Itinerario de Viaje"
     },
     {
       "section": "3K1",
@@ -1399,7 +1404,7 @@
       "group_number": 9,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestor de Actividades y Recursos Polideportivo"
+      "name": "Gestor de Actividades y Recursos del Polideportivo"
     },
     {
       "section": "3K1",
@@ -1407,7 +1412,7 @@
       "group_number": 10,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión de Flota de Automóviles"
+      "name": "Gestión de la Flota de Automóviles"
     },
     {
       "section": "3K1",
@@ -1415,7 +1420,8 @@
       "group_number": 11,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Judicial Inteligente (AbogacIA)"
+      "name": "AbogacIA",
+      "description": "Gestión Judicial Inteligente"
     },
     {
       "section": "3K1",
@@ -1423,7 +1429,8 @@
       "group_number": 12,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión de Producciones Audiovisuales (EnFOCO)"
+      "name": "EnFOCO",
+      "description": "Gestión de Producciones Audiovisuales"
     },
     {
       "section": "3K1",
@@ -1431,7 +1438,8 @@
       "group_number": 13,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Agenda Flota de Colectivos (iterBus)"
+      "name": "iterBus",
+      "description": "Gestión de Agenda de Flota de Colectivos"
     },
     {
       "section": "3K1",
@@ -1439,7 +1447,8 @@
       "group_number": 14,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestor Comunicación Formal (ATLAS)"
+      "name": "ATLAS",
+      "description": "Gestor de Comunicación Formal"
     },
     {
       "section": "3K1",
@@ -1447,7 +1456,7 @@
       "group_number": 15,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Clínica Dental"
+      "name": "Gestión de Clínica Dental"
     },
     {
       "section": "3K1",
@@ -1455,7 +1464,8 @@
       "group_number": 16,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión de Alquileres de Inmuebles \"RentART\""
+      "name": "RentART",
+      "description": "Gestión de Alquileres de Inmuebles"
     },
     {
       "section": "3K1",
@@ -1471,7 +1481,8 @@
       "group_number": 18,
       "status": "in_progress",
       "privacy": "public",
-      "name": "Gestión Hiperfoco"
+      "name": "Hiperfoco",
+      "description": "Gestión Hiperfoco"
     }
   ],
   "student_projects": [

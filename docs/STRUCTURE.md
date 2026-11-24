@@ -264,7 +264,7 @@ Las rutas son delgadas: declaran el endpoint, sus permisos y su documentación, 
 | Archivo | Para qué sirve |
 |---|---|
 | `seed.json` | Seed realista para probar sin cargar nada: ~200 alumnos, 4 comisiones, 10 cursos lectivos (2024-2026; `3K4` solo en 2024), proyectos con estados e historial, entregas, tecnologías, actividades, calendarios con feriados y asistencias. Solo se carga si la BD está vacía. |
-| `seed_real.json` | Seed de la comisión real `3K1` 2026: 97 alumnos repartidos en 18 grupos, 5 alumnos inscriptos en `3K4` que cursan en `3K1`, Marta y María Cecilia como super admin, Daniel, María Cecilia y Rita asignados a 3K1, y proyectos en `in_progress`. Se activa con `SEED_FILE=seed_real.json`. |
+| `seed_real.json` | Seed de la comisión real `3K1` 2026: 97 alumnos repartidos en 18 grupos, 5 alumnos inscriptos en `3K4` que cursan en `3K1`, Marta y María Cecilia como super admin, Daniel, María Cecilia y Rita asignados a 3K1, y proyectos en `in_progress` con nombre (marca) y descripción (tema). Se activa con `SEED_FILE=seed_real.json`. |
 | `seed_test.json` | Seed mínimo y fijo que usan los tests (Ana, Luis y Marta). Así el seed real puede cambiar sin romper los tests. |
 
 ## `models/`
@@ -435,7 +435,7 @@ Definen qué datos acepta y devuelve cada endpoint (altas, modificaciones, respu
 | `test_statuses.py` | Estados: permisos, consulta, filtro por ámbito, paginación y reglas por ámbito (incluye `student_section_year`). |
 | `test_generic_section_year.py` | Curso genérico `PRESOCRATICO`: creación automática, consulta, exclusión de listados/estadísticas, atributos no editables y proyectos de ejemplo editables por cualquier profesor. |
 | `test_seed.py` | Seed real una vez por módulo: conteos clave, curso genérico, cobertura de estados, historial, grupos, cursadas, asistencias, tecnologías y reglas del dominio. |
-| `test_seed_real.py` | Seed de la comisión real 3K1 2026: conteos, 4 profesores con sus mails/legajos y super admins, 3 asignaciones a 3K1, alumnos normalizados, proyectos `in_progress`, un jefe por grupo, grupo 18 con Leonardo Ludueña y los 5 alumnos inscriptos en 3K4 cursando 3K1. |
+| `test_seed_real.py` | Seed de la comisión real 3K1 2026: conteos, 4 profesores con sus mails/legajos y super admins, 3 asignaciones a 3K1, alumnos normalizados, proyectos `in_progress` con nombre y descripción, un jefe por grupo, grupo 18 con Leonardo Ludueña y los 5 alumnos inscriptos en 3K4 cursando 3K1. |
 
 El detalle de cada test está en `docs/tests.md`.
 

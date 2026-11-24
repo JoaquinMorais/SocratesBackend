@@ -1327,6 +1327,7 @@ Carga `data/seed_real.json` una vez por módulo y restaura `data/seed_test.json`
 - `test_seed_real_professors_assigned_to_3k1`: testear que Daniel, María Cecilia y Rita están asignados a 3K1 2026 y que Marta no lo está.
 - `test_seed_real_students_normalized_and_without_duplicates`: testear que hay 97 legajos únicos, todos con ingreso 2024, fechas de nacimiento entre 2000 y 2005, nombres y apellidos completos y sin espacios sobrantes.
 - `test_seed_real_projects_in_progress_and_public`: testear que hay 18 proyectos públicos, todos `in_progress`, con nombre y números de grupo del 1 al 18.
+- `test_seed_real_project_names_and_descriptions`: testear que los 18 proyectos tienen el nombre y la descripción esperados: marcas como nombre (`SIGPROMIN`, `Socrates`, `SmartPick Diesel`, `ViajeZazo`, `AbogacIA`, `EnFOCO`, `iterBus`, `ATLAS`, `RentART`, `Hiperfoco`) y el tema como descripción; los grupos sin marca usan el tema completo como nombre y no tienen descripción.
 - `test_seed_real_one_leader_per_group`: testear que cada uno de los 18 grupos tiene exactamente un jefe y que todas las membresías están `active`.
 
 **Casos especiales del documento**

@@ -159,6 +159,35 @@ async def test_seed_real_projects_in_progress_and_public():
     assert sorted(project.group_number for project in projects) == list(range(1, 19))
 
 
+async def test_seed_real_project_names_and_descriptions():
+    expected = {
+        1: ("SIGPROMIN", "Gestión de Activos Mineros"),
+        2: ("Asistencia en Violencia de Género", None),
+        3: ("GOP", "Gestor de Obras de Pintura"),
+        4: ("Gestión Integral de Taller Automotriz", None),
+        5: ("Socrates", "Gestión de Proyectos Académicos"),
+        6: ("Gestión de Mantenimiento de Vehículos", None),
+        7: ("SmartPick Diesel", "Gestión de Pedidos y Optimización Logística"),
+        8: ("ViajeZazo", "Planificador de Itinerario de Viaje"),
+        9: ("Gestor de Actividades y Recursos del Polideportivo", None),
+        10: ("Gestión de la Flota de Automóviles", None),
+        11: ("AbogacIA", "Gestión Judicial Inteligente"),
+        12: ("EnFOCO", "Gestión de Producciones Audiovisuales"),
+        13: ("iterBus", "Gestión de Agenda de Flota de Colectivos"),
+        14: ("ATLAS", "Gestor de Comunicación Formal"),
+        15: ("Gestión de Clínica Dental", None),
+        16: ("RentART", "Gestión de Alquileres de Inmuebles"),
+        17: ("Gestión y Auditoría de Inventario", None),
+        18: ("Hiperfoco", "Gestión Hiperfoco"),
+    }
+    projects = {project.group_number: project for project in await _all(Project)}
+    assert set(projects) == set(expected)
+    for group_number, (name, description) in expected.items():
+        project = projects[group_number]
+        assert project.name == name
+        assert project.description == description
+
+
 async def test_seed_real_one_leader_per_group():
     memberships = await _all(StudentProject)
     leaders = [membership for membership in memberships if membership.is_leader]
