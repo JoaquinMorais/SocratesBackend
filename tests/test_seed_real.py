@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time, timedelta
 
 import pytest_asyncio
 from sqlalchemy import text
@@ -6,6 +6,8 @@ from sqlmodel import SQLModel, func, select
 
 from config.database import SessionLocal
 from models import (
+    Calendar,
+    CalendarClass,
     Professor,
     ProfessorSectionYear,
     Project,
@@ -246,3 +248,70 @@ async def test_seed_real_3k4_students_registered_there_and_attending_3k1():
             and row.state == "attending"
         ]
         assert len(attending_3k1) == 1
+
+
+async def test_seed_real_calendar_classes():
+    async with SessionLocal() as session:
+        section_year = (
+            await session.exec(
+                select(SectionYear)
+                .join(Section, Section.id_section == SectionYear.id_section)
+                .where(Section.name == "3K1", SectionYear.year == 2026)
+            )
+        ).one()
+        calendar = (
+            await session.exec(
+                select(Calendar).where(
+                    Calendar.id_section_year == section_year.id_section_year
+                )
+            )
+        ).one()
+        classes = (
+            await session.exec(
+                select(CalendarClass)
+                .where(CalendarClass.id_calendar == calendar.id_calendar)
+                .order_by(CalendarClass.date)
+            )
+        ).all()
+
+    assert len(classes) == 33
+    assert {calendar_class.date.isoweekday() for calendar_class in classes} == {2, 3}
+    assert all(
+        date(2026, 8, 1) <= calendar_class.date <= date(2026, 11, 28)
+        for calendar_class in classes
+    )
+
+    tuesdays = [c for c in classes if c.date.isoweekday() == 2]
+    wednesdays = [c for c in classes if c.date.isoweekday() == 3]
+    assert len(tuesdays) == 17
+    assert len(wednesdays) == 16
+    assert tuesdays[0].date == date(2026, 8, 4)
+    assert tuesdays[-1].date == date(2026, 11, 24)
+    assert wednesdays[0].date == date(2026, 8, 5)
+    assert wednesdays[-1].date == date(2026, 11, 25)
+    assert date(2026, 11, 18) not in {c.date for c in classes}
+
+    for calendar_class in tuesdays:
+        assert calendar_class.start_time == time(18, 30)
+        assert calendar_class.end_time == time(21, 30)
+        assert calendar_class.modality == "in_person"
+        assert calendar_class.title == "Clase presencial"
+        assert calendar_class.location is None
+        assert calendar_class.meeting_url is None
+
+    for calendar_class in wednesdays:
+        assert calendar_class.start_time == time(18, 30)
+        assert calendar_class.end_time == time(21, 0)
+        assert calendar_class.modality == "virtual"
+        assert calendar_class.title == "Clase virtual"
+        assert calendar_class.location is None
+        assert calendar_class.meeting_url is None
+
+    expected_dates = set()
+    day = date(2026, 8, 1)
+    while day <= date(2026, 11, 28):
+        if day.isoweekday() in (2, 3) and day != date(2026, 11, 18):
+            expected_dates.add(day)
+        day += timedelta(days=1)
+    assert {calendar_class.date for calendar_class in classes} == expected_dates
+
